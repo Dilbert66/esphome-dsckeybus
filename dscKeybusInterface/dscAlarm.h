@@ -45,7 +45,6 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   
   char accessCode[4];
-  bool initialRun=false;
   
   void setup() override {
 
@@ -59,7 +58,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
     register_service(&DSCkeybushome::alarm_keypress, "alarm_keypress",{"keys"});
 	
 	systemStatusChangeCallback(STATUS_OFFLINE);
-	initialRun=true;
+	dsc.resetStatus();
 	dsc.begin();
 
   }
@@ -163,7 +162,7 @@ void alarm_trigger_panic () {
 
   void loop() override {
     	 
-    if (dsc.handlePanel() && (dsc.statusChanged || initialRun )) {   // Processes data only when a valid Keybus command has been read
+    if (dsc.handlePanel() && (dsc.statusChanged )) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 	
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
@@ -186,7 +185,7 @@ void alarm_trigger_panic () {
 			dsc.write(accessCode);
 		}
 
-		if (dsc.troubleChanged || initialRun) {
+		if (dsc.troubleChanged ) {
 			dsc.troubleChanged = false;  // Resets the trouble status flag
 			if (dsc.trouble) troubleStatusChangeCallback(true);
 			else troubleStatusChangeCallback(false);
@@ -195,14 +194,14 @@ void alarm_trigger_panic () {
 		// Publishes status per partition
 		for (byte partition = 0; partition < dscPartitions; partition++) {
 			// Publishes exit delay status
-			if (dsc.exitDelayChanged[partition] || initialRun) {
+			if (dsc.exitDelayChanged[partition] ) {
 				dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
 				if (dsc.exitDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_PENDING );  
 				else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_OFF );
 			}
 		
 			// Publishes armed/disarmed status
-			if (dsc.armedChanged[partition] || initialRun) {
+			if (dsc.armedChanged[partition] ) {
 				dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 				if (dsc.armed[partition]) {
 					if (dsc.armedAway[partition]) partitionStatusChangeCallback(partition+1,STATUS_ARM);
@@ -214,7 +213,7 @@ void alarm_trigger_panic () {
 			}
 			
 			// Publishes ready status
-			if (dsc.readyChanged[partition] || initialRun) {
+			if (dsc.readyChanged[partition] ) {
 				dsc.readyChanged[partition] = false;  // Resets the partition alarm status flag
 				if (dsc.ready[partition] ) {
 					partitionStatusChangeCallback(partition+1,STATUS_READY );
@@ -222,7 +221,7 @@ void alarm_trigger_panic () {
 			}
 
 			// Publishes alarm status
-			if (dsc.alarmChanged[partition] || initialRun) {
+			if (dsc.alarmChanged[partition] ) {
 				dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 				if (dsc.alarm[partition]) {
 					partitionStatusChangeCallback(partition+1,STATUS_TRIGGERED );
@@ -230,7 +229,7 @@ void alarm_trigger_panic () {
 			}
 
 			// Publishes fire alarm status
-			if (dsc.fireChanged[partition] || initialRun) {
+			if (dsc.fireChanged[partition] ) {
 				dsc.fireChanged[partition] = false;  // Resets the fire status flag
 				if (dsc.fire[partition]) fireStatusChangeCallback(partition+1,true );  // Fire alarm tripped
 				else fireStatusChangeCallback(partition+1,false ); // Fire alarm restored
@@ -243,7 +242,7 @@ void alarm_trigger_panic () {
 		//   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
 		//   ...
 		//   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
-		if (dsc.openZonesStatusChanged || initialRun ) {
+		if (dsc.openZonesStatusChanged  ) {
 			dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
 			for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
 				for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
@@ -258,7 +257,7 @@ void alarm_trigger_panic () {
 				}
 			}
 		}
-		if (initialRun) initialRun=false;
+		
 	}
 		
   }
