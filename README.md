@@ -2,7 +2,7 @@
 
 This is an implementation of an ESPHOME custom component to interface directly to a DSC POWER832 (PC5010) alarm system using the keybus interface and  very inexpensive ESP8266 modules (or arduino) .  Using a slightly modified DSC keybus interface library from https://github.com/taligentx/dscKeybusInterface, it provides full read and write control of the alarm system. The idea and yaml code is based on the DIY example at: https://github.com/Margriko/Paradox-ESPHome.
 
-The following services are published to home assistant for use in various scripts:
+The following services are published to home assistant for use in various scripts.  Please note that you will also need to have a transistor on the green data line to give you write access to the bus as shown in the wiring diagram.
 
 	alarm_disarm: Disarms the alarm with the user code provided, or the code specified in the configuration.
 	alarm_arm_home: Arms the alarm in home mode.
@@ -36,7 +36,7 @@ DSC Yellow --- 15k ohm resistor ---|
 DSC Green ---- 15k ohm resistor ---|
                                    +--- 10k ohm resistor --- Ground
 
-Virtual keypad (optional):
+Write access eg. Disarm/arm/etc (option for status read only but required for alarm status control):
 DSC Green ---- NPN collector --\
                                 |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
       Ground --- NPN emitter --/
