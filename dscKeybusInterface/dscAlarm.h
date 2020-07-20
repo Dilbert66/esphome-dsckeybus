@@ -102,7 +102,6 @@ void alarm_trigger_panic () {
 
  void alarm_keypress(std::string keystring) {
 	   const char* keys=keystring.c_str();
-	   while (!dsc.writeReady) dsc.handlePanel();
 	   ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
 	   dsc.write(keys);
  }		
@@ -110,47 +109,41 @@ void alarm_trigger_panic () {
 
  void set_alarm_state(int partition,std::string state,int code=0) {
 	
-	if (partition > 0)  partition=partition-1;
-		
+	if (partition) partition = partition-1;
+
     // Arm stay
     if (state.compare("S") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-      dsc.writePartition = partition;         // Sets writes to the partition number
+      dsc.writePartition = partition+1;         // Sets writes to the partition number
 	  dsc.write('s');                             // Virtual keypad arm stay
     }
 	
     // Arm away
     else if (state.compare("A") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-	  while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-	  dsc.writePartition = partition;         // Sets writes to the partition number
+	  dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('w');                             // Virtual keypad arm away
     }
 	
 	// Arm night
 	else if (state.compare("N") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-      dsc.writePartition = partition;         // Sets writes to the partition number
+      dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('n');                             // Virtual keypad arm away
     }
 	
 	// Fire command
 	else if (state.compare("F") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-      dsc.writePartition = partition;         // Sets writes to the partition number
+      dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('f');                             // Virtual keypad arm away
     }
 	
 	// Panic command
 	else if (state.compare("P") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-      dsc.writePartition = partition;         // Sets writes to the partition number
+      dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('p');                             // Virtual keypad arm away
     }
 	
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
-		while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-		dsc.writePartition = partition;         // Sets writes to the partition number
+		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		if (code==0) code=id(accesscode);
 		itoa(code,accessCode,10);
 		dsc.write(accessCode);
