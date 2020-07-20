@@ -28,7 +28,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   const std::string STATUS_PENDING = "pending";
   const std::string STATUS_ARM = "armed_away";
   const std::string STATUS_STAY = "armed_home";
-  const std::string STATUS_SLEEP = "armed_night";
+  const std::string STATUS_NIGHT = "armed_night";
   const std::string STATUS_OFF = "disarmed";
   const std::string STATUS_ONLINE = "online";
   const std::string STATUS_OFFLINE = "offline";
@@ -122,13 +122,23 @@ void alarm_trigger_panic () {
 	  dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('w');                             // Virtual keypad arm away
     }
-	
+	/*
 	// Arm night
 	else if (state.compare("N") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
       dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('n');                             // Virtual keypad arm away
     }
-	
+	*/
+	//Arm night
+	else if (state.compare("N") == 0 && !dsc.armed[partition] &&  !dsc.exitDelay[partition]) {
+		char cmd[2];
+		dsc.writePartition = partition+1;         // Sets writes to the partition number
+		strcpy(cmd,"*9");
+		if (code==0) code=id(accesscode);
+		itoa(code,accessCode,10);
+		dsc.write(cmd);
+		dsc.write(accessCode);
+	}
 	// Fire command
 	else if (state.compare("F") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
       dsc.writePartition = partition+1;         // Sets writes to the partition number
@@ -154,8 +164,8 @@ void alarm_trigger_panic () {
 	 
 
   void loop() override {
-    	 
-    if (dsc.handlePanel() && (dsc.statusChanged )) {   // Processes data only when a valid Keybus command has been read
+		 
+    if (dsc.handlePanel() &&  dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 	
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
@@ -186,23 +196,25 @@ void alarm_trigger_panic () {
 	
 		// Publishes status per partition
 		for (byte partition = 0; partition < dscPartitions; partition++) {
-			// Publishes exit delay status
-			if (dsc.exitDelayChanged[partition] ) {
-				dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
-				if (dsc.exitDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_PENDING );  
-				else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_OFF );
-			}
-		
+			
 			// Publishes armed/disarmed status
 			if (dsc.armedChanged[partition] ) {
 				dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 				if (dsc.armed[partition]) {
-					if (dsc.armedAway[partition]) partitionStatusChangeCallback(partition+1,STATUS_ARM);
+					if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
+					else if (dsc.armedAway[partition]) partitionStatusChangeCallback(partition+1,STATUS_ARM);
+					else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
 					else if (dsc.armedStay[partition]) partitionStatusChangeCallback(partition+1,STATUS_STAY );
 				} else {
 					partitionStatusChangeCallback(partition+1,STATUS_OFF );
 					
 				}
+			}
+			// Publishes exit delay status
+			if (dsc.exitDelayChanged[partition] ) {
+				dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+				if (dsc.exitDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_PENDING );  
+				else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_OFF );
 			}
 			
 			// Publishes ready status
