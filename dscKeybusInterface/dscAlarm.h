@@ -4,11 +4,13 @@
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 
+bool forceDisconnect;
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 void disconnectKeybus() {
-  dsc.stop();
-  dsc.keybusConnected=false;
+	dsc.stop();
+	dsc.keybusConnected = false;
+	forceDisconnect = true;
 }
 
 bool getKeybusConnectionStatus() {
@@ -57,6 +59,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
 	
 	systemStatusChangeCallback(STATUS_OFFLINE);
 	dsc.resetStatus();
+	forceDisconnect = false;
 	dsc.begin();
 
   }
@@ -163,7 +166,7 @@ void alarm_trigger_panic () {
 
   void loop() override {
 		 
-    if (dsc.handlePanel() &&  dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
+    if (!forceDisconnect && dsc.loop() &&  dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 	
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
