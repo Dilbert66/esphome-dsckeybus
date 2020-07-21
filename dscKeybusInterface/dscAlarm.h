@@ -7,10 +7,8 @@
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 void disconnectKeybus() {
-  timer1_disable();
-  timer1_detachInterrupt();
-  detachInterrupt(digitalPinToInterrupt(dscClockPin));
-  dsc.keybusConnected = false;
+  dsc.stop();
+  dsc.keybusConnected=false;
 }
 
 bool getKeybusConnectionStatus() {
