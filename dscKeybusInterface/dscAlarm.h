@@ -37,7 +37,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   const std::string STATUS_READY = "ready";
   const std::string STATUS_NOT_READY = "not_ready";
   const std::string MSG_ZONE_BYPASS = "zone_bypass_entered";
-  const std::string MSG_ARMED_BYPASS = "armed_zone_bypass";
+  const std::string MSG_ARMED_BYPASS = "armed_custom_bypass";
   const std::string MSG_NONE = "no_messages";
  
   uint8_t zone;
@@ -250,7 +250,7 @@ void alarm_trigger_panic () {
 			if (dsc.readyChanged[partition] ) {
 				dsc.readyChanged[partition] = false;  // Resets the partition alarm status flag
 				if (dsc.ready[partition] ) {
-					partitionStatusChangeCallback(partition+1,STATUS_READY );
+					partitionStatusChangeCallback(partition+1,STATUS_OFF );
 				} else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
 			}
 

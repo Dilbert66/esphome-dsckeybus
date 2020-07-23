@@ -17,6 +17,36 @@ These are similar services to those provided by the Envisalink Home Assistant in
 ## Example in Home Assistant
 ![Image of HASS example](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dsckeybusinterface.png)
 
+The returned statuses for Home Assistant are: armed_away, armed_home, armed_night, pending, disarmed,triggered and unavailable.  
+
+Sample Home Assistant Template Alarm Control Panel configuration:
+
+```
+alarm_control_panel:
+  - platform: template
+    panels:
+      safe_alarm_panel:
+        name: "Alarm Panel"
+        value_template: "{{states('sensor.partition_1_status')}}"
+        code_arm_required: false
+        
+        arm_away:
+          service: esphome.alarm_alarm_arm_away
+                  
+        arm_home:
+          service: esphome.alarm_alarm_arm_home
+          
+        arm_night:
+          service: esphome.alarm_alarm_arm_night
+          
+        disarm:
+          - service: esphome.alarm_alarm_disarm
+            data_template:
+              code: '{{code}}'
+                    
+
+```
+
 ## Wiring
 
 ```
