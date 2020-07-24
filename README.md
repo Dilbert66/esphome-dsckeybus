@@ -31,19 +31,20 @@ alarm_control_panel:
         code_arm_required: false
         
         arm_away:
-          service: esphome.alarm_alarm_arm_away
+          - service: esphome.alarm_alarm_arm_away
                   
         arm_home:
-          service: esphome.alarm_alarm_arm_home
+          - service: esphome.alarm_alarm_arm_home
           
         arm_night:
-          service: esphome.alarm_alarm_arm_night
+          - service: esphome.alarm_alarm_arm_night
+            data_template:
+              code: '{{code}}'
           
         disarm:
           - service: esphome.alarm_alarm_disarm
             data_template:
-              code: '{{code}}'
-                    
+              code: '{{code}}'                    
 
 ```
 
@@ -88,4 +89,5 @@ In order to make OTA updates, connection switch in frontend must be switched to 
 * ESPHOME yaml and component structure based on code from https://github.com/Margriko/Paradox-ESPHome
 * Wiring and DSC library from https://github.com/taligentx/dscKeybusInterface
 * ESPHOME diy examples from https://esphome.io/guides/diy.html
+
 
