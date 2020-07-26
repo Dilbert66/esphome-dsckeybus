@@ -51,6 +51,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
   
   byte lastStatus[dscPartitions];
+  std::string access_code="";
   
   void setup() override {
 
@@ -200,12 +201,11 @@ bool isInt(std::string s, int base){
 		}
 
 		// Sends the access code when needed by the panel for arming
-		if (dsc.accessCodePrompt && dsc.writeReady) { 
+		if (dsc.accessCodePrompt && dsc.writeReady) {
 			dsc.accessCodePrompt = false;
-			char accessCode[4];
-			sprintf(accessCode,"%04u",id(accesscode));
+			const char* accessCode = access_code.c_str();
 			dsc.write(accessCode);
-			ESP_LOGD("Debug","got arming access code prompt");
+			ESP_LOGD("Debug","got access code prompt");
 		}
 
 		if (dsc.troubleChanged ) {
