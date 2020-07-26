@@ -173,7 +173,7 @@ bool isInt(std::string s, int base){
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
-		if (code.length()) == 4) { // ensure we get a 4 digit code
+		if (code.length() == 4) { // ensure we get a 4 digit code
 			dsc.write(accessCode);
 		}
 	}
