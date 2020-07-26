@@ -91,21 +91,21 @@ alarm_control_panel:
 
 - Basic alarm services. Thes services default to partition 1.:
 
-	"alarm_disarm" Parameter: "code" (access code)
-	"alarm_arm_home" 
-	"alarm_arm_night" Parameter: "code" (access code)
-	"alarm_arm_away"
-	"alarm_trigger_panic"
-	"alarm_trigger_fire"
+	- "alarm_disarm",  Parameter: "code" (access code)
+	- "alarm_arm_home" 
+	- "alarm_arm_night",  Parameter: "code" (access code)
+	- "alarm_arm_away"
+	- "alarm_trigger_panic"
+	- "alarm_trigger_fire"
 
 
 - Intermediate command service. Use this service if you need more versatility such as setting alarm states on any partition:
 
-	"set_alarm_state" Parameters: "partition","state","code"  where partition is the partition number from 1 to 8, state is one of "D" (disarm), "A" (arm_away), "S" (arm_home), "N" (arm_night), "P" (panic) or "F" (fire) and "code" is your panel access code (can be empty for arming, panic and fire cmds )
+	- "set_alarm_state",  Parameters: "partition","state","code"  where partition is the partition number from 1 to 8, state is one of "D" (disarm), "A" (arm_away), "S" (arm_home), "N" (arm_night), "P" (panic) or "F" (fire) and "code" is your panel access code (can be empty for arming, panic and fire cmds )
 
 - Generic command service. Use this service for more complex control:
 
-	"alarm_keypress" Parameter: "keys" where keys can be any sequence of cmds from the list below. For example to disarm partition 2 you set keys to be "/2Dxxxx" where xxxx is your access code.   The system defaults to partition 1.
+	- "alarm_keypress",  Parameter: "keys" where keys can be any sequence of cmds from the list below. For example to disarm partition 2 you set keys to be "/2Dxxxx" where xxxx is your access code.   The system defaults to partition 1.
 
 
 ```
