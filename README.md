@@ -19,7 +19,7 @@ These are similar services to those provided by the Envisalink Home Assistant in
 
 The returned statuses for Home Assistant are: armed_away, armed_home, armed_night, pending, disarmed,triggered and unavailable.  
 
-Sample Home Assistant Template Alarm Control Panel configuration:
+Sample Home Assistant Template Alarm Control Panel configuration with simple services (defaults to partition 1):
 
 ```
 alarm_control_panel:
@@ -47,6 +47,104 @@ alarm_control_panel:
               code: '{{code}}'                    
 
 ```
+
+Alternative Home assistant configuration using specified partition with set_alarm_state service
+
+```
+alarm_control_panel:
+  - platform: template
+    panels:
+      safe_alarm_panel:
+        name: "Alarm Panel - Partition 2"
+        value_template: "{{states('sensor.partition_1_status')}}"
+        code_arm_required: false
+        
+        arm_away:
+          - service: esphome.alarm_set_alarm_state
+            data_template:
+			  partition: 2
+			  state: "A"
+			  code: ""
+      
+        arm_home:
+          - service: esphome.alarm_set_alarm_state
+			data_template:
+			  partition: 2
+			  state: "S"
+			  code: ""
+
+        arm_night:
+          - service: esphome.alarm_set_alarm_state
+            data_template:
+			  partition: 2
+			  state: "N"
+              code: '{{code}}'  
+          
+        disarm:
+          - service: esphome.alarm_set_alarm_state
+            data_template:
+			  partition: 2
+			  state: "D"
+              code: '{{code}}'            
+```
+## Services
+
+Basic alarm services. Thes services default to partition 1.:
+
+"alarm_disarm" Parameter: "code" (access code)
+"alarm_arm_home" 
+"alarm_arm_night" Parameter: "code" (access code)
+"alarm_arm_away"
+"alarm_trigger_panic"
+"alarm_trigger_fire"
+
+
+Intermediate command service. Use this service if you need more versatility such as setting alarm states on any partition:
+
+"set_alarm_state" Parameters: "partition","state","code"  where partition is the partition number from 1 to 8, state is one of "D" (disarm), "A" (arm_away), "S" (arm_home), "N" (arm_night), "P" (panic) or "F" (fire) and "code" is your panel access code (can be empty for arming, panic and fire cmds )
+
+Generic command service. Use this service for more complex control:
+
+"alarm_keypress" Parameter: "keys" where keys can be any sequence of cmds from the list below. For example to disarm partition 2 you set keys to be "/2Dxxxx" where xxxx is your access code.   The system defaults to partition 1.
+
+
+```
+	  case '/': setPartition = true; validKey = false; break;
+      case '0': writeKey = 0x00; break;
+      case '1': writeKey = 0x05; break;
+      case '2': writeKey = 0x0A; break;
+      case '3': writeKey = 0x0F; break;
+      case '4': writeKey = 0x11; break;
+      case '5': writeKey = 0x16; break;
+      case '6': writeKey = 0x1B; break;
+      case '7': writeKey = 0x1C; break;
+      case '8': writeKey = 0x22; break;
+      case '9': writeKey = 0x27; break;
+      case '*': writeKey = 0x28; writeAsterisk = true; break;
+      case '#': writeKey = 0x2D; break;
+      case 'F':
+      case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
+      case 's':
+      case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;  // Arm stay
+      case 'w':
+      case 'W': writeKey = 0xB1; writeArm[writePartition - 1] = true; break;  // Arm away
+      case 'n':
+      case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
+      case 'A':
+      case 'a': writeKey = 0xBB; writeAlarm = true; break;                    // Keypad auxiliary alarm
+      case 'c':
+      case 'C': writeKey = 0xBB; break;                                       // Door chime
+      case 'r':
+      case 'R': writeKey = 0xDA; break;                                       // Reset
+      case 'P':
+      case 'p': writeKey = 0xDD; writeAlarm = true; break;                    // Keypad panic alarm
+      case 'x':
+      case 'X': writeKey = 0xE1; break;                                       // Exit
+      case '[': writeKey = 0xD5; break;                                       // Command output 1
+      case ']': writeKey = 0xDA; break;                                       // Command output 2
+      case '{': writeKey = 0x70; break;                                       // Command output 3
+      case '}': writeKey = 0xEC; break;                                       // Command output 4
+```	  
 
 ## Wiring
 

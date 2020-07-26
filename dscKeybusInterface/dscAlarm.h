@@ -71,7 +71,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   }
   
   
-void alarm_disarm (std::string code="") {
+void alarm_disarm (std::string code) {
 	
 	set_alarm_state(1,"D",code);
 	
@@ -83,7 +83,7 @@ void alarm_arm_home () {
 	
 }
 
-void alarm_arm_night (std::string code="") {
+void alarm_arm_night (std::string code) {
 	
 	set_alarm_state(1,"N",code);
 	
