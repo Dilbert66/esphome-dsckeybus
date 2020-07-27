@@ -62,29 +62,29 @@ alarm_control_panel:
         arm_away:
           - service: esphome.alarm_set_alarm_state
             data_template:
-			  partition: 2
-			  state: "A"
-			  code: ""
+	      partition: 2
+	      state: "A"
+	      code: ""
       
         arm_home:
           - service: esphome.alarm_set_alarm_state
-			data_template:
-			  partition: 2
-			  state: "S"
-			  code: ""
+	    data_template:
+	      partition: 2
+	      state: "S"
+	      code: ""
 
         arm_night:
           - service: esphome.alarm_set_alarm_state
             data_template:
-			  partition: 2
-			  state: "N"
+	      partition: 2
+	      state: "N"
               code: '{{code}}'  
           
         disarm:
           - service: esphome.alarm_set_alarm_state
             data_template:
-			  partition: 2
-			  state: "D"
+	      partition: 2
+	      state: "D"
               code: '{{code}}'            
 ```
 ## Services
