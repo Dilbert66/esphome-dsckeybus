@@ -89,7 +89,7 @@ alarm_control_panel:
 ```
 ## Services
 
-- Basic alarm services. Thes services default to partition 1.:
+- Basic alarm services. These services default to partition 1:
 
 	- "alarm_disarm",  Parameter: "code" (access code)
 	- "alarm_arm_home" 
