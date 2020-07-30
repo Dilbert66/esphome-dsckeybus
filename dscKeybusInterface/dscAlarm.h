@@ -7,7 +7,7 @@
   
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool forceDisconnect;
-bool debug = false;
+
 
 void disconnectKeybus() {
   dsc.stop();
@@ -53,6 +53,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onTroubleStatusChange(std::function<void (bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
+  bool debug = false;
   
   private:
     uint8_t zone;
