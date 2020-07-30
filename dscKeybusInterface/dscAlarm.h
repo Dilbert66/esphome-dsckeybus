@@ -238,17 +238,17 @@ bool isInt(std::string s, int base){
 		}	
 		if (dsc.keypadFireAlarm) partitionMsgChangeCallback(1,"Keypad Fire Alarm");
 	
-	if (debug) ESP_LOGD("Debug22","Partition1 changed data:  %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.armedChanged[0],dsc.exitDelay[0],dsc.armed[0],dsc.lights[0],dsc.status[0],dsc.armedAway[0],dsc.armedStay[0],dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6]);
+	if (debug) ESP_LOGD("Debug22","Partition 1 panel data: %02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6]);
 	 
 		// Publishes status per partition
 		for (byte partition = 0; partition < dscPartitions; partition++) {
 			
 			
-		if (debug) ESP_LOGD("Debug33","Partition data %02X: %02X,%02X,%02X,%02X",partition,dsc.status[partition], dsc.lights[partition], dsc.armed[partition],dsc.fire[partition]);
+		if (debug) ESP_LOGD("Debug33","Partition changed data %02X: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",partition,dsc.status[partition], dsc.lights[partition], dsc.armed[partition],dsc.armedAway[partition],dsc.armedStay[partition],dsc.noEntryDelay[partition],dsc.fire[partition],dsc.armedChanged[partition],dsc.exitDelay[partition]);
 		 
 			if (lastStatus[partition] == 0) partitionMsgChangeCallback(partition+1,MSG_NONE ); //init msgs
 			
-			if (lastStatus[partition] != dsc.status[partition] && enable05Messages) {
+			if (lastStatus[partition] != dsc.status[partition] && enable05Messages ) {
 				lastStatus[partition]=dsc.status[partition];
 				char msg[50];
 				sprintf(msg,"%02X: %s", dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
@@ -260,14 +260,12 @@ bool isInt(std::string s, int base){
 				dsc.readyChanged[partition] = false; // no need to update the ready status since we update the current status here
 				dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 				if (dsc.armed[partition]) {
-					if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
+					if (dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
 					else if (dsc.armedAway[partition]) partitionStatusChangeCallback(partition+1,STATUS_ARM);
 					else if (dsc.armedStay[partition]) partitionStatusChangeCallback(partition+1,STATUS_STAY );
-					if (lastStatus[partition] == 0x15) partitionStatusChangeCallback(partition+1,MSG_ARMED_BYPASS );
 				} else {
 					if (dsc.ready[partition] ) 	partitionStatusChangeCallback(partition+1,STATUS_OFF ); 
 					else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
-	
 				}
 			}
 			// Publishes exit delay status
@@ -282,7 +280,6 @@ bool isInt(std::string s, int base){
 				dsc.readyChanged[partition] = false;  // Resets the partition alarm status flag
 				if (dsc.ready[partition] ) 	partitionStatusChangeCallback(partition+1,STATUS_OFF ); 
 				else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
-				
 			}
 
 			// Publishes alarm status
