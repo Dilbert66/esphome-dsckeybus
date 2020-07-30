@@ -1,6 +1,8 @@
+#for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 substitutions:
-  access_code: !secret access_code
- 
+  accessCode: !secret access_code #Only comes into effect if a password prompt occurs when arming (if set that way on the panel)
+  enable05ArmStatus: "true" #set to false if you get false triggers for arm/trouble/etc alarms 
+
 esphome:
   name: alarm
   platform: ESP8266
@@ -35,10 +37,9 @@ status_led:
 
 custom_component:
 - lambda: |-
-    auto DSCkeybus = new DSCkeybushome();
+    auto DSCkeybus = new DSCkeybushome("$accessCode",$enable05ArmStatus);
     
-    DSCkeybus->access_code="$access_code";
-    
+  
     DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
        id(system_status).publish_state(statusCode);
     });
@@ -158,14 +159,15 @@ text_sensor:
     id: m2
     name: "Partition 2 Msg "
     icon: "mdi:alert-box"
-     
+
+    
       
 switch:
   - platform: template
     name: "Alarm Connection"
     id: connection_status_switch
     lambda: |-
-      return getKeybusConnectionStatus();
+      return dsc.keybusConnected;
     icon: "mdi:shield-link-variant"
     turn_on_action:
       - switch.toggle: restart_switch

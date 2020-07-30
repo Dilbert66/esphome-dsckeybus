@@ -70,6 +70,7 @@ class dscKeybusInterface {
     // Write control
     static byte writePartition;                       // Set to a partition number for virtual keypad
     bool writeReady;                                  // True if the library is ready to write a key
+	bool enable05ArmStatus;							  // True to use 05 armed status messages to update state
 
     // Prints output to the stream interface set in begin()
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
@@ -245,7 +246,7 @@ class dscKeybusInterface {
     byte previousAccessCode[dscPartitions];
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
-    bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
+	bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
     byte previousExitState[dscPartitions];
     bool previousArmed[dscPartitions], previousArmedStay[dscPartitions];
     bool previousAlarm[dscPartitions];
@@ -262,7 +263,7 @@ class dscKeybusInterface {
     static volatile bool writeKeyPending;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool moduleDataCaptured;
-    static volatile unsigned long clockHighTime, keybusTime;
+	static volatile unsigned long clockHighTime, keybusTime, waitTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];

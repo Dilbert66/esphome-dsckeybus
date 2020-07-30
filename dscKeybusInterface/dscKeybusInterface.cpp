@@ -56,6 +56,7 @@ volatile byte dscKeybusInterface::currentCmd;
 volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
+volatile unsigned long dscKeybusInterface::waitTime;
 
 #if defined(ESP32)
 hw_timer_t *timer0 = NULL;
@@ -74,6 +75,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   processModuleData = false;
   writePartition = 1;
   pauseStatus = false;
+  enable05ArmStatus=true;
 }
 
 
@@ -158,6 +160,7 @@ bool dscKeybusInterface::loop() {
   if (millis() - keybusTime > 3000) keybusConnected = false;  // dataTime is set in dscDataInterrupt() when the clock resets
   else keybusConnected = true;
 
+  
   #if defined(ESP32)
   portEXIT_CRITICAL(&timer0Mux);
   #else
@@ -498,27 +501,43 @@ bool dscKeybusInterface::handleModule() {
 // Sets up writes for a single key
 void dscKeybusInterface::write(const char receivedKey) {
 
+  waitTime=millis();
   // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
     yield();
     #endif
+	if (millis() - waitTime > 10000) { // timeout after no response from * write
+		writeKeysPending = false;
+		wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
+        writeAsterisk = false;
+        writeKeyPending = false;
+		return;
+	}
+	
   }
-
+  
   setWriteKey(receivedKey);
 }
 
 
 // Sets up writes for multiple keys sent as a char array
 void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
-
+  waitTime=millis();
   // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
     yield();
     #endif
+	if (millis() - waitTime > 10000) { // timeout after no response from * write
+		writeKeysPending = false;
+		wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
+        writeAsterisk = false;
+        writeKeyPending = false;
+		return;
+	}
   }
 
   writeKeysArray = receivedKeys;
@@ -536,6 +555,14 @@ void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
       #if defined(ESP8266)
       yield();
       #endif
+	  if (millis() - waitTime > 10000) { // timeout after no response for 3 seconds from * write
+		writeKeysPending = false;
+		wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
+        writeAsterisk = false;
+        writeKeyPending = false;
+		return;
+	  }
+	  
     }
   }
   else writeKeys(writeKeysArray);
@@ -588,7 +615,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
       case '7': writeKey = 0x1C; break;
       case '8': writeKey = 0x22; break;
       case '9': writeKey = 0x27; break;
-      case '*': writeKey = 0x28; writeAsterisk = true; break;
+      case '*': writeKey = 0x28; writeAsterisk = true; break; //was true but causes lockup on unused partions
       case '#': writeKey = 0x2D; break;
       case 'F':
       case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
