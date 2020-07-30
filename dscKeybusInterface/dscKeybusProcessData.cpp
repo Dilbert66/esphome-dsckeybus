@@ -223,6 +223,7 @@ void dscKeybusInterface::processPanelStatus() {
       // Armed
       case 0x04:         // Armed stay
       case 0x05: {       // Armed away
+	    writeArm[partitionIndex] = false;
 	   if (bitRead(panelData[statusByte],1) && enable05ArmStatus) { // look for armed light being set to ensure valid arm message
         if (panelData[messageByte] == 0x04) {
           armedStay[partitionIndex] = true;
@@ -232,7 +233,6 @@ void dscKeybusInterface::processPanelStatus() {
           armedStay[partitionIndex] = false;
           armedAway[partitionIndex] = true;
         }
-        writeArm[partitionIndex] = false;
 		armed[partitionIndex] = true;
        
         if (armed[partitionIndex] != previousArmed[partitionIndex] || armedStay[partitionIndex] != previousArmedStay[partitionIndex]) {

@@ -2,6 +2,7 @@
 substitutions:
   accessCode: !secret access_code #Only comes into effect if a password prompt occurs when arming (if set that way on the panel)
   enable05ArmStatus: "true" #set to false if you get false triggers for arm/trouble/etc alarms 
+  enable05Messages: "true" #set to false if you get a lot of bogus displayed messages for arm/trouble/etc alarms 
 
 esphome:
   name: alarm
@@ -37,7 +38,7 @@ status_led:
 
 custom_component:
 - lambda: |-
-    auto DSCkeybus = new DSCkeybushome("$accessCode",$enable05ArmStatus);
+    auto DSCkeybus = new DSCkeybushome("$accessCode",$enable05ArmStatus,$enable05Messages);
     
   
     DSCkeybus->onSystemStatusChange([&](std::string statusCode) {

@@ -19,9 +19,10 @@ void disconnectKeybus() {
 
 class DSCkeybushome : public Component, public CustomAPIDevice {
  public:
-   DSCkeybushome( const char *accessCode, bool enable05ArmStatus)
+   DSCkeybushome( const char *accessCode="", bool enable05ArmStatus = true, bool enable05Messages=true)
    :  accessCode(accessCode)
    ,  enable05ArmStatus(enable05ArmStatus)
+    , enable05Messages(enable05Messages)
   {}
  
   std::function<void (uint8_t, bool)> zoneStatusChangeCallback;
@@ -53,13 +54,16 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onTroubleStatusChange(std::function<void (bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
+  
   bool debug = false;
+  const char *accessCode;
+  bool enable05ArmStatus; 
+  bool enable05Messages;
   
   private:
     uint8_t zone;
 	byte lastStatus[dscPartitions];
-	const char *accessCode;
-	bool enable05ArmStatus;
+	
 	
   void setup() override {
 	
@@ -244,7 +248,7 @@ bool isInt(std::string s, int base){
 		 
 			if (lastStatus[partition] == 0) partitionMsgChangeCallback(partition+1,MSG_NONE ); //init msgs
 			
-			if (lastStatus[partition] != dsc.status[partition] ) {
+			if (lastStatus[partition] != dsc.status[partition] && enable05Messages) {
 				lastStatus[partition]=dsc.status[partition];
 				char msg[50];
 				sprintf(msg,"%02X: %s", dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
@@ -331,6 +335,7 @@ const __FlashStringHelper *statusText(uint8_t statusCode)
         case 0x03: return F("Zones open");
         case 0x04: return F("Armed stay");
         case 0x05: return F("Armed away");
+		case 0x06: return F("No entry delay");
         case 0x07: return F("Failed to arm");
         case 0x08: return F("Exit delay");
         case 0x09: return F("No entry delay");
