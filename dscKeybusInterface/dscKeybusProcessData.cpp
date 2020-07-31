@@ -95,17 +95,7 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
 // Processes status commands: 0x05 (Partitions 1-4) and 0x1B (Partitions 5-8)
 void dscKeybusInterface::processPanelStatus() {
 
-  // Trouble status
-  //if (panelData[3] <= 0x05) {  // Ignores trouble light status in intermittent states
-  //  if (bitRead(panelData[2],4)) trouble = true;
-  if (bitRead(panelData[4],4)) trouble = true; 
-    else trouble = false;
-    if (trouble != previousTrouble) {
-      previousTrouble = trouble;
-      troubleChanged = true;
-      if (!pauseStatus) statusChanged = true;
-    }
- // }
+
 
   // Sets partition counts based on the status command and generation of panel
   byte partitionStart = 0;
@@ -152,17 +142,25 @@ void dscKeybusInterface::processPanelStatus() {
     }
 
     // Fire status
-    //if (panelData[messageByte] < 0x12) {  // Ignores fire light status in intermittent states
-    //  if (bitRead(panelData[statusByte],6)) fire[partitionIndex] = true;
-	  if (bitRead(panelData[messageByte+1],6)) fire[partitionIndex] = true;
+     if (panelData[messageByte] < 0x12) {  // Ignores fire light status in intermittent states
+      if (bitRead(panelData[statusByte],6)) fire[partitionIndex] = true;
       else fire[partitionIndex] = false;
       if (fire[partitionIndex] != previousFire[partitionIndex]) {
         previousFire[partitionIndex] = fire[partitionIndex];
         fireChanged[partitionIndex] = true;
         if (!pauseStatus) statusChanged = true;
       }
-   // }
-
+    }
+  // Trouble status
+  if (panelData[messageByte] <= 0x05) {  // Ignores trouble light status in intermittent states
+    if (bitRead(panelData[statusByte],4)) trouble = true;
+    else trouble = false;
+    if (trouble != previousTrouble) {
+      previousTrouble = trouble;
+      troubleChanged = true;
+      if (!pauseStatus) statusChanged = true;
+    }
+  }
 
     // Messages
     switch (panelData[messageByte]) {
