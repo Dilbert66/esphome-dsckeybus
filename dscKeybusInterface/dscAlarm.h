@@ -243,7 +243,8 @@ bool isInt(std::string s, int base){
 		// Publishes status per partition
 		for (byte partition = 0; partition < dscPartitions; partition++) {
 			
-			
+		if (dsc.disabled[partition]) continue; //skip disabled or partitions in install programming	
+		
 		if (debug) ESP_LOGD("Debug33","Partition data %02X: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",partition,dsc.status[partition], dsc.lights[partition], dsc.armed[partition],dsc.armedAway[partition],dsc.armedStay[partition],dsc.noEntryDelay[partition],dsc.fire[partition],dsc.armedChanged[partition],dsc.exitDelay[partition]);
 		 
 			if (lastStatus[partition] != dsc.status[partition] && enable05Messages ) {
@@ -255,15 +256,15 @@ bool isInt(std::string s, int base){
 			
 			// Publishes armed/disarmed status
 			if (dsc.armedChanged[partition] ) {
-				//dsc.readyChanged[partition] = false; // no need to update the ready status since we update the current status here
+				dsc.readyChanged[partition] = false; // no need to update the ready status since we update the current status here
 				dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 				if (dsc.armed[partition]) {
-					if (dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
+					if ((dsc.armedAway[partition] || dsc.armedStay[partition] )&& dsc.noEntryDelay[partition]) 	partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
 					else if (dsc.armedAway[partition]) partitionStatusChangeCallback(partition+1,STATUS_ARM);
 					else if (dsc.armedStay[partition]) partitionStatusChangeCallback(partition+1,STATUS_STAY );
 				} else {
 					if (dsc.ready[partition] ) 	partitionStatusChangeCallback(partition+1,STATUS_OFF ); 
-					else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
+					else  partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
 				}
 			}
 			// Publishes exit delay status
