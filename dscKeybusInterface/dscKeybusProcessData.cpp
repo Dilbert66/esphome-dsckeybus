@@ -415,7 +415,7 @@ void dscKeybusInterface::processPanelStatus() {
         }
 
         exitState[partitionIndex] = 0;
-
+		noEntryDelay[partitionIndex] = false;
         entryDelay[partitionIndex] = false;
         if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
           previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
