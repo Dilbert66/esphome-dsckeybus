@@ -547,7 +547,8 @@ void dscKeybusInterface::processPanel_0x27() {
     }
 
     // Armed with no entry delay
-    else if (panelData[messageByte] == 0x16 || panelData[messageByte] == 0x06) {
+    //else if (panelData[messageByte] == 0x16 || panelData[messageByte] == 0x06) {
+	else if (panelData[messageByte] == 0x16 ) {
       noEntryDelay[partitionIndex] = true;
 
       // Sets an armed mode if not already set, used if interface is initialized while the panel is armed

@@ -246,8 +246,6 @@ bool isInt(std::string s, int base){
 			
 		if (debug) ESP_LOGD("Debug33","Partition data %02X: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",partition,dsc.status[partition], dsc.lights[partition], dsc.armed[partition],dsc.armedAway[partition],dsc.armedStay[partition],dsc.noEntryDelay[partition],dsc.fire[partition],dsc.armedChanged[partition],dsc.exitDelay[partition]);
 		 
-			if (lastStatus[partition] == 0) partitionMsgChangeCallback(partition+1,MSG_NONE ); //init msgs
-			
 			if (lastStatus[partition] != dsc.status[partition] && enable05Messages ) {
 				lastStatus[partition]=dsc.status[partition];
 				char msg[50];
@@ -257,7 +255,7 @@ bool isInt(std::string s, int base){
 			
 			// Publishes armed/disarmed status
 			if (dsc.armedChanged[partition] ) {
-				dsc.readyChanged[partition] = false; // no need to update the ready status since we update the current status here
+				//dsc.readyChanged[partition] = false; // no need to update the ready status since we update the current status here
 				dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 				if (dsc.armed[partition]) {
 					if (dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
