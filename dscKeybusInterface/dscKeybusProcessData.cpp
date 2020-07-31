@@ -330,7 +330,6 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Partition in alarm
       case 0x11: {
-	  if (bitRead(panelData[statusByte],1)) { // look for armed light being set to ensure valid arm message
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
@@ -352,7 +351,6 @@ void dscKeybusInterface::processPanelStatus() {
           if (!pauseStatus) statusChanged = true;
         }
         break;
-     }
 	  }
       // Arming with bypassed zones
       case 0x15: {
