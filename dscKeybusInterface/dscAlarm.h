@@ -244,7 +244,7 @@ bool isInt(std::string s, int base){
 			
 		if (dsc.disabled[partition]) continue; //skip disabled or partitions in install programming	
 		
-		if (debug) ESP_LOGD("Debug33","Partition data %02X: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",partition,dsc.status[partition], dsc.lights[partition], dsc.armed[partition],dsc.armedAway[partition],dsc.armedStay[partition],dsc.noEntryDelay[partition],dsc.fire[partition],dsc.armedChanged[partition],dsc.exitDelay[partition]);
+		if (debug) ESP_LOGD("Debug33","Partition data %02X: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",partition,dsc.status[partition], dsc.lights[partition], dsc.armed[partition],dsc.armedAway[partition],dsc.armedStay[partition],dsc.noEntryDelay[partition],dsc.fire[partition],dsc.armedChanged[partition],dsc.exitDelay[partition],dsc.readyChanged[partition],dsc.ready[partition]);
 		 
 			if (lastStatus[partition] != dsc.status[partition] && enable05Messages ) {
 				lastStatus[partition]=dsc.status[partition];

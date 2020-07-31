@@ -183,7 +183,7 @@ void dscKeybusInterface::processPanelStatus() {
           entryDelayChanged[partitionIndex] = true;
           if (!pauseStatus) statusChanged = true;
         }
-
+		
         armedStay[partitionIndex] = false;
         armedAway[partitionIndex] = false;
         armed[partitionIndex] = false;
@@ -210,7 +210,7 @@ void dscKeybusInterface::processPanelStatus() {
           readyChanged[partitionIndex] = true;
           if (!pauseStatus) statusChanged = true;
         }
-
+		noEntryDelay[partitionIndex] = false;
         entryDelay[partitionIndex] = false;
         if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
           previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
@@ -486,12 +486,14 @@ void dscKeybusInterface::processPanelStatus() {
       }
 	 
       default: {
-        ready[partitionIndex] = false;
-        if (ready[partitionIndex] != previousReady[partitionIndex]) {
-          previousReady[partitionIndex] = ready[partitionIndex];
-          readyChanged[partitionIndex] = true;
-          if (!pauseStatus) statusChanged = true;
-        }
+		if (enable05ArmStatus) {
+			ready[partitionIndex] = false;
+			if (ready[partitionIndex] != previousReady[partitionIndex]) {
+			previousReady[partitionIndex] = ready[partitionIndex];
+			readyChanged[partitionIndex] = true;
+			if (!pauseStatus) statusChanged = true;
+			}
+		}
         break;
       }
     }
