@@ -123,7 +123,7 @@ void alarm_trigger_panic () {
 
  void alarm_keypress(std::string keystring) {
 	  const char* keys =  strcpy(new char[keystring.length() +1],keystring.c_str());
-	   ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
+	   if (debug) ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
 	   dsc.write(keys);
  }		
 
@@ -201,7 +201,9 @@ bool isInt(std::string s, int base){
   void loop() override {
     	 
 		 
-	if (!forceDisconnect )   dsc.loop();
+	if (!forceDisconnect )  { dsc.loop();
+		//if (debug and (dsc.panelData[0] == 0x05 || dsc.panelData[0]==0x27)) ESP_LOGD("Debug22","Panel command data: %02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6]);
+	}
     if ( dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 			 
@@ -222,7 +224,7 @@ bool isInt(std::string s, int base){
 		if (dsc.accessCodePrompt && dsc.writeReady) {
 			dsc.accessCodePrompt = false;
 			dsc.write(accessCode);
-			ESP_LOGD("Debug","got access code prompt");
+			if (debug) ESP_LOGD("Debug","got access code prompt");
 		}
 
 		if (dsc.troubleChanged ) {
@@ -235,9 +237,16 @@ bool isInt(std::string s, int base){
 			dsc.powerChanged=false;
 			if (dsc.powerTrouble) partitionMsgChangeCallback(1,"AC power failure");
 		}	
-		if (dsc.keypadFireAlarm &&  enable05Messages) partitionMsgChangeCallback(1,"Keypad Fire Alarm");
+		if (dsc.keypadFireAlarm &&  enable05Messages) {
+			dsc.keypadFireAlarm=false;
+			partitionMsgChangeCallback(1,"Keypad Fire Alarm");
+		}
+		if (dsc.keypadPanicAlarm &&  enable05Messages) {
+			dsc.keypadPanicAlarm=false;
+			partitionMsgChangeCallback(1,"Keypad Panic Alarm");
+		}
 	
-	if (debug) ESP_LOGD("Debug22","Partition 1 panel data: %02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6]);
+	if (debug) ESP_LOGD("Debug22","Panel command data: %02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6]);
 	 
 		// Publishes status per partition
 		for (byte partition = 0; partition < dscPartitions; partition++) {
@@ -276,8 +285,9 @@ bool isInt(std::string s, int base){
 			// Publishes ready status
 			if (dsc.readyChanged[partition] ) {
 				dsc.readyChanged[partition] = false;  // Resets the partition alarm status flag
-				if (dsc.ready[partition] ) 	partitionStatusChangeCallback(partition+1,STATUS_OFF ); 
-				else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
+			//	if (dsc.panelData[0] == 0x27 || dsc.status[partition]==0x01 || dsc.status[partition]=0x02) // ignore 05 state change
+					if (dsc.ready[partition] ) 	partitionStatusChangeCallback(partition+1,STATUS_OFF ); 
+					else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
 			}
 
 			// Publishes alarm status

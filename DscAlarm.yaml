@@ -40,7 +40,7 @@ custom_component:
 - lambda: |-
     auto DSCkeybus = new DSCkeybushome("$accessCode",$enable05ArmStatus,$enable05Messages);
     
-    DSCkeybus->debug=true;
+    DSCkeybus->debug=true; //set to false to remove debug status prints
   
     DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
        id(system_status).publish_state(statusCode);

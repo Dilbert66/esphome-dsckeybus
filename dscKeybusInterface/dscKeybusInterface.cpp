@@ -594,8 +594,10 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
   // Sets the write partition if set by virtual keypad key '/'
   if (setPartition) {
     setPartition = false;
-    if (receivedKey >= '1' && receivedKey <= '8') {
-      writePartition = receivedKey - 48;
+    if (receivedKey >= '1' && receivedKey <= '8' ) {
+		writePartition = receivedKey - 48;
+		if (disabled[writePartition - 1]) writePartition=1; //prevent writes to disabled partitions
+			 
     }
     return;
   }
