@@ -1,4 +1,4 @@
-# DSCKeyBus ESPHOME custom component to interface to a DSC POWER832 (PC5010) alarm system.
+# DSCKeyBus ESPHOME custom component to interface to a DSC POWERSERIES alarm system.
 
 This is an implementation of an ESPHOME custom component to interface directly to a DSC POWERSERIES alarm system using the keybus interface and  very inexpensive ESP8266 modules (or arduino) .  Using a slightly modified DSC keybus interface library from https://github.com/taligentx/dscKeybusInterface, it provides full read and write control of the alarm system. The idea and yaml code is based on the DIY example at: https://github.com/Margriko/Paradox-ESPHome.
 
