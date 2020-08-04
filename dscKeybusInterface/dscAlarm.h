@@ -8,7 +8,6 @@
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool forceDisconnect;
 
-
 void disconnectKeybus() {
   dsc.stop();
   dsc.keybusConnected = false;
@@ -19,15 +18,15 @@ void disconnectKeybus() {
 
 class DSCkeybushome : public Component, public CustomAPIDevice {
  public:
-   DSCkeybushome( const char *accessCode="", bool enable05ArmStatus = true, bool enable05Messages=true)
-   :  accessCode(accessCode)
-   ,  enable05ArmStatus(enable05ArmStatus)
-    , enable05Messages(enable05Messages)
+   DSCkeybushome( const char *accessCode="",  unsigned long cmdWaitTime=0)
+   : accessCode(accessCode)
+   , cmdWaitTime(cmdWaitTime)
   {}
  
   std::function<void (uint8_t, bool)> zoneStatusChangeCallback;
+  std::function<void (uint8_t, bool)> zoneAlarmChangeCallback;
   std::function<void (std::string)> systemStatusChangeCallback;
-  std::function<void ( bool)> troubleStatusChangeCallback;
+  std::function<void (uint8_t, bool)> troubleStatusChangeCallback;
   std::function<void (uint8_t, bool)> fireStatusChangeCallback;
   std::function<void (uint8_t,std::string)> partitionStatusChangeCallback; 
   std::function<void (uint8_t,std::string)> partitionMsgChangeCallback;    
@@ -49,21 +48,21 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   const std::string MSG_NONE = "no_messages";
  
   void onZoneStatusChange(std::function<void (uint8_t zone, bool isOpen)> callback) { zoneStatusChangeCallback = callback; }
+  void onZoneAlarmChange(std::function<void (uint8_t zone, bool isOpen)> callback) { zoneAlarmChangeCallback = callback; }
   void onSystemStatusChange(std::function<void (std::string status)> callback) { systemStatusChangeCallback = callback; }
   void onFireStatusChange(std::function<void (uint8_t partition, bool isOpen)> callback) { fireStatusChangeCallback = callback; }
-  void onTroubleStatusChange(std::function<void (bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
+  void onTroubleStatusChange(std::function<void (uint8_t partition, bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
   
-  bool debug = false;
+  byte debug;
   const char *accessCode;
-  bool enable05ArmStatus; 
-  bool enable05Messages;
+  bool enable05Messages = true;
+  unsigned long cmdWaitTime;
   
   private:
     uint8_t zone;
 	byte lastStatus[dscPartitions];
-	
 	
   void setup() override {
 	
@@ -75,13 +74,11 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
 	register_service(&DSCkeybushome::alarm_trigger_panic,"alarm_trigger_panic");
 	register_service(&DSCkeybushome::alarm_trigger_fire,"alarm_trigger_fire");
     register_service(&DSCkeybushome::alarm_keypress, "alarm_keypress",{"keys"});
-
 	systemStatusChangeCallback(STATUS_OFFLINE);
 	forceDisconnect = false;
+	dsc.cmdWaitTime=cmdWaitTime;
 	dsc.resetStatus();
-	dsc.enable05ArmStatus=enable05ArmStatus;
 	dsc.begin();
-
   }
   
 
@@ -123,7 +120,7 @@ void alarm_trigger_panic () {
 
  void alarm_keypress(std::string keystring) {
 	  const char* keys =  strcpy(new char[keystring.length() +1],keystring.c_str());
-	   if (debug) ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
+	   if (debug > 0) ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
 	   dsc.write(keys);
  }		
 
@@ -166,11 +163,11 @@ bool isInt(std::string s, int base){
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		strcpy(cmd,"*9");
 	
-		if (debug) ESP_LOGD("Debug","Writing keys: %s, [%s], %d",cmd,accessCode,code.length());
+		if (debug > 0) ESP_LOGD("Debug","Writing keys: %s, [%s], %d",cmd,accessCode,code.length());
 		if (code.length() == 4 ) { // ensure we get 4 digit code
 			dsc.write(cmd);
 			dsc.write(accessCode);
-		if (debug)	ESP_LOGD("Debug","Writing keys: %s,[%s],%d",cmd,accessCode,strlen(accessCode));
+		if (debug > 0)	ESP_LOGD("Debug","Writing keys: %s,[%s],%d",cmd,accessCode,strlen(accessCode));
 		}
 	}
 	// Fire command
@@ -201,9 +198,14 @@ bool isInt(std::string s, int base){
   void loop() override {
     	 
 		 
-	if (!forceDisconnect )  { dsc.loop();
-		//if (debug and (dsc.panelData[0] == 0x05 || dsc.panelData[0]==0x27)) ESP_LOGD("Debug22","Panel command data: %02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6]);
+	if (!forceDisconnect  && dsc.loop())  { 
+	
+		if (debug > 1 && (dsc.panelData[0] == 0x05 || dsc.panelData[0]==0x27)) ESP_LOGD("Debug11","Panel data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9],dsc.panelData[10],dsc.panelData[11]);
+	
+		if (debug > 2 ) ESP_LOGD("Debug11","Panel data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9],dsc.panelData[10],dsc.panelData[11]);
+	
 	}
+	
     if ( dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 			 
@@ -224,18 +226,17 @@ bool isInt(std::string s, int base){
 		if (dsc.accessCodePrompt && dsc.writeReady) {
 			dsc.accessCodePrompt = false;
 			dsc.write(accessCode);
-			if (debug) ESP_LOGD("Debug","got access code prompt");
-		}
-
-		if (dsc.troubleChanged ) {
-			dsc.troubleChanged = false;  // Resets the trouble status flag
-			if (dsc.trouble) troubleStatusChangeCallback(true);
-			else troubleStatusChangeCallback(false);
+			if (debug > 0) ESP_LOGD("Debug","got access code prompt");
 		}
 		
+
 		if (dsc.powerChanged && enable05Messages) {
 			dsc.powerChanged=false;
 			if (dsc.powerTrouble) partitionMsgChangeCallback(1,"AC power failure");
+		}	
+		if (dsc.batteryChanged && enable05Messages) {
+			dsc.batteryChanged=false;
+			if (dsc.batteryTrouble) partitionMsgChangeCallback(1,"Battery trouble");
 		}	
 		if (dsc.keypadFireAlarm &&  enable05Messages) {
 			dsc.keypadFireAlarm=false;
@@ -246,20 +247,31 @@ bool isInt(std::string s, int base){
 			partitionMsgChangeCallback(1,"Keypad Panic Alarm");
 		}
 	
-	if (debug) ESP_LOGD("Debug22","Panel command data: %02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6]);
+	
+	if (debug > 0) ESP_LOGD("Debug22","Panel command data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9]);
 	 
 		// Publishes status per partition
 		for (byte partition = 0; partition < dscPartitions; partition++) {
 			
 		if (dsc.disabled[partition]) continue; //skip disabled or partitions in install programming	
 		
-		if (debug) ESP_LOGD("Debug33","Partition data %02X: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",partition,dsc.status[partition], dsc.lights[partition], dsc.armed[partition],dsc.armedAway[partition],dsc.armedStay[partition],dsc.noEntryDelay[partition],dsc.fire[partition],dsc.armedChanged[partition],dsc.exitDelay[partition],dsc.readyChanged[partition],dsc.ready[partition]);
+		if (debug > 0) ESP_LOGD("Debug33","Partition data %02X: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",partition,dsc.lights[partition], dsc.status[partition], dsc.armed[partition],dsc.armedAway[partition],dsc.armedStay[partition],dsc.noEntryDelay[partition],dsc.fire[partition],dsc.armedChanged[partition],dsc.exitDelay[partition],dsc.readyChanged[partition],dsc.ready[partition],dsc.alarmChanged[partition],dsc.alarm[partition]);
 		 
-			if (lastStatus[partition] != dsc.status[partition] && enable05Messages ) {
+			if (lastStatus[partition] != dsc.status[partition]  ) {
 				lastStatus[partition]=dsc.status[partition];
 				char msg[50];
 				sprintf(msg,"%02X: %s", dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
-				partitionMsgChangeCallback(partition+1,msg);
+				if (enable05Messages) partitionMsgChangeCallback(partition+1,msg);
+			}
+
+			// Publishes alarm status
+			if (dsc.alarmChanged[partition] ) {
+				dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
+				if (dsc.alarm[partition]) {
+					dsc.readyChanged[partition] = false;  //if we are triggered no need to trigger a ready state change
+					dsc.armedChanged[partition] = false;  // no need to display armed changed
+					partitionStatusChangeCallback(partition+1,STATUS_TRIGGERED );
+				}
 			}
 			
 			// Publishes armed/disarmed status
@@ -285,17 +297,8 @@ bool isInt(std::string s, int base){
 			// Publishes ready status
 			if (dsc.readyChanged[partition] ) {
 				dsc.readyChanged[partition] = false;  // Resets the partition alarm status flag
-			//	if (dsc.panelData[0] == 0x27 || dsc.status[partition]==0x01 || dsc.status[partition]=0x02) // ignore 05 state change
 					if (dsc.ready[partition] ) 	partitionStatusChangeCallback(partition+1,STATUS_OFF ); 
 					else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
-			}
-
-			// Publishes alarm status
-			if (dsc.alarmChanged[partition] ) {
-				dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
-				if (dsc.alarm[partition]) {
-					partitionStatusChangeCallback(partition+1,STATUS_TRIGGERED );
-				}
 			}
 
 			// Publishes fire alarm status
@@ -304,6 +307,14 @@ bool isInt(std::string s, int base){
 				if (dsc.fire[partition]) fireStatusChangeCallback(partition+1,true );  // Fire alarm tripped
 				else fireStatusChangeCallback(partition+1,false ); // Fire alarm restored
 			}
+			
+			// Publishes trouble status
+			if (dsc.troubleChanged[partition] ) {
+				dsc.troubleChanged[partition] = false;  // Resets the fire status flag
+				if (dsc.trouble[partition]) troubleStatusChangeCallback(partition+1,true );  // Trouble alarm tripped
+				else troubleStatusChangeCallback(partition+1,false ); // Trouble alarm restored
+			}
+			
 		}
 
 		// Publishes zones 1-64 status in a separate topic per zone
@@ -323,6 +334,27 @@ bool isInt(std::string s, int base){
 							zoneStatusChangeCallback(zone, true);  // Zone open
 						}
 						else  zoneStatusChangeCallback(zone, false);        // Zone closed
+					}
+				}
+			}
+		}
+		
+		// Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+		//   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+		//   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+		//   ...
+		//   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64	
+		if (dsc.alarmZonesStatusChanged  ) {
+			dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
+			for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
+				for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+					if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
+						bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
+						zone=zoneBit + 1 + (zoneGroup * 8);
+						if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
+							zoneAlarmChangeCallback(zone, true);  // Zone alarm
+						}
+						else  zoneAlarmChangeCallback(zone, false);        // Zone restored
 					}
 				}
 			}
@@ -352,6 +384,7 @@ const __FlashStringHelper *statusText(uint8_t statusCode)
         case 0x14: return F("Auto-arm");
         case 0x15: return F("Arm with bypass");
         case 0x16: return F("No entry delay");
+		case 0x17: return F("Power failure");//??? not sure
         case 0x22: return F("Alarm memory");
         case 0x33: return F("Busy");
         case 0x3D: return F("Disarmed");

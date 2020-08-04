@@ -70,7 +70,6 @@ class dscKeybusInterface {
     // Write control
     static byte writePartition;                       // Set to a partition number for virtual keypad
     bool writeReady;                                  // True if the library is ready to write a key
-	bool enable05ArmStatus;							  // True to use 05 armed status messages to update state
 
     // Prints output to the stream interface set in begin()
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
@@ -101,7 +100,7 @@ class dscKeybusInterface {
     byte accessCode[dscPartitions];
     bool accessCodeChanged[dscPartitions];
     bool accessCodePrompt;                // True if the panel is requesting an access code
-    bool trouble, troubleChanged;
+    //bool trouble, troubleChanged;
     bool powerTrouble, powerChanged;
     bool batteryTrouble, batteryChanged;
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
@@ -114,6 +113,7 @@ class dscKeybusInterface {
     byte exitState[dscPartitions], exitStateChanged[dscPartitions];
     bool entryDelay[dscPartitions], entryDelayChanged[dscPartitions];
     bool fire[dscPartitions], fireChanged[dscPartitions];
+	bool trouble[dscPartitions], troubleChanged[dscPartitions];
     bool openZonesStatusChanged;
     byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
@@ -129,13 +129,14 @@ class dscKeybusInterface {
     //            ^ Byte 1 (stop bit)
     static byte panelData[dscReadSize];
     static volatile byte moduleData[dscReadSize];
-
+	
     // status[] and lights[] store the current status message and LED state for each partition.  These can be accessed
     // directly in the sketch to get data that is not already tracked in the library.  See printPanelMessages() and
     // printPanelLights() in dscKeybusPrintData.cpp to see how this data translates to the status message and LED status.
     byte status[dscPartitions];
     byte lights[dscPartitions];
-
+    static byte lastPanelData[dscReadSize];
+	static unsigned long cmdWaitTime;
     // Process keypad and module data, returns true if data is available
     bool handleModule();
 
@@ -241,7 +242,8 @@ class dscKeybusInterface {
     bool writeKeysPending;
     bool writeArm[dscPartitions];
     bool queryResponse;
-    bool previousTrouble;
+    //bool previousTrouble;
+	
     bool previousKeybus;
     byte previousAccessCode[dscPartitions];
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
@@ -251,8 +253,9 @@ class dscKeybusInterface {
     bool previousArmed[dscPartitions], previousArmedStay[dscPartitions];
     bool previousAlarm[dscPartitions];
     bool previousFire[dscPartitions];
+	bool previousTrouble[dscPartitions];
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
-
+	
     static byte dscClockPin;
     static byte dscReadPin;
     static byte dscWritePin;
@@ -263,7 +266,7 @@ class dscKeybusInterface {
     static volatile bool writeKeyPending;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool moduleDataCaptured;
-	static volatile unsigned long clockHighTime, keybusTime, waitTime;
+	static volatile unsigned long clockHighTime, keybusTime, waitTime, cmdTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];

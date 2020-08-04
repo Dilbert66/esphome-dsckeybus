@@ -24,7 +24,7 @@
 void dscKeybusInterface::resetStatus() {
   statusChanged = true;
   keybusChanged = true;
-  troubleChanged = true;
+  //troubleChanged = true;
   powerChanged = true;
   batteryChanged = true;
   for (byte partition = 0; partition < dscPartitions; partition++) {
@@ -32,7 +32,9 @@ void dscKeybusInterface::resetStatus() {
     armedChanged[partition] = true;
     alarmChanged[partition] = true;
     fireChanged[partition] = true;
+	troubleChanged[partition] = true;
     disabled[partition] = true;
+	
   }
   openZonesStatusChanged = true;
   alarmZonesStatusChanged = true;
@@ -95,8 +97,6 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
 // Processes status commands: 0x05 (Partitions 1-4) and 0x1B (Partitions 5-8)
 void dscKeybusInterface::processPanelStatus() {
 
- 
-
   // Sets partition counts based on the status command and generation of panel
   byte partitionStart = 0;
   byte partitionCount = 0;
@@ -122,7 +122,7 @@ void dscKeybusInterface::processPanelStatus() {
       statusByte = ((partitionIndex - 4) * 2) + 2;
       messageByte = ((partitionIndex - 4) * 2) + 3;
     }
-
+	
     // Partition disabled status
     if (panelData[messageByte] == 0xC7) disabled[partitionIndex] = true;
     else disabled[partitionIndex] = false;
@@ -152,15 +152,16 @@ void dscKeybusInterface::processPanelStatus() {
         if (!pauseStatus) statusChanged = true;
       }
     }
+	
 	// Trouble status
 	if (panelData[messageByte] <= 0x05) {  // Ignores trouble light status in intermittent states
-		if (bitRead(panelData[statusByte],4)) trouble = true; 
-			else trouble = false;
-			if (trouble != previousTrouble) {
-			previousTrouble = trouble;
-			troubleChanged = true;
+		if (bitRead(panelData[statusByte],4)) trouble[partitionIndex] = true; 
+			else trouble[partitionIndex] = false;
+		if (trouble[partitionIndex] != previousTrouble[partitionIndex]) {
+			previousTrouble[partitionIndex] = trouble[partitionIndex];
+			troubleChanged[partitionIndex] = true;
 			if (!pauseStatus) statusChanged = true;
-		}
+      }
 	}
 
     // Messages
@@ -222,8 +223,7 @@ void dscKeybusInterface::processPanelStatus() {
       // Armed
       case 0x04:         // Armed stay
       case 0x05: {       // Armed away
-	    break; //testing
-		if (armed[partitionIndex] || !exitDelay[partitionIndex]) break; //some panels send bogus or duplicate commands
+	  	if (armed[partitionIndex]) break;
 	    writeArm[partitionIndex] = false;
 	   if (bitRead(panelData[statusByte],1) ) { // look for armed light being set to ensure valid arm message
         if (panelData[messageByte] == 0x04) {
@@ -270,7 +270,6 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Exit delay in progress
       case 0x08: {
-		//if (!ready[partitionIndex]) then break; //some panels send bogus data
         writeArm[partitionIndex] = false;
         accessCodePrompt = false;
         exitDelay[partitionIndex] = true;
@@ -316,7 +315,7 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Entry delay in progress
       case 0x0C: {
-		if (!armed[partitionIndex]) break; //some panels send bogus commands
+		//if (!armed[partitionIndex]) break; //some panels send bogus commands
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
@@ -335,7 +334,6 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Partition in alarm
       case 0x11: {
-		
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
@@ -373,9 +371,8 @@ void dscKeybusInterface::processPanelStatus() {
       // Partition armed with no entry delay
 	  case 0x06:
       case 0x16: {
-	   if (armed[partitionIndex]) break; //some panels send bogus commands
+	   if (armed[partitionIndex]) break;
 	   if (exitState[partitionIndex] != DSC_EXIT_NO_ENTRY_DELAY) break;
-	   
         noEntryDelay[partitionIndex] = true;
 
         // Sets an armed mode if not already set, used if interface is initialized while the panel is armed
@@ -474,7 +471,7 @@ void dscKeybusInterface::processPanelStatus() {
       }
 
       // Enter access code
-      case 0x9F: {
+	    case 0x9F: {
         if (writeArm[partitionIndex]) {  // Ensures access codes are only sent when an arm command is sent through this interface
           accessCodePrompt = true;
           if (!pauseStatus) statusChanged = true;
@@ -488,17 +485,15 @@ void dscKeybusInterface::processPanelStatus() {
         }
         break;
       }
+	  case 0x17: break; // possible power failure. Do not set state unavailable
 	 
       default: {
-
-		if (enable05ArmStatus) { //disable if panel sends a lot of unknown or bogus data on the 05 cmd
-			ready[partitionIndex] = false;
-			if (ready[partitionIndex] != previousReady[partitionIndex]) {
-			previousReady[partitionIndex] = ready[partitionIndex];
-			readyChanged[partitionIndex] = true;
-			if (!pauseStatus) statusChanged = true;
-			}
-		}
+		ready[partitionIndex] = false;
+		if (ready[partitionIndex] != previousReady[partitionIndex]) {
+		previousReady[partitionIndex] = ready[partitionIndex];
+		readyChanged[partitionIndex] = true;
+		if (!pauseStatus) statusChanged = true;
+	  }
         break;
       }
     }
@@ -518,7 +513,7 @@ void dscKeybusInterface::processPanel_0x27() {
 
     // Armed
     if (panelData[messageByte] == 0x04 || panelData[messageByte] == 0x05) {
-	  if (armed[partitionIndex]) break; //some panels send bogus commands
+	  if (armed[partitionIndex]) break; 
       ready[partitionIndex] = false;
       if (ready[partitionIndex] != previousReady[partitionIndex]) {
         previousReady[partitionIndex] = ready[partitionIndex];
@@ -552,33 +547,10 @@ void dscKeybusInterface::processPanel_0x27() {
 
       exitState[partitionIndex] = 0;
 	}
-    else if ( panelData[messageByte] == 0x011) {
-/*
-        ready[partitionIndex] = false;
-        if (ready[partitionIndex] != previousReady[partitionIndex]) {
-          previousReady[partitionIndex] = ready[partitionIndex];
-          readyChanged[partitionIndex] = true;
-          if (!pauseStatus) statusChanged = true;
-        }
 
-        entryDelay[partitionIndex] = false;
-        if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
-          previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
-          entryDelayChanged[partitionIndex] = true;
-          if (!pauseStatus) statusChanged = true;
-        }
-	  
-        alarm[partitionIndex] = true;
-        if (alarm[partitionIndex] != previousAlarm[partitionIndex]) {
-          previousAlarm[partitionIndex] = alarm[partitionIndex];
-          alarmChanged[partitionIndex] = true;
-          if (!pauseStatus) statusChanged = true;
-        }
-   */
-     
-	}
     // Armed with no entry delay
     else if (panelData[messageByte] == 0x16 || panelData[messageByte] == 0x06) {
+	  if (armed[partitionIndex]) break;
       noEntryDelay[partitionIndex] = true;
       // Sets an armed mode if not already set, used if interface is initialized while the panel is armed
       if (!armedStay[partitionIndex] && !armedAway[partitionIndex]) armedStay[partitionIndex] = true;
