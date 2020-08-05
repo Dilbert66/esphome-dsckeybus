@@ -142,9 +142,7 @@ bool isInt(std::string s, int base){
     if (state.compare("S") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
       dsc.writePartition = partition+1;         // Sets writes to the partition number
 	  dsc.write('s');                             // Virtual keypad arm stay
-	  
     }
-	
     // Arm away
     else if (state.compare("A") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
 	  dsc.writePartition = partition+1;         // Sets writes to the partition number
@@ -152,47 +150,30 @@ bool isInt(std::string s, int base){
     }
 	// Arm night  ** this depends on the accessCode setup in the yaml
 	else if (state.compare("N") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+      //ensure you have the accessCode setup correctly in the yaml for this to work
       dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('n');                             // Virtual keypad arm away
+	  if (code.length() == 4 ) { // if we get a valid accessCode write it, else the default yaml code will be used
+        dsc.write(accessCode);
+	  }
     }
-    /*
-	// Arm night alternative if the one above doesnt work
-	else if (state.compare("N") == 0 && !dsc.armed[partition] &&  !dsc.exitDelay[partition]) {
-		char cmd[3];
-		dsc.writePartition = partition+1;         // Sets writes to the partition number
-		strcpy(cmd,"*9");
-	
-		if (debug > 0) ESP_LOGD("Debug","Writing keys: %s, [%s], %d",cmd,accessCode,code.length());
-		if (code.length() == 4 ) { // ensure we get 4 digit code
-			dsc.write(cmd);
-			dsc.write(accessCode);
-		if (debug > 0)	ESP_LOGD("Debug","Writing keys: %s,[%s],%d",cmd,accessCode,strlen(accessCode));
-		}
-	}
-    */
 	// Fire command
-	//else if (state.compare("F") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
 	else if (state.compare("F") == 0 ) {
       dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('f');                             // Virtual keypad arm away
     }
-	
 	// Panic command
-	//else if (state.compare("P") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
 	else if (state.compare("P") == 0 ) {
       dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('p');                             // Virtual keypad arm away
     }
-	
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		if (code.length() == 4 ) { // ensure we get 4 digit code
 			dsc.write(accessCode);
 		}
-		
 	}
-
 }
 
   void loop() override {
