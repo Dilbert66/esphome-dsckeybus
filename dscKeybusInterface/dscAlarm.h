@@ -369,7 +369,7 @@ const __FlashStringHelper *statusText(uint8_t statusCode)
         case 0x03: return F("Zones open");
         case 0x04: return F("Armed stay");
         case 0x05: return F("Armed away");
-		case 0x06: return F("No entry delay");
+        case 0x06: return F("No entry delay");
         case 0x07: return F("Failed to arm");
         case 0x08: return F("Exit delay");
         case 0x09: return F("No entry delay");
