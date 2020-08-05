@@ -150,14 +150,13 @@ bool isInt(std::string s, int base){
 	  dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('w');                             // Virtual keypad arm away
     }
-	/*
-	// Arm night  #note this code does not work with my older PC5010 panel
+	// Arm night  ** this depends on the accessCode setup in the yaml
 	else if (state.compare("N") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
       dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('n');                             // Virtual keypad arm away
     }
-	*/
-	// Arm night
+    /*
+	// Arm night alternative if the one above doesnt work
 	else if (state.compare("N") == 0 && !dsc.armed[partition] &&  !dsc.exitDelay[partition]) {
 		char cmd[3];
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
@@ -170,6 +169,7 @@ bool isInt(std::string s, int base){
 		if (debug > 0)	ESP_LOGD("Debug","Writing keys: %s,[%s],%d",cmd,accessCode,strlen(accessCode));
 		}
 	}
+    */
 	// Fire command
 	//else if (state.compare("F") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
 	else if (state.compare("F") == 0 ) {
@@ -381,7 +381,7 @@ const __FlashStringHelper *statusText(uint8_t statusCode)
         case 0x14: return F("Auto-arm");
         case 0x15: return F("Arm with bypass");
         case 0x16: return F("No entry delay");
-		case 0x17: return F("Power failure");//??? not sure
+        case 0x17: return F("Power failure");//??? not sure
         case 0x22: return F("Alarm memory");
         case 0x33: return F("Busy");
         case 0x3D: return F("Disarmed");
