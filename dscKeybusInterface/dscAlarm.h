@@ -135,7 +135,7 @@ bool isInt(std::string s, int base){
  void set_alarm_state(int partition,std::string state,std::string code="") {
 
 	if (code.length() != 4 || !isInt(code,10) ) code=""; // ensure we get a numeric 4 digit code
-	const char* accessCode =  strcpy(new char[code.length() +1],code.c_str());
+	const char* alarmCode =  strcpy(new char[code.length() +1],code.c_str());
 	if (partition) partition = partition-1; // adjust to 0-xx range
 
     // Arm stay
@@ -153,8 +153,8 @@ bool isInt(std::string s, int base){
       //ensure you have the accessCode setup correctly in the yaml for this to work
       dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('n');                             // Virtual keypad arm away
-	  if (code.length() == 4 ) { // if we get a valid accessCode write it, else the default yaml code will be used
-        dsc.write(accessCode);
+	  if (code.length() == 4 && !isInt(accessCode,10) ) { // if the code is sent and the yaml code is not active use this.
+        dsc.write(alarmCode);
 	  }
     }
 	// Fire command
@@ -171,7 +171,7 @@ bool isInt(std::string s, int base){
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		if (code.length() == 4 ) { // ensure we get 4 digit code
-			dsc.write(accessCode);
+			dsc.write(alarmCode);
 		}
 	}
 }
@@ -204,7 +204,7 @@ bool isInt(std::string s, int base){
 		}
 
 		// Sends the access code when needed by the panel for arming
-		if (dsc.accessCodePrompt && dsc.writeReady) {
+		if (dsc.accessCodePrompt && dsc.writeReady && isInt(accessCode,10)) {
 			dsc.accessCodePrompt = false;
 			dsc.write(accessCode);
 			if (debug > 0) ESP_LOGD("Debug","got access code prompt");
