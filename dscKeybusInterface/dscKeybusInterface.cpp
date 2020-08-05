@@ -790,31 +790,31 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         static byte previousCmd05[dscReadSize];
         static byte previousCmd1B[dscReadSize];
         case 0x05:  // Status: partitions 1-4
-		 if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)){
+		  if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)){
 			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
 				 skipData=false;
 				 goodCmd=true;
 			 }
 			 else skipData = true;
-		} else {
+		  } else {
 			 cmdTime = millis();
 			 skipData=true;
 			 goodCmd=false;
-		 }
+		  }
           break;
 
         case 0x1B:  // Status: partitions 5-8
-           if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)){
+          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)){
 			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
 				 skipData=false;
 				 goodCmd=true;
 			 }
 			 else skipData = true;
-		} else {
+		  } else {
 			 cmdTime = millis();
 			 skipData=true;
 			 goodCmd=false;
-		 }
+		  }
           break;
       }
 

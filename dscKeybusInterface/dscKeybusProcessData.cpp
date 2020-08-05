@@ -223,8 +223,7 @@ void dscKeybusInterface::processPanelStatus() {
       // Armed
       case 0x04:         // Armed stay
       case 0x05: {       // Armed away
-	  	if (armed[partitionIndex]) break;
-	    writeArm[partitionIndex] = false;
+	   writeArm[partitionIndex] = false;
 	   if (bitRead(panelData[statusByte],1) ) { // look for armed light being set to ensure valid arm message
         if (panelData[messageByte] == 0x04) {
           armedStay[partitionIndex] = true;
@@ -301,8 +300,7 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Arming with no entry delay
       case 0x09: {
-		if (armed[partitionIndex]) break;
-        ready[partitionIndex] = true;
+		ready[partitionIndex] = true;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
@@ -315,7 +313,6 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Entry delay in progress
       case 0x0C: {
-		//if (!armed[partitionIndex]) break; //some panels send bogus commands
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
@@ -371,10 +368,7 @@ void dscKeybusInterface::processPanelStatus() {
       // Partition armed with no entry delay
 	  case 0x06:
       case 0x16: {
-	   if (armed[partitionIndex]) break;
-	   if (exitState[partitionIndex] != DSC_EXIT_NO_ENTRY_DELAY) break;
         noEntryDelay[partitionIndex] = true;
-
         // Sets an armed mode if not already set, used if interface is initialized while the panel is armed
         if (!armedStay[partitionIndex] && !armedAway[partitionIndex]) armedStay[partitionIndex] = true;
 
@@ -513,7 +507,6 @@ void dscKeybusInterface::processPanel_0x27() {
 
     // Armed
     if (panelData[messageByte] == 0x04 || panelData[messageByte] == 0x05) {
-	  if (armed[partitionIndex]) break; 
       ready[partitionIndex] = false;
       if (ready[partitionIndex] != previousReady[partitionIndex]) {
         previousReady[partitionIndex] = ready[partitionIndex];
@@ -550,8 +543,7 @@ void dscKeybusInterface::processPanel_0x27() {
 
     // Armed with no entry delay
     else if (panelData[messageByte] == 0x16 || panelData[messageByte] == 0x06) {
-	  if (armed[partitionIndex]) break;
-      noEntryDelay[partitionIndex] = true;
+	  noEntryDelay[partitionIndex] = true;
       // Sets an armed mode if not already set, used if interface is initialized while the panel is armed
       if (!armedStay[partitionIndex] && !armedAway[partitionIndex]) armedStay[partitionIndex] = true;
 
