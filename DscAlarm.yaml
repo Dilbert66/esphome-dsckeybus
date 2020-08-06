@@ -21,10 +21,11 @@ wifi:
 
 logger:
   baud_rate: 0
-  level: debug
+  level: verbose
 
 api:
    password: !secret api_password  
+      
    
 ota:
    password: !secret ota_password
@@ -58,10 +59,8 @@ custom_component:
          case 2: id(m2).publish_state(msg); break;
       }
     });
-     DSCkeybus->onTroubleStatusChange([&](uint8_t partition, bool open) {
-        switch (partition) {
-          case 1: id(t1).publish_state(open); break;
-      }
+    DSCkeybus->onTroubleStatusChange([&](bool open) {
+        id(t1).publish_state(open);
     });
     DSCkeybus->onFireStatusChange([&](uint8_t partition, bool open) {
       switch (partition) {
@@ -195,39 +194,39 @@ binary_sensor:
     
   - platform: template
     id: t1
-    name: "Zone Trouble Status"
+    name: "DSCAlarm Trouble Status"
     device_class: problem
     
   - platform: template
     id: f1
     device_class: safety
-    name: "Zone Fire Status"
+    name: "DSCAlarm Partition1 Fire Status"
   
 text_sensor:
   - platform: template
     id: system_status
-    name: "Zone System Status"
+    name: "DSCAlarm System Status"
     icon: "mdi:shield"
   - platform: template
     id: p1
-    name: "Zone Partition 1 Status "
+    name: "DSCAlarm Partition 1 Status "
     icon: "mdi:shield"
   - platform: template
     id: p2
-    name: "Zone Partition 2 Status "
+    name: "DSCAlarm Partition 2 Status "
     icon: "mdi:shield"  
   - platform: template
     id: m1
-    name: "Zone Partition 1 Msg "
+    name: "DSCAlarm Partition 1 Msg "
     icon: "mdi:alert-box"
   - platform: template
     id: m2
-    name: "Zone Partition 2 Msg "
+    name: "DSCAlarm Partition 2 Msg "
     icon: "mdi:alert-box"
      
 switch:
   - platform: template
-    name: "DSC Alarm Connection"
+    name: "DSCAlarm Connection"
     id: connection_status_switch
     lambda: |-
       return dsc.keybusConnected;

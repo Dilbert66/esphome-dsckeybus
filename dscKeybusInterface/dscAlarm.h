@@ -26,7 +26,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   std::function<void (uint8_t, bool)> zoneStatusChangeCallback;
   std::function<void (uint8_t, bool)> zoneAlarmChangeCallback;
   std::function<void (std::string)> systemStatusChangeCallback;
-  std::function<void (uint8_t, bool)> troubleStatusChangeCallback;
+  std::function<void (bool)> troubleStatusChangeCallback;
   std::function<void (uint8_t, bool)> fireStatusChangeCallback;
   std::function<void (uint8_t,std::string)> partitionStatusChangeCallback; 
   std::function<void (uint8_t,std::string)> partitionMsgChangeCallback;    
@@ -51,7 +51,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onZoneAlarmChange(std::function<void (uint8_t zone, bool isOpen)> callback) { zoneAlarmChangeCallback = callback; }
   void onSystemStatusChange(std::function<void (std::string status)> callback) { systemStatusChangeCallback = callback; }
   void onFireStatusChange(std::function<void (uint8_t partition, bool isOpen)> callback) { fireStatusChangeCallback = callback; }
-  void onTroubleStatusChange(std::function<void (uint8_t partition, bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
+  void onTroubleStatusChange(std::function<void (bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
   
@@ -209,7 +209,6 @@ bool isInt(std::string s, int base){
 			dsc.write(accessCode);
 			if (debug > 0) ESP_LOGD("Debug","got access code prompt");
 		}
-		
 
 		if (dsc.powerChanged && enable05Messages) {
 			dsc.powerChanged=false;
@@ -227,8 +226,12 @@ bool isInt(std::string s, int base){
 			dsc.keypadPanicAlarm=false;
 			partitionMsgChangeCallback(1,"Keypad Panic Alarm");
 		}
-	
-	
+		// Publishes trouble status
+		if (dsc.troubleChanged ) {
+			dsc.troubleChanged = false;  // Resets the trouble status flag
+			if (dsc.trouble) troubleStatusChangeCallback(true );  // Trouble alarm tripped
+			else troubleStatusChangeCallback(false ); // Trouble alarm restored
+		}
 	if (debug > 0) ESP_LOGD("Debug22","Panel command data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9]);
 	 
 		// Publishes status per partition
@@ -285,14 +288,6 @@ bool isInt(std::string s, int base){
 				if (dsc.fire[partition]) fireStatusChangeCallback(partition+1,true );  // Fire alarm tripped
 				else fireStatusChangeCallback(partition+1,false ); // Fire alarm restored
 			}
-			
-			// Publishes trouble status
-			if (dsc.troubleChanged[partition] ) {
-				dsc.troubleChanged[partition] = false;  // Resets the fire status flag
-				if (dsc.trouble[partition]) troubleStatusChangeCallback(partition+1,true );  // Trouble alarm tripped
-				else troubleStatusChangeCallback(partition+1,false ); // Trouble alarm restored
-			}
-			
 		}
 
 		// Publishes zones 1-64 status in a separate topic per zone

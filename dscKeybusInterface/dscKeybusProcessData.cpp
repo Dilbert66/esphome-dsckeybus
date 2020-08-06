@@ -32,7 +32,7 @@ void dscKeybusInterface::resetStatus() {
     armedChanged[partition] = true;
     alarmChanged[partition] = true;
     fireChanged[partition] = true;
-	troubleChanged[partition] = true;
+	troubleChanged = true;
     disabled[partition] = true;
 	
   }
@@ -43,7 +43,6 @@ void dscKeybusInterface::resetStatus() {
     alarmZonesChanged[zoneGroup] = 0xFF;
   }
 }
-
 
 // Sets the panel time
 bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode) {
@@ -96,6 +95,18 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
 
 // Processes status commands: 0x05 (Partitions 1-4) and 0x1B (Partitions 5-8)
 void dscKeybusInterface::processPanelStatus() {
+
+
+  // Trouble status
+  if (panelData[3] <= 0x05) {  // Ignores trouble light status in intermittent states
+    if (bitRead(panelData[2],4)) trouble = true;
+    else trouble = false;
+    if (trouble != previousTrouble) {
+      previousTrouble = trouble;
+      troubleChanged = true;
+      if (!pauseStatus) statusChanged = true;
+    }
+  }
 
   // Sets partition counts based on the status command and generation of panel
   byte partitionStart = 0;
@@ -153,16 +164,6 @@ void dscKeybusInterface::processPanelStatus() {
       }
     }
 	
-	// Trouble status
-	if (panelData[messageByte] <= 0x05) {  // Ignores trouble light status in intermittent states
-		if (bitRead(panelData[statusByte],4)) trouble[partitionIndex] = true; 
-			else trouble[partitionIndex] = false;
-		if (trouble[partitionIndex] != previousTrouble[partitionIndex]) {
-			previousTrouble[partitionIndex] = trouble[partitionIndex];
-			troubleChanged[partitionIndex] = true;
-			if (!pauseStatus) statusChanged = true;
-      }
-	}
 
     // Messages
     switch (panelData[messageByte]) {
@@ -389,7 +390,10 @@ void dscKeybusInterface::processPanelStatus() {
         break;
       
 	  }
-
+      
+      // possible power failure. Do not set state unavailable
+	  case 0x17: break; 
+      
       // Partition disarmed
       case 0x3D:
       case 0x3E: {
@@ -479,7 +483,6 @@ void dscKeybusInterface::processPanelStatus() {
         }
         break;
       }
-	  case 0x17: break; // possible power failure. Do not set state unavailable
 	 
       default: {
 		ready[partitionIndex] = false;

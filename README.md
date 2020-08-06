@@ -27,7 +27,7 @@ alarm_control_panel:
     panels:
       safe_alarm_panel:
         name: "Alarm Panel"
-        value_template: "{{states('sensor.partition_1_status')}}"
+        value_template: "{{states('sensor.dscalarm_partition_1_status')}}"
         code_arm_required: false
         
         arm_away:
@@ -56,7 +56,7 @@ alarm_control_panel:
     panels:
       safe_alarm_panel:
         name: "Alarm Panel - Partition 2"
-        value_template: "{{states('sensor.partition_1_status')}}"
+        value_template: "{{states('sensor.dscalarm_partition_1_status')}}"
         code_arm_required: false
         
         arm_away:

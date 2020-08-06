@@ -29,9 +29,9 @@ byte dscKeybusInterface::writeBit;
 bool dscKeybusInterface::virtualKeypad;
 bool dscKeybusInterface::processModuleData;
 byte dscKeybusInterface::panelData[dscReadSize];
-byte dscKeybusInterface::lastPanelData[dscReadSize];
 byte dscKeybusInterface::panelByteCount;
 byte dscKeybusInterface::panelBitCount;
+unsigned long dscKeybusInterface::cmdWaitTime;
 volatile bool dscKeybusInterface::writeKeyPending;
 volatile byte dscKeybusInterface::moduleData[dscReadSize];
 volatile bool dscKeybusInterface::moduleDataCaptured;
@@ -57,9 +57,7 @@ volatile byte dscKeybusInterface::currentCmd;
 volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
-volatile unsigned long dscKeybusInterface::waitTime;
-volatile unsigned long dscKeybusInterface::cmdTime;
-unsigned long dscKeybusInterface::cmdWaitTime;
+
 
 #if defined(ESP32)
 hw_timer_t *timer0 = NULL;
@@ -78,7 +76,6 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   processModuleData = false;
   writePartition = 1;
   pauseStatus = false;
-  cmdWaitTime=0;
 }
 
 
@@ -150,7 +147,7 @@ void dscKeybusInterface::stop() {
   isrModuleByteCount = 0;
 }
 
-bool dscKeybusInterface::handlePanel() { return loop(); }
+
 
 bool dscKeybusInterface::loop() {
 
@@ -314,6 +311,8 @@ bool dscKeybusInterface::loop() {
   return true;
 }
 
+bool dscKeybusInterface::handlePanel() { return loop(); }
+
 bool dscKeybusInterface::handleModule() {
   if (!moduleDataCaptured) return false;
   moduleDataCaptured = false;
@@ -351,7 +350,8 @@ bool dscKeybusInterface::handleModule() {
 
 // Sets up writes for a single key
 void dscKeybusInterface::write(const char receivedKey) {
-
+    
+  static unsigned long waitTime;
   waitTime=millis();
   // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
@@ -375,6 +375,8 @@ void dscKeybusInterface::write(const char receivedKey) {
 
 // Sets up writes for multiple keys sent as a char array
 void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
+    
+  static unsigned long waitTime;
   waitTime=millis();
   // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
@@ -697,6 +699,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
   static bool skipData = false;
   static bool goodCmd = false;
+  static unsigned long cmdTime;
 
   // Panel sends data while the clock is high
   if (digitalRead(dscClockPin) == HIGH) {
