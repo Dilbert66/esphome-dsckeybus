@@ -555,7 +555,7 @@ bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte cu
   }
   if (redundantData) return true;
   else {
-    for (byte i = 0; i < checkedBytes; i++) previousCmd[i] = currentCmd[i];
+    for (byte i = 0; i < dscReadSize; i++) previousCmd[i] = currentCmd[i];
     return false;
   }
  return redundantData;

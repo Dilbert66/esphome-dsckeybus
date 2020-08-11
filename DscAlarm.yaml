@@ -1,10 +1,11 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 substitutions:
+  systemName: "dscalarm"
   accessCode: !secret access_code #Only comes into effect if a password prompt occurs when arming eg. night mode
   cmdWaitTime: "0" # milliseconds.  set how long to delay before accepting a new 05 cmd as valid to filter out intermittent short duration bogus commands that some panels send. default = 0
 
 esphome:
-  name: dscalarm
+  name: $systemName
   platform: ESP8266
   board: nodemcuv2
   
@@ -16,12 +17,12 @@ wifi:
   password: !secret wifi_password
 
   ap:
-    ssid: "DSCalarm"
+    ssid: "$systemName"
     password: !secret wifi_password
 
 logger:
   baud_rate: 0
-  level: verbose
+  level: debug
 
 api:
    password: !secret api_password  
@@ -103,130 +104,130 @@ binary_sensor:
     #zone status
   - platform: template
     id: z1
-    name: "Zone Front door"
+    name: "$systemName Front door"
     device_class: door
   - platform: template
     id: z2
-    name: "Zone Garage door"
+    name: "$systemName Garage door"
     device_class: door
   - platform: template
     id: z3
-    name: "Zone Back door"
+    name: "$systemName Back door"
     device_class: door
   - platform: template
     id: z4
-    name: "Zone Living room window"
+    name: "$systemName Living room window"
     device_class: window
   - platform: template
     id: z5
-    name: "Zone Dining room window"
+    name: "$systemName Dining room window"
     device_class: window
   - platform: template
     id: z6
-    name: "Zone Family room window LF"
+    name: "$systemName Family room window LF"
     device_class: window
   - platform: template
     id: z7
-    name: "Zone Family room window RF"
+    name: "$systemName Family room window RF"
     device_class: window
   - platform: template
     id: z8
-    name: "Zone Basement windows"
+    name: "$systemName Basement windows"
     device_class: window
   - platform: template
     id: z9
-    name: "Zone Upstairs motion"
+    name: "$systemName Upstairs motion"
     device_class: motion
   - platform: template
     id: z10
-    name: "Zone Basement motion"
+    name: "$systemName Basement motion"
     device_class: motion
   - platform: template
     id: z11
-    name: "Zone Main floor motion"
+    name: "$systemName Main floor motion"
     device_class: motion
     
     #zone alarm status
   - platform: template
     id: za1
-    name: "Zone Front door alarm"
+    name: "$systemName Front door alarm"
     #device_class: safety
   - platform: template
     id: za2
-    name: "Zone Garage door alarm"
+    name: "$systemName Garage door alarm"
     #device_class: safety
   - platform: template
     id: za3
-    name: "Zone Back door alarm"
+    name: "$systemName Back door alarm"
     #device_class: safety
   - platform: template
     id: za4
-    name: "Zone Living room window alarm"
+    name: "$systemName Living room window alarm"
     #device_class: safety
   - platform: template
     id: za5
-    name: "Zone Dining room window alarm"
+    name: "$systemName Dining room window alarm"
     #device_class: safety
   - platform: template
     id: za6
-    name: "Zone Family room window LF alarm"
+    name: "$systemName Family room window LF alarm"
     #device_class: safety
   - platform: template
     id: za7
-    name: "Zone Family room window RF alarm"
+    name: "$systemName Family room window RF alarm"
     #device_class: safety
   - platform: template
     id: za8
-    name: "Zone Basement windows alarm"
+    name: "$systemName Basement windows alarm"
     #device_class: safety
   - platform: template
     id: za9
-    name: "Zone Upstairs motion alarm"
+    name: "$systemName Upstairs motion alarm"
     #device_class: safety
   - platform: template
     id: za10
-    name: "Zone Basement motion alarm"
+    name: "$systemName Basement motion alarm"
     #device_class: safety
   - platform: template
     id: za11
-    name: "Zone Main floor motion alarm"
+    name: "$systemName Main floor motion alarm"
     #device_class: safety
     
   - platform: template
     id: t1
-    name: "DSCAlarm Trouble Status"
+    name: "$systemName Trouble Status"
     device_class: problem
     
   - platform: template
     id: f1
     device_class: safety
-    name: "DSCAlarm Partition1 Fire Status"
+    name: "$systemName Partition1 Fire Status"
   
 text_sensor:
   - platform: template
     id: system_status
-    name: "DSCAlarm System Status"
+    name: "$systemName System Status"
     icon: "mdi:shield"
   - platform: template
     id: p1
-    name: "DSCAlarm Partition 1 Status "
+    name: "$systemName Partition 1 Status "
     icon: "mdi:shield"
   - platform: template
     id: p2
-    name: "DSCAlarm Partition 2 Status "
+    name: "$systemName Partition 2 Status "
     icon: "mdi:shield"  
   - platform: template
     id: m1
-    name: "DSCAlarm Partition 1 Msg "
+    name: "$systemName Partition 1 Msg "
     icon: "mdi:alert-box"
   - platform: template
     id: m2
-    name: "DSCAlarm Partition 2 Msg "
+    name: "$systemName Partition 2 Msg "
     icon: "mdi:alert-box"
      
 switch:
   - platform: template
-    name: "DSCAlarm Connection"
+    name: "$systemName Connection"
     id: connection_status_switch
     lambda: |-
       return dsc.keybusConnected;

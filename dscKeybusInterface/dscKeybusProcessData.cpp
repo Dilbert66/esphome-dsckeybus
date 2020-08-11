@@ -737,7 +737,7 @@ void dscKeybusInterface::processPanel_0xEB() {
 void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
 
   // Processes status messages that are not partition-specific
-  if (panelData[0] == 0xA5) {
+  if ( panelData[0] == 0xA5) {
     switch (panelData[panelByte]) {
 
       // Keypad Fire alarm
@@ -792,7 +792,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         if (!pauseStatus) statusChanged = true;
         return;
       }
-      default: return;
+      default: if (partition == 0) return;
     }
   }
 
