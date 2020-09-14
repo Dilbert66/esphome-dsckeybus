@@ -22,7 +22,7 @@ wifi:
 
 logger:
   baud_rate: 0
-  level: debug
+  level: info
 
 api:
    password: !secret api_password  
@@ -43,7 +43,7 @@ custom_component:
     
     DSCkeybus->accessCode="$accessCode";
     DSCkeybus->cmdWaitTime=$cmdWaitTime;
-    DSCkeybus->debug=0; // 0 = off, 1 = status change data, 2 = + 05/27 packets, 3 = + all packets received
+    DSCkeybus->debug=2; // 0 = off, 1 = status change data, 2 = + 05/27 packets, 3 = + all packets received
     
     DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
        id(system_status).publish_state(statusCode);
@@ -60,8 +60,14 @@ custom_component:
          case 2: id(m2).publish_state(msg); break;
       }
     });
-    DSCkeybus->onTroubleStatusChange([&](bool open) {
-        id(t1).publish_state(open);
+    DSCkeybus->onTroubleStatusChange([&](troubleStatus ts,bool open) {
+        switch(ts) {
+            case trStatus: id(tr).publish_state(open);break;
+            case batStatus: id(bat).publish_state(open);break;
+            case acStatus: id(ac).publish_state(open);break;
+            case panicStatus: id(panic).publish_state(open);break;
+            default: break;
+        }
     });
     DSCkeybus->onFireStatusChange([&](uint8_t partition, bool open) {
       switch (partition) {
@@ -194,14 +200,28 @@ binary_sensor:
     #device_class: safety
     
   - platform: template
-    id: t1
+    id: tr
     name: "$systemName Trouble Status"
     device_class: problem
+  - platform: template
+    id: bat
+    name: "$systemName Battery Status"
+    device_class: problem
+
+  - platform: template
+    id: ac
+    name: "$systemName AC Status"
+    device_class: plug
+
+  - platform: template
+    id: panic
+    name: "$systemName Panic Status"
+    device_class: safety
     
   - platform: template
     id: f1
     device_class: safety
-    name: "$systemName Partition1 Fire Status"
+    name: "$systemName Fire Status"
   
 text_sensor:
   - platform: template

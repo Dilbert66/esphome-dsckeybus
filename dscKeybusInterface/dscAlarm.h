@@ -1,4 +1,5 @@
 #include "esphome.h"
+#include "dscKeybusInterface.h"
 //for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
@@ -15,8 +16,9 @@ void disconnectKeybus() {
   forceDisconnect = true;
  
 }
+enum troubleStatus {acStatus,batStatus,trStatus,fireStatus,panicStatus};
 
-class DSCkeybushome : public Component, public CustomAPIDevice {
+class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
  public:
    DSCkeybushome( const char *accessCode="",  unsigned long cmdWaitTime=0)
    : accessCode(accessCode)
@@ -26,7 +28,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   std::function<void (uint8_t, bool)> zoneStatusChangeCallback;
   std::function<void (uint8_t, bool)> zoneAlarmChangeCallback;
   std::function<void (std::string)> systemStatusChangeCallback;
-  std::function<void (bool)> troubleStatusChangeCallback;
+  std::function<void (troubleStatus,bool)> troubleStatusChangeCallback;
   std::function<void (uint8_t, bool)> fireStatusChangeCallback;
   std::function<void (uint8_t,std::string)> partitionStatusChangeCallback; 
   std::function<void (uint8_t,std::string)> partitionMsgChangeCallback;    
@@ -51,7 +53,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onZoneAlarmChange(std::function<void (uint8_t zone, bool isOpen)> callback) { zoneAlarmChangeCallback = callback; }
   void onSystemStatusChange(std::function<void (std::string status)> callback) { systemStatusChangeCallback = callback; }
   void onFireStatusChange(std::function<void (uint8_t partition, bool isOpen)> callback) { fireStatusChangeCallback = callback; }
-  void onTroubleStatusChange(std::function<void (bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
+  void onTroubleStatusChange(std::function<void (troubleStatus ts,bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
   
@@ -65,7 +67,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
 	byte lastStatus[dscPartitions];
 	
   void setup() override {
-	
+	set_update_interval(10); 
     register_service(&DSCkeybushome::set_alarm_state,"set_alarm_state", {"partition","state","code"});
 	register_service(&DSCkeybushome::alarm_disarm,"alarm_disarm",{"code"});
 	register_service(&DSCkeybushome::alarm_arm_home,"alarm_arm_home");
@@ -77,6 +79,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
 	systemStatusChangeCallback(STATUS_OFFLINE);
 	forceDisconnect = false;
 	dsc.cmdWaitTime=cmdWaitTime;
+    dsc.processModuleData = false;      // Controls if keypad and module data is processed and displayed (default: false)
 	dsc.resetStatus();
 	dsc.begin();
   }
@@ -176,7 +179,7 @@ bool isInt(std::string s, int base){
 	}
 }
 
-  void loop() override {
+  void update() override {
     	 
 		 
 	if (!forceDisconnect  && dsc.loop())  { 
@@ -185,7 +188,10 @@ bool isInt(std::string s, int base){
 	
 		if (debug > 2 ) ESP_LOGD("Debug11","Panel data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9],dsc.panelData[10],dsc.panelData[11]);
 		
-	}
+	} 
+    if (dsc.handleModule()) {
+        ESP_LOGD("Module data:","Module: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",dsc.moduleData[0],dsc.moduleData[1],dsc.moduleData[2],dsc.moduleData[3],dsc.moduleData[4],dsc.moduleData[5],dsc.moduleData[6],dsc.moduleData[7],dsc.moduleData[8],dsc.moduleData[9],dsc.moduleData[10],dsc.moduleData[11],dsc.moduleData[12],dsc.moduleData[13],dsc.moduleData[14],dsc.moduleData[15]);
+   }
 
     if ( dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
@@ -210,27 +216,33 @@ bool isInt(std::string s, int base){
 			if (debug > 0) ESP_LOGD("Debug","got access code prompt");
 		}
 
-		if (dsc.powerChanged && enable05Messages) {
+		if (dsc.powerChanged ) {
 			dsc.powerChanged=false;
-			if (dsc.powerTrouble) partitionMsgChangeCallback(1,"AC power failure");
+			if (dsc.powerTrouble) {
+               troubleStatusChangeCallback(acStatus,false ); //no ac
+            } else troubleStatusChangeCallback(acStatus,true );
 		}	
-		if (dsc.batteryChanged && enable05Messages) {
+
+		if (dsc.batteryChanged ) {
 			dsc.batteryChanged=false;
-			if (dsc.batteryTrouble) partitionMsgChangeCallback(1,"Battery trouble");
+			if (dsc.batteryTrouble) {
+                troubleStatusChangeCallback(batStatus,true ); 
+            } else troubleStatusChangeCallback(batStatus,false );
 		}	
-		if (dsc.keypadFireAlarm &&  enable05Messages) {
+		if (dsc.keypadFireAlarm ) {
 			dsc.keypadFireAlarm=false;
 			partitionMsgChangeCallback(1,"Keypad Fire Alarm");
 		}
-		if (dsc.keypadPanicAlarm &&  enable05Messages) {
+		if (dsc.keypadPanicAlarm ) {
 			dsc.keypadPanicAlarm=false;
+            troubleStatusChangeCallback(panicStatus,true ); 
 			partitionMsgChangeCallback(1,"Keypad Panic Alarm");
 		}
 		// Publishes trouble status
 		if (dsc.troubleChanged ) {
 			dsc.troubleChanged = false;  // Resets the trouble status flag
-			if (dsc.trouble) troubleStatusChangeCallback(true );  // Trouble alarm tripped
-			else troubleStatusChangeCallback(false ); // Trouble alarm restored
+			if (dsc.trouble) troubleStatusChangeCallback(trStatus,true );  // Trouble alarm tripped
+			else troubleStatusChangeCallback(trStatus,false ); // Trouble alarm restored
 		}
 	if (debug > 0) ESP_LOGD("Debug22","Panel command data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9]);
 	 
