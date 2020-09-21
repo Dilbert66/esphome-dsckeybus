@@ -148,28 +148,7 @@ alarm_control_panel:
 
 ## Wiring
 
-```
-DSC Aux(+) ---+--- Arduino Vin pin
-              |
-              +--- esp8266 NodeMCU Vin pin
-              |
-              +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
-
-DSC Aux(-) --- Arduino/esp8266 Ground
-
-                                   +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
-DSC Yellow --- 15k ohm resistor ---|
-                                   +--- 10k ohm resistor --- Ground
-
-                                   +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
-DSC Green ---- 15k ohm resistor ---|
-                                   +--- 10k ohm resistor --- Ground
-
-Write access eg. Disarm/arm/etc (option for status read only but required for alarm status control):
-DSC Green ---- NPN collector --\
-                                |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
-      Ground --- NPN emitter --/
-```
+![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
 
 ## Wiring Notes
 ### See DSC interface project for more info: https://github.com/taligentx/dscKeybusInterface
