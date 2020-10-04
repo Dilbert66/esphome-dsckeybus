@@ -42,6 +42,13 @@ const byte dscReadSize = 16;
 #define DSC_EXIT_NO_ENTRY_DELAY 3
 
 
+struct moduleType {
+    byte slot;
+    byte fields[4];
+    byte faultBuffer[5];
+    byte cksum;
+};
+
 class dscKeybusInterface {
 
   public:
@@ -143,13 +150,13 @@ class dscKeybusInterface {
     static volatile bool bufferOverflow;
 
     // Timer interrupt function to capture data - declared as public for use by AVR Timer2
-    static void dscDataInterrupt();
-
+   // static void dscDataInterrupt();
+    static void dscDataInterrupt(dscKeybusInterface *dscPointer);
     // Deprecated
     bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
 
   private:
-
+    
     void processPanelStatus();
     void processPanelStatus0(byte partition, byte panelByte);
     void processPanelStatus2(byte partition, byte panelByte);
@@ -229,7 +236,15 @@ class dscKeybusInterface {
     void printModule_Panel_0xD5();
     void printModule_Notification();
     void printModule_Keys();
-
+    void setPendingZoneUpdate();
+    void processModuleResponse(byte cmd);
+    void processModuleResponse_0xE6(byte cmd);
+    void setModuleSlot(byte slot,bool set,bool issupervised);
+    void setZoneFault(byte zone,bool fault) ;
+    
+    moduleType modules[10];
+    volatile static byte moduleSlots[6],pendingZoneStatus[6],faultBuffer[5];
+    volatile static byte *writeModuleBuffer;
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
     void setWriteKey(const char receivedKey);
@@ -255,22 +270,23 @@ class dscKeybusInterface {
 	bool previousTrouble;
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
 	
+   
     static byte dscClockPin;
     static byte dscReadPin;
     static byte dscWritePin;
-    static byte writeByte, writeBit;
+    static byte writeByte, writeBit,writeModuleBit;
     static bool virtualKeypad;
     static char writeKey;
     static byte panelBitCount, panelByteCount;
-    static volatile bool writeKeyPending;
+    static volatile bool writeKeyPending,writeModulePending,pendingZoneUpdate;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool moduleDataCaptured;
 	static volatile unsigned long clockHighTime, keybusTime;
-    static volatile byte panelBufferLength;
+    static volatile byte panelBufferLength,moduleBufferLength,currentModuleIdx;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte currentCmd, statusCmd;
+    static volatile byte currentCmd, statusCmd,moduleCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };

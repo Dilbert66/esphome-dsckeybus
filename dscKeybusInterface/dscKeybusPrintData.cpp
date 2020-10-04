@@ -2279,6 +2279,7 @@ void dscKeybusInterface::printPanelBinary(bool printSpaces) {
 
 
 void dscKeybusInterface::printModuleBinary(bool printSpaces) {
+    stream->print(currentCmd,HEX);stream->print(": ");
   for (byte moduleByte = 0; moduleByte < moduleByteCount; moduleByte++) {
     if (moduleByte == 1) stream->print(moduleData[moduleByte]);  // Prints the stop bit
     else if (hideKeypadDigits
