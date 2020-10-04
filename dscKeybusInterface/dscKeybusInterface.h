@@ -31,6 +31,7 @@ const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
+const byte maxModules = 10;
 #endif
 
 // Maximum bytes of a Keybus command
@@ -43,10 +44,9 @@ const byte dscReadSize = 16;
 
 
 struct moduleType {
-    byte slot;
+    byte address;
     byte fields[4];
     byte faultBuffer[5];
-    byte cksum;
 };
 
 class dscKeybusInterface {
@@ -125,6 +125,9 @@ class dscKeybusInterface {
     bool alarmZonesStatusChanged;
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
     static unsigned long cmdWaitTime; // time to delay treating 05/1b command as valid in ms
+    void setZoneFault(byte zone,bool fault) ;
+    void addEmulatedZone(byte address);
+    void removeEmulatedZone(byte address);
 
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -236,15 +239,21 @@ class dscKeybusInterface {
     void printModule_Panel_0xD5();
     void printModule_Notification();
     void printModule_Keys();
+    
+    void addModule(byte address);
+    void removeModule(byte address);
     void setPendingZoneUpdate();
     void processModuleResponse(byte cmd);
     void processModuleResponse_0xE6(byte cmd);
-    void setModuleSlot(byte slot,bool set,bool issupervised);
-    void setZoneFault(byte zone,bool fault) ;
+    void setUpdateRequestSlot(byte slot,bool set);
+    void setSupervisorySlot(byte slot,bool set);
+    void setModuleSlot(byte slot,bool set);
     
-    moduleType modules[10];
-    volatile static byte moduleSlots[6],pendingZoneStatus[6],faultBuffer[5];
-    volatile static byte *writeModuleBuffer;
+    byte moduleIdx; 
+    static volatile moduleType modules[maxModules];
+    volatile static byte moduleSlots[6];
+    volatile static byte pendingZoneStatus[6];
+    volatile static byte writeModuleBuffer[6];
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
     void setWriteKey(const char receivedKey);
@@ -286,7 +295,7 @@ class dscKeybusInterface {
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte currentCmd, statusCmd,moduleCmd;
+    static volatile byte currentCmd, statusCmd,moduleCmd,moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };
