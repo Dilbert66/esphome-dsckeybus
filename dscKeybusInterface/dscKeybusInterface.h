@@ -32,6 +32,8 @@ const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
 const byte maxModules = 10;
+const byte zoneOpen=3; //no resistor/no short
+const byte zoneClosed=2;//shorted.  Use 3 for resistor termination instead
 #endif
 
 // Maximum bytes of a Keybus command
@@ -153,8 +155,8 @@ class dscKeybusInterface {
     static volatile bool bufferOverflow;
 
     // Timer interrupt function to capture data - declared as public for use by AVR Timer2
-   // static void dscDataInterrupt();
-    static void dscDataInterrupt(dscKeybusInterface *dscPointer);
+    static void dscDataInterrupt();
+    //static void dscDataInterrupt(dscKeybusInterface *dscPointer);
     // Deprecated
     bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
 
@@ -242,16 +244,16 @@ class dscKeybusInterface {
     
     void addModule(byte address);
     void removeModule(byte address);
-    void setPendingZoneUpdate();
-    void processModuleResponse(byte cmd);
-    void processModuleResponse_0xE6(byte cmd);
-    void setUpdateRequestSlot(byte slot,bool set);
-    void setSupervisorySlot(byte slot,bool set);
-    void setModuleSlot(byte slot,bool set);
+    static void setPendingZoneUpdate();
+    static void processModuleResponse(byte cmd);
+    static void processModuleResponse_0xE6(byte cmd);
+    static void setUpdateRequestSlot(byte slot,bool set);
+    static void setSupervisorySlot(byte slot,bool set);
+    static void setModuleSlot(byte slot,bool set);
     
-    byte moduleIdx; 
-    static volatile moduleType modules[maxModules];
-    volatile static byte moduleSlots[6];
+    static byte moduleIdx; 
+    static moduleType modules[maxModules];
+    static byte moduleSlots[6];
     volatile static byte pendingZoneStatus[6];
     volatile static byte writeModuleBuffer[6];
     bool validCRC();

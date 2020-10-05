@@ -22,13 +22,6 @@
 
 #include "dscKeybusInterface.h"
 
-dscKeybusInterface *pointerToDscClass;
-
-void ICACHE_RAM_ATTR dscDataHandler() { // define global handler
-  pointerToDscClass->dscDataInterrupt(pointerToDscClass); // calls class member handler
-}
-
-
 byte dscKeybusInterface::dscClockPin;
 byte dscKeybusInterface::dscReadPin;
 byte dscKeybusInterface::dscWritePin;
@@ -60,10 +53,11 @@ volatile byte dscKeybusInterface::moduleBufferLength;
 volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
 volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
 volatile byte dscKeybusInterface::panelBufferByteCount[dscBufferSize];
-volatile byte dscKeybusInterface::moduleSlots[6];
+byte dscKeybusInterface::moduleSlots[6];
 volatile byte dscKeybusInterface::writeModuleBuffer[6];
 volatile byte dscKeybusInterface::pendingZoneStatus[6];
-volatile moduleType dscKeybusInterface::modules[maxModules];
+moduleType dscKeybusInterface::modules[maxModules];
+byte dscKeybusInterface::moduleIdx;
 volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
 volatile byte dscKeybusInterface::isrPanelBitCount;
@@ -97,7 +91,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   processModuleData = false;
   writePartition = 1;
   pauseStatus = false;
-  pointerToDscClass=this;
+
   for (int x=0;x<6;x++) { //clear all statuses
      pendingZoneStatus[x]=0xff;
      moduleSlots[x]=0xff;
@@ -126,8 +120,7 @@ void dscKeybusInterface::begin(Stream &_stream) {
   // esp8266 timer1 calls dscDataInterrupt() from dscClockInterrupt() as a one-shot timer
   #elif defined(ESP8266)
   timer1_isr_init();
-  //timer1_attachInterrupt(dscDataInterrupt);
-  timer1_attachInterrupt(dscDataHandler);
+  timer1_attachInterrupt(dscDataInterrupt);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
 
   // esp32 timer0 calls dscDataInterrupt() from dscClockInterrupt()
@@ -612,34 +605,35 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
         switch (address) {
             //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 16
             //11111111 1 00111111 11111111 11111111 00111111 11111111 11111111 11111111 13
-            // 1111111 1 00111111 11111111  00111111 11111111 11111111 11111111 11111111 slots 9
+            // 1111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111 slots 9
             //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 slots 16
-            case 9:   moduleSlots[2]=set?moduleSlots[2]&0x3f:moduleSlots[2]|~0x3f;break;
-            case 10:  moduleSlots[2]=set?moduleSlots[2]&0xcf:moduleSlots[2]|~0xcf;break;
-            case 11:  moduleSlots[2]=set?moduleSlots[2]&0xf3:moduleSlots[2]|~0xf3;break;
-            case 12:  moduleSlots[2]=set?moduleSlots[2]&0xfc:moduleSlots[2]|~0xfc;break;
-            case 13:  moduleSlots[3]=set?moduleSlots[3]&0x3f:moduleSlots[3]|~0x3f;break;
-            case 14:  moduleSlots[3]=set?moduleSlots[3]&0xcf:moduleSlots[3]|~0xcf;break;
-            case 16:  moduleSlots[5]=set?moduleSlots[5]&0x3f:moduleSlots[5]|~0x3f;break;
+            case 9:   moduleSlots[2]=set?moduleSlots[2]&0x3f:moduleSlots[2]|~0x3f;break; //pc5108 
+            case 10:  moduleSlots[2]=set?moduleSlots[2]&0xcf:moduleSlots[2]|~0xcf;break; //pc5108
+            case 11:  moduleSlots[2]=set?moduleSlots[2]&0xf3:moduleSlots[2]|~0xf3;break; //pc5108
+            case 12:  moduleSlots[2]=set?moduleSlots[2]&0xfc:moduleSlots[2]|~0xfc;break; //pc5108
+            case 13:  moduleSlots[3]=set?moduleSlots[3]&0x3f:moduleSlots[3]|~0x3f;break; //pc5108
+            case 14:  moduleSlots[3]=set?moduleSlots[3]&0xcf:moduleSlots[3]|~0xcf;break; //pc5108
+            case 15:  moduleSlots[3]=set?moduleSlots[3]&0xf3:moduleSlots[3]|~0xf3;break;  // pc5208 relay board         
+            case 16:  moduleSlots[5]=set?moduleSlots[5]&0x3f:moduleSlots[5]|~0x3f;break; //pc5108
             default: return;
         }
     
     
 }
 
-void dscKeybusInterface::setUpdateRequestSlot(byte address,bool set=true) {
+void  dscKeybusInterface::setUpdateRequestSlot(byte address,bool set=true) {
 
         //set our request to send data for the zone that we need to publish info on. This gets sent on the 05 command
         //11111111 1 11111111 11111111 11111111 11111111 11111111 01111111 11111111 11111111 (12)
         //11111111 1 11111111 11111111 10111111 11111111 11111111 11111111 11111111 11111111 (9)
         switch (address) {
-            case 9:  pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xbf:pendingZoneStatus[2]|~0xbf;break;//zbit=2;byte=bf; //or with ~operand
-            case 10: pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xdf:pendingZoneStatus[2]|~0xdf;break;//zfbit=2;byte=df;
-            case 11: pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xef:pendingZoneStatus[2]|~0xef;break;//zfbit=2;byte=ef;
-            case 12: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0x7f:pendingZoneStatus[5]|~0x7f;break;//zfbit=5;byte=7f;
-            case 13: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xbf:pendingZoneStatus[5]|~0xbf;break;//zfbit=5;byte=bf;
-            case 14: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xdf:pendingZoneStatus[5]|~0xdf;break;//zfbit=5;byte=df;
-            case 16: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xef:pendingZoneStatus[5]|~0xef;break;//zfbit=5;byte=ef;
+            case 9:  pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xbf:pendingZoneStatus[2]|~0xbf;break;
+            case 10: pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xdf:pendingZoneStatus[2]|~0xdf;break;
+            case 11: pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xef:pendingZoneStatus[2]|~0xef;break;
+            case 12: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0x7f:pendingZoneStatus[5]|~0x7f;break;
+            case 13: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xbf:pendingZoneStatus[5]|~0xbf;break;
+            case 14: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xdf:pendingZoneStatus[5]|~0xdf;break;
+            case 16: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xef:pendingZoneStatus[5]|~0xef;break;
             default: return;
         }
  
@@ -648,7 +642,7 @@ void dscKeybusInterface::setUpdateRequestSlot(byte address,bool set=true) {
 void dscKeybusInterface::addModule(byte address) {
  if (moduleIdx < maxModules) {
     modules[moduleIdx].address=address;
-    for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0xff;//set our zones to be closed
+    for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
     moduleIdx++;
     setSupervisorySlot(address,true);
  }
@@ -670,6 +664,8 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
     byte address=0;
     byte channel=0;
     bool change=false;
+    
+    //we try and do as much setup here so that the ISR functions do the mimimal work.
     
     //get address and channel from zone range
     if (zone > 8 && zone < 17) {
@@ -704,15 +700,16 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
     }
     if (idx==moduleIdx) return;  //address not found in our emulation list so return
     
-    int chk1=0xff;
-    int chk2=0xff;
-    if (channel < 4) { //set / reset bits according to fault value (open=00,closed=11)
-        modules[idx].fields[0]=fault?modules[idx].fields[0]& (~(0x3 << (channel*2))):modules[idx].fields[0]|(0x3 << (channel*2));
+    uint8_t chk1=0xff;
+    uint8_t chk2=0xff;
+    if (channel < 4) { //set / reset bits according to fault value (open=11,closed=01)
+        modules[idx].fields[0]=fault?modules[idx].fields[0] | (zoneOpen << (channel*2)):modules[idx].fields[0] & ~(zoneClosed << (channel*2));
         chk1=((modules[idx].fields[0] >> 4)+(modules[idx].fields[0]&0x0f)+(modules[idx].fields[1]>>4)+(modules[idx].fields[1]&0x0f)) % 0x10;
     } else {
-        modules[idx].fields[2]=fault?modules[idx].fields[2]& (~(0x3 << (channel))):modules[idx].fields[2]|(0x3 << (channel));
+        modules[idx].fields[2]=fault?modules[idx].fields[2] | (zoneOpen << (channel)):modules[idx].fields[2] & ~(zoneClosed << (channel));
         chk2=((modules[idx].fields[2]>>4)+(modules[idx].fields[2]&0x0f)+(modules[idx].fields[3]>>4)+(modules[idx].fields[3]&0x0f)) % 0x10;
     }
+
 
     for (int x=0;x<5;x++)  modules[idx].faultBuffer[x]=0xFF;//clear buffer
     
@@ -720,18 +717,18 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
          modules[idx].faultBuffer[0]=modules[idx].fields[0]; //populate faultbuffer with response data for low channel
          modules[idx].faultBuffer[1]=modules[idx].fields[1];
          modules[idx].faultBuffer[4]=(chk1 << 4) | 0x0F; 
+         modules[idx].fields[1]=modules[idx].fields[0];  //copy current channel values to previous
          change=true;
     }
     if (modules[idx].fields[2] != modules[idx].fields[3]) {  //check high channels
          modules[idx].faultBuffer[2]=modules[idx].fields[2];
          modules[idx].faultBuffer[3]=modules[idx].fields[3];
          modules[idx].faultBuffer[4]= (modules[idx].faultBuffer[4] & 0xf0) | chk2 ; 
+         modules[idx].fields[3]=modules[idx].fields[2];  //copy current channel values to previous
          change=true;
     }
-    Serial.print("Got change");Serial.println(change);
-    modules[idx].fields[1]=modules[idx].fields[0];       //copy current channel values to previous
-    modules[idx].fields[3]=modules[idx].fields[2];     
-        
+
+   
     if (!change) return;  //nothing changed in our zones so return
     
     setUpdateRequestSlot(address,true);
@@ -744,11 +741,10 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
     writeModulePending=true;
       
 }
-
    
-void  ICACHE_RAM_ATTR dscKeybusInterface::processModuleResponse(byte cmd) {
+void  dscKeybusInterface::processModuleResponse(byte cmd) {
     
-    byte address=0;
+     byte address=0;
      switch (cmd) {
        case 0x11:   moduleCmd=cmd;
                     moduleSubCmd=0;
@@ -758,7 +754,7 @@ void  ICACHE_RAM_ATTR dscKeybusInterface::processModuleResponse(byte cmd) {
                     moduleBufferLength=6;
                     writeModulePending=true;
                     return;
-       case 0x28:   address=9;break;
+       case 0x28:   address=9;break;  // the address will depend on the panel request command.
        case 0x33:   address=10;break;
        case 0x39:   address=11;break;
        default:     return;            
@@ -772,14 +768,14 @@ void  ICACHE_RAM_ATTR dscKeybusInterface::processModuleResponse(byte cmd) {
         if (modules[idx].address==address) break;
     }
     if (idx==moduleIdx) return; //not found
-    for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x];
+    for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
     moduleBufferLength=5;
     setUpdateRequestSlot(address,false);  //clear our initial request
     writeModulePending=true;    //set flag that we need to write buffer data 
  
 }
 
-void  ICACHE_RAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
+void  dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
 
     byte address=0;
     switch (subcmd) {
@@ -792,8 +788,7 @@ void  ICACHE_RAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd
     moduleCmd=0xE6;
     moduleSubCmd=subcmd;
     currentModuleIdx=0;
-    writeModuleBit=18;
-    Serial.print("\ngot e6 address");Serial.println(address);
+    writeModuleBit=17;
     int idx;  
     for (idx=0;idx<moduleIdx;idx++) {
     if (modules[idx].address==address) break;
@@ -804,8 +799,6 @@ void  ICACHE_RAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd
     setUpdateRequestSlot(address,false);
     writeModulePending=true;  
 }
-
-
 
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
 // data after an interval.
@@ -949,8 +942,8 @@ ISR(TIMER1_OVF_vect) {
 #if defined(__AVR__)
 void dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt(dscKeybusInterface *dsc) {
-//void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+//void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt(dscKeybusInterface *dsc) {
+void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
   timerStop(timer0);
@@ -982,7 +975,8 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
           case 0x11: 
           case 0x28: 
           case 0x33:
-          case 0x39: dsc->processModuleResponse(isrPanelData[0]);break;
+          case 0xEB: 
+          case 0x39: processModuleResponse(isrPanelData[0]);break;
           case 0x05:
           case 0x0A: statusCmd = 0x05; break;
           case 0x1B: statusCmd = 0x1B; break;
@@ -1005,9 +999,9 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         isrPanelBitCount = 0;
         isrPanelByteCount++;
       }
-      if (isrPanelBitTotal == 17) {
+      if (isrPanelBitTotal == 16) {
             switch (isrPanelData[0]) {
-                case 0xE6: dsc->processModuleResponse_0xE6(isrPanelData[2]);break;//check subcommand
+                case 0xE6: processModuleResponse_0xE6(isrPanelData[2]);break;//check subcommand
                 
             }
        }
