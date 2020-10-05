@@ -45,12 +45,20 @@ const byte dscReadSize = 16;
 #define DSC_EXIT_AWAY 2
 #define DSC_EXIT_NO_ENTRY_DELAY 3
 
+struct zoneMaskType {
+    byte idx;
+    byte mask;
+};
+
 
 struct moduleType {
     byte address;
     byte fields[4];
     byte faultBuffer[5];
+    byte zoneStatusMask;
+    byte zoneStatusByte;
 };
+
 
 class dscKeybusInterface {
 
@@ -253,10 +261,10 @@ class dscKeybusInterface {
     static void setPendingZoneUpdate();
     static void processModuleResponse(byte cmd);
     static void processModuleResponse_0xE6(byte cmd);
-    static void setUpdateRequestFlag(byte slot,bool set);
+    static void addRequestToQueue(byte slot);
     static void setSupervisorySlot(byte slot,bool set);
-    static void setModuleSlot(byte slot,bool set);
     static byte getPendingUpdate();
+    static zoneMaskType getUpdateMask(byte address);
 
     static volatile byte updateQueue[updateQueueSize];
     static byte outIdx,inIdx;
@@ -289,7 +297,6 @@ class dscKeybusInterface {
     bool previousFire[dscPartitions];
 	bool previousTrouble;
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
-	
    
     static byte dscClockPin;
     static byte dscReadPin;

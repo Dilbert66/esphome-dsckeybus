@@ -572,9 +572,13 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
     }
   }
 }
-
-
+#if defined(__AVR__)
 bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#elif defined(ESP8266)
+bool ICACHE_RAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#elif defined(ESP32)
+bool  IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#endif
   bool redundantData = true;
   for (byte i = 0; i < checkedBytes; i++) {
     if (previousCmd[i] != currentCmd[i]) {
@@ -601,10 +605,15 @@ bool dscKeybusInterface::validCRC() {
   else return false;
 }
 
-
-//check for a pending update flag and clear it
+#if defined(__AVR__)
 byte dscKeybusInterface::getPendingUpdate() { 
-    byte addr;
+#elif defined(ESP8266)
+byte ICACHE_RAM_ATTR dscKeybusInterface::getPendingUpdate() { 
+#elif defined(ESP32)
+byte  IRAM_ATTR dscKeybusInterface::getPendingUpdate() { 
+#endif
+//check for a pending update flag and clear it
+    byte addr=0;
 	if (inIdx == outIdx) return 0;
     addr = updateQueue[outIdx];
 	outIdx = (outIdx + 1) % updateQueueSize;
@@ -633,27 +642,29 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
     
 }
 
-void  dscKeybusInterface::setUpdateRequestFlag(byte address,bool set=true) {
-
-        //set our request to send data for the zone that we need to publish info on. This gets sent on the 05 command
-        //11111111 1 11111111 11111111 11111111 11111111 11111111 01111111 11111111 11111111 (12)
-        //11111111 1 11111111 11111111 10111111 11111111 11111111 11111111 11111111 11111111 (9)
-        switch (address) {
-            case 9:  pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xbf:pendingZoneStatus[2]|~0xbf;break;
-            case 10: pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xdf:pendingZoneStatus[2]|~0xdf;break;
-            case 11: pendingZoneStatus[2]=set?pendingZoneStatus[2]&0xef:pendingZoneStatus[2]|~0xef;break;
-            case 12: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0x7f:pendingZoneStatus[5]|~0x7f;break;
-            case 13: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xbf:pendingZoneStatus[5]|~0xbf;break;
-            case 14: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xdf:pendingZoneStatus[5]|~0xdf;break;
-            case 16: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xef:pendingZoneStatus[5]|~0xef;break;
-            default: return;
-        }
-        if (set) { //we set a pending update flag in the queue by saving the address
+void dscKeybusInterface::addRequestToQueue(byte address) {
             updateQueue[inIdx]=address;
             inIdx=(inIdx + 1) % updateQueueSize;
-        }
- 
 }
+
+zoneMaskType dscKeybusInterface::getUpdateMask(byte address) {
+
+        //get our request byte and mask to send data for the zone that we need to publish info on. This gets sent on the 05 command
+        //11111111 1 11111111 11111111 11111111 11111111 11111111 01111111 11111111 11111111 (12)
+        //11111111 1 11111111 11111111 10111111 11111111 11111111 11111111 11111111 11111111 (9)
+        zoneMaskType zm;
+        switch (address) {
+            case 9:  zm.idx=2;zm.mask=0xbf; break;
+            case 10: zm.idx=2;zm.mask=0xdf; break;
+            case 11: zm.idx=2;zm.mask=0xef; break;
+            case 12: zm.idx=5;zm.mask=0x7f; break;
+            case 13: zm.idx=5;zm.mask=0xbf; break;
+            case 14: zm.idx=5;zm.mask=0xdf; break;
+            case 16: zm.idx=5;zm.mask=0xef; break;
+        }
+        return zm;
+}
+
 
 //clears all emulated zones on the panel 
 void dscKeybusInterface:: clearZoneRanges() {
@@ -663,7 +674,8 @@ for (int x=0;x<moduleIdx;x++) {
         modules[x].faultBuffer[2]=0x55;
         modules[x].faultBuffer[3]=0;
         modules[x].faultBuffer[4]= 0xaa ;  //cksum for 01010101 00000000 
-        setUpdateRequestFlag(modules[x].address,true);
+        pendingZoneStatus[modules[x].zoneStatusByte]&=modules[x].zoneStatusMask; //set update slot
+        addRequestToQueue(modules[x].address);  //update queue to indicate pending request
       }
 }
 
@@ -671,14 +683,18 @@ void dscKeybusInterface::addModule(byte address) {
  if (moduleIdx < maxModules) {
     modules[moduleIdx].address=address;
     for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
-    moduleIdx++;
+        
+    //fetch the byte offset and mask for the 0x05 request to update response and store it with the module data
+    zoneMaskType zm=getUpdateMask(address);
+    modules[moduleIdx].zoneStatusByte=zm.idx;
+    modules[moduleIdx].zoneStatusMask=zm.mask;
     setSupervisorySlot(address,true);
- }
+    moduleIdx++;
+    }
 }
 
 void dscKeybusInterface::addRelayModule() {
     setSupervisorySlot(15,true);
- 
 }
 
 void dscKeybusInterface::removeModule(byte address) {
@@ -763,14 +779,20 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
          change=true;
     }
 
-   
     if (!change) return;  //nothing changed in our zones so return
-    setUpdateRequestFlag(address,true);  //set our flag to indicate we have a pending zone update
+    pendingZoneStatus[modules[idx].zoneStatusByte]&=modules[idx].zoneStatusMask; //set update slot
+    addRequestToQueue(address);  //update queue to indicate pending request
   
  
 }
-   
-void  dscKeybusInterface::processModuleResponse(byte cmd) {
+ 
+#if defined(__AVR__)
+void dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
+#elif defined(ESP8266)
+void ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
+#endif
     
      byte address=0;
      switch (cmd) {
@@ -807,12 +829,17 @@ void  dscKeybusInterface::processModuleResponse(byte cmd) {
     if (idx==moduleIdx) return; //not found so not for us
     for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
     moduleBufferLength=5;
-    setUpdateRequestFlag(address,false);  //clear upate slot
+    pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
     writeModulePending=true;    //set flag that we need to write buffer data 
  
 }
-
-void  dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
+#if defined(__AVR__)
+void dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
+#elif defined(ESP8266)
+void  ICACHE_RAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
+#endif
 
     byte address=0;
     switch (subcmd) {
@@ -833,7 +860,7 @@ void  dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
     if (idx==moduleIdx) return; //not found so return
     for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
     moduleBufferLength=5;
-    setUpdateRequestFlag(address,false); //clear update slot
+    pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
     writeModulePending=true;   //set flag to send it
 }
 
@@ -979,7 +1006,6 @@ ISR(TIMER1_OVF_vect) {
 #if defined(__AVR__)
 void dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
-//void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt(dscKeybusInterface *dsc) {
 void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
