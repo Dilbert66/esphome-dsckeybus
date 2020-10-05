@@ -38,7 +38,7 @@ byte dscKeybusInterface::panelBitCount;
 unsigned long dscKeybusInterface::cmdWaitTime;
 volatile bool dscKeybusInterface::writeKeyPending;
 volatile bool dscKeybusInterface::writeModulePending;
-//volatile bool dscKeybusInterface::pendingZoneUpdate;
+volatile bool dscKeybusInterface::pendingDeviceUpdate;
 volatile byte dscKeybusInterface::moduleData[dscReadSize];
 volatile bool dscKeybusInterface::moduleDataCaptured;
 volatile byte dscKeybusInterface::moduleByteCount;
@@ -58,6 +58,9 @@ volatile byte dscKeybusInterface::writeModuleBuffer[6];
 volatile byte dscKeybusInterface::pendingZoneStatus[6];
 moduleType dscKeybusInterface::modules[maxModules];
 byte dscKeybusInterface::moduleIdx;
+byte dscKeybusInterface::inIdx;
+byte dscKeybusInterface::outIdx;
+volatile byte  dscKeybusInterface::updateQueue[updateQueueSize];
 volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
 volatile byte dscKeybusInterface::isrPanelBitCount;
@@ -97,9 +100,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
      moduleSlots[x]=0xff;
   }
 
-    addModule(9); //testing
-    addModule(14);
-   
+
 }
 
 
@@ -329,6 +330,7 @@ bool dscKeybusInterface::loop() {
     case 0x34: processPanel_0x34(); break;
     case 0x3E: processPanel_0x3E(); break;
     case 0xA5: processPanel_0xA5(); break;
+    case 0x87: processPanel_0x87(); break;
     case 0xE6: if (dscPartitions > 2) processPanel_0xE6(); break;
     case 0xEB: if (dscPartitions > 2) processPanel_0xEB(); break;
   }
@@ -488,10 +490,10 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
     switch (receivedKey) {
       case '/': setPartition = true; validKey = false; break;
       case '0': writeKey = 0x00; break;
-      case '1':  setZoneFault(12,true);break;//writeKey = 0x05; break;
-      case '2':  setZoneFault(12,false);break;//writeKey = 0x0A; break;
-      case '3':  setZoneFault(49,true);break;//writeKey = 0x0F; break;
-      case '4':  setZoneFault(49,false);break;//writeKey = 0x11; break;
+      case '1': writeKey = 0x05; break;
+      case '2': writeKey = 0x0A; break;
+      case '3': writeKey = 0x0F; break;
+      case '4': writeKey = 0x11; break;
       case '5': writeKey = 0x16; break;
       case '6': writeKey = 0x1B; break;
       case '7': writeKey = 0x1C; break;
@@ -600,6 +602,16 @@ bool dscKeybusInterface::validCRC() {
 }
 
 
+//check for a pending update flag and clear it
+byte dscKeybusInterface::getPendingUpdate() { 
+    byte addr;
+	if (inIdx == outIdx) return 0;
+    addr = updateQueue[outIdx];
+	outIdx = (outIdx + 1) % updateQueueSize;
+	return addr;
+}
+
+
 void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
        //set our response data for the 0x11 supervisory request
         switch (address) {
@@ -621,7 +633,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
     
 }
 
-void  dscKeybusInterface::setUpdateRequestSlot(byte address,bool set=true) {
+void  dscKeybusInterface::setUpdateRequestFlag(byte address,bool set=true) {
 
         //set our request to send data for the zone that we need to publish info on. This gets sent on the 05 command
         //11111111 1 11111111 11111111 11111111 11111111 11111111 01111111 11111111 11111111 (12)
@@ -636,7 +648,23 @@ void  dscKeybusInterface::setUpdateRequestSlot(byte address,bool set=true) {
             case 16: pendingZoneStatus[5]=set?pendingZoneStatus[5]&0xef:pendingZoneStatus[5]|~0xef;break;
             default: return;
         }
+        if (set) { //we set a pending update flag in the queue by saving the address
+            updateQueue[inIdx]=address;
+            inIdx=(inIdx + 1) % updateQueueSize;
+        }
  
+}
+
+//clears all emulated zones on the panel 
+void dscKeybusInterface:: clearZoneRanges() {
+for (int x=0;x<moduleIdx;x++) {
+        modules[x].faultBuffer[0]=0x55;
+        modules[x].faultBuffer[1]=0;
+        modules[x].faultBuffer[2]=0x55;
+        modules[x].faultBuffer[3]=0;
+        modules[x].faultBuffer[4]= 0xaa ;  //cksum for 01010101 00000000 
+        setUpdateRequestFlag(modules[x].address,true);
+      }
 }
 
 void dscKeybusInterface::addModule(byte address) {
@@ -646,6 +674,11 @@ void dscKeybusInterface::addModule(byte address) {
     moduleIdx++;
     setSupervisorySlot(address,true);
  }
+}
+
+void dscKeybusInterface::addRelayModule() {
+    setSupervisorySlot(15,true);
+ 
 }
 
 void dscKeybusInterface::removeModule(byte address) {
@@ -703,9 +736,11 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
     uint8_t chk1=0xff;
     uint8_t chk2=0xff;
     if (channel < 4) { //set / reset bits according to fault value (open=11,closed=01)
-        modules[idx].fields[0]=fault?modules[idx].fields[0] | (zoneOpen << (channel*2)):modules[idx].fields[0] & ~(zoneClosed << (channel*2));
+        channel=channel*2;
+        modules[idx].fields[0]=fault?modules[idx].fields[0] | (zoneOpen << channel):modules[idx].fields[0] & ~(zoneClosed << channel);
         chk1=((modules[idx].fields[0] >> 4)+(modules[idx].fields[0]&0x0f)+(modules[idx].fields[1]>>4)+(modules[idx].fields[1]&0x0f)) % 0x10;
     } else {
+        channel=(channel-4)*2;
         modules[idx].fields[2]=fault?modules[idx].fields[2] | (zoneOpen << (channel)):modules[idx].fields[2] & ~(zoneClosed << (channel));
         chk2=((modules[idx].fields[2]>>4)+(modules[idx].fields[2]&0x0f)+(modules[idx].fields[3]>>4)+(modules[idx].fields[3]&0x0f)) % 0x10;
     }
@@ -730,28 +765,30 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
 
    
     if (!change) return;  //nothing changed in our zones so return
-    
-    setUpdateRequestSlot(address,true);
-    for(int x=0;x<6;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
-    currentModuleIdx=0;
-    moduleBufferLength=6;
-    moduleCmd=0x05;
-    moduleSubCmd=0;
-    writeModuleBit=9;
-    writeModulePending=true;
-      
+    setUpdateRequestFlag(address,true);  //set our flag to indicate we have a pending zone update
+  
+ 
 }
    
 void  dscKeybusInterface::processModuleResponse(byte cmd) {
     
      byte address=0;
      switch (cmd) {
+       case 0x05:   if (!getPendingUpdate()) return;  //if nothing in queue for a zone update return
+                    moduleCmd=cmd;
+                    moduleSubCmd=0; //setup to send our pending update message to the panel
+                    moduleBufferLength=6;
+                    currentModuleIdx=0;
+                    writeModuleBit=9;
+                    for(int x=0;x<6;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
+                    writeModulePending=true;
+                    return;
        case 0x11:   moduleCmd=cmd;
                     moduleSubCmd=0;
+                    moduleBufferLength=6;
                     currentModuleIdx=0;
                     writeModuleBit=9;
                     for(int x=0;x<6;x++) writeModuleBuffer[x]=moduleSlots[x];
-                    moduleBufferLength=6;
                     writeModulePending=true;
                     return;
        case 0x28:   address=9;break;  // the address will depend on the panel request command.
@@ -767,10 +804,10 @@ void  dscKeybusInterface::processModuleResponse(byte cmd) {
     for (idx=0;idx<moduleIdx;idx++) {  //get the buffer data from the module record that matches the address we need
         if (modules[idx].address==address) break;
     }
-    if (idx==moduleIdx) return; //not found
+    if (idx==moduleIdx) return; //not found so not for us
     for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
     moduleBufferLength=5;
-    setUpdateRequestSlot(address,false);  //clear our initial request
+    setUpdateRequestFlag(address,false);  //clear upate slot
     writeModulePending=true;    //set flag that we need to write buffer data 
  
 }
@@ -793,11 +830,11 @@ void  dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
     for (idx=0;idx<moduleIdx;idx++) {
     if (modules[idx].address==address) break;
     }
-    if (idx==moduleIdx) return;
-    for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x];
+    if (idx==moduleIdx) return; //not found so return
+    for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
     moduleBufferLength=5;
-    setUpdateRequestSlot(address,false);
-    writeModulePending=true;  
+    setUpdateRequestFlag(address,false); //clear update slot
+    writeModulePending=true;   //set flag to send it
 }
 
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
@@ -972,12 +1009,12 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       if (isrPanelBitTotal == 8) {
         // Tests for a status command, used in dscClockInterrupt() to ensure keys are only written during a status command
         switch (isrPanelData[0]) {
+          case 0x05: statusCmd = 0x05;
           case 0x11: 
           case 0x28: 
           case 0x33:
           case 0xEB: 
           case 0x39: processModuleResponse(isrPanelData[0]);break;
-          case 0x05:
           case 0x0A: statusCmd = 0x05; break;
           case 0x1B: statusCmd = 0x1B; break;
           default: statusCmd = 0; break;

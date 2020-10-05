@@ -8,6 +8,7 @@
   
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool forceDisconnect;
+bool firstrun;
 
 void disconnectKeybus() {
   dsc.stop();
@@ -46,10 +47,21 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data
    register_service(&DSCkeybushome::alarm_keypress, "alarm_keypress",{"keys"});
+   register_service(&DSCkeybushome::set_zone_fault,"set_zone_fault",{"zone","fault"});
 	forceDisconnect = false;
 	dsc.cmdWaitTime=cmdWaitTime;
 	dsc.resetStatus();
-	dsc.begin();
+     dsc.begin();
+     dsc.addModule(9);
+     dsc.addModule(10);
+     dsc.addModule(11);
+     dsc.addModule(12);
+     dsc.addModule(13);
+     dsc.addModule(14);
+     //dsc.addRelayModule();
+     firstrun=true;
+     
+	
   }
   
    void alarm_keypress(std::string keystring) {
@@ -57,6 +69,13 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
 	   if (debug > 0) ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
 	   dsc.write(keys);
  }	
+ 
+void set_zone_fault (int zone, bool fault) {
+	
+	dsc.setZoneFault(zone,fault);
+	
+}
+
   
  void printTimestamp() {
   float timeStamp = millis() / 1000.0;
@@ -74,6 +93,12 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
 
 
   if (dsc.handlePanel()) {
+      if (firstrun) {
+          firstrun=false;
+          dsc.clearZoneRanges();
+          
+          
+      }
 
 //bool fault=true;
 //byte channel=0;
@@ -88,6 +113,11 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
 
+
+    if (dsc.relayStatusChanged) {
+        Serial.print("Relay data=");Serial.println(dsc.relayChannels,HEX);
+        ESP_LOGI("debug","relay status %02X",dsc.relayChannels);
+    }
     // Prints panel data
     printTimestamp();
     Serial.print("[PANEL] ");

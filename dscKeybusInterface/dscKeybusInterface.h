@@ -32,8 +32,9 @@ const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
 const byte maxModules = 10;
-const byte zoneOpen=3; //no resistor/no short
-const byte zoneClosed=2;//shorted.  Use 3 for resistor termination instead
+const byte zoneOpen=3; //fault 
+const byte zoneClosed=2;// Normal  
+const byte updateQueueSize=10; //zone pending update queue
 #endif
 
 // Maximum bytes of a Keybus command
@@ -130,7 +131,12 @@ class dscKeybusInterface {
     void setZoneFault(byte zone,bool fault) ;
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
-
+    bool relayStatusChanged;
+    byte relayChannels,previousRelayChannels;
+    void addModule(byte address); //add zone expanders
+    void addRelayModule(); 
+    void clearZoneRanges();
+    
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
     // tracked in the library.  See dscKeybusPrintData-RTOS.c for the currently known DSC commands and data.
@@ -177,6 +183,7 @@ class dscKeybusInterface {
     void processPanel_0xE6_0x0D();
     void processPanel_0xE6_0x0F();
     void processPanel_0xEB();
+    void processPanel_0x87();
 
     void printPanelLights(byte panelByte);
     void printPanelMessages(byte panelByte);
@@ -242,15 +249,17 @@ class dscKeybusInterface {
     void printModule_Notification();
     void printModule_Keys();
     
-    void addModule(byte address);
     void removeModule(byte address);
     static void setPendingZoneUpdate();
     static void processModuleResponse(byte cmd);
     static void processModuleResponse_0xE6(byte cmd);
-    static void setUpdateRequestSlot(byte slot,bool set);
+    static void setUpdateRequestFlag(byte slot,bool set);
     static void setSupervisorySlot(byte slot,bool set);
     static void setModuleSlot(byte slot,bool set);
-    
+    static byte getPendingUpdate();
+
+    static volatile byte updateQueue[updateQueueSize];
+    static byte outIdx,inIdx;
     static byte moduleIdx; 
     static moduleType modules[maxModules];
     static byte moduleSlots[6];
@@ -289,7 +298,7 @@ class dscKeybusInterface {
     static bool virtualKeypad;
     static char writeKey;
     static byte panelBitCount, panelByteCount;
-    static volatile bool writeKeyPending,writeModulePending,pendingZoneUpdate;
+    static volatile bool writeKeyPending,writeModulePending,pendingDeviceUpdate;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool moduleDataCaptured;
 	static volatile unsigned long clockHighTime, keybusTime;
