@@ -827,7 +827,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
         if (modules[idx].address==address) break;
     }
     if (idx==moduleIdx) return; //not found so not for us
-    for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
+    for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
     moduleBufferLength=5;
     pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
     writeModulePending=true;    //set flag that we need to write buffer data 
@@ -855,10 +855,10 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
     writeModuleBit=17;
     int idx;  
     for (idx=0;idx<moduleIdx;idx++) {
-    if (modules[idx].address==address) break;
+        if (modules[idx].address==address) break;
     }
     if (idx==moduleIdx) return; //not found so return
-    for(int x=0;x<6;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
+    for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
     moduleBufferLength=5;
     pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
     writeModulePending=true;   //set flag to send it
