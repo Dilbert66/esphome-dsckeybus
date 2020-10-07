@@ -58,9 +58,9 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
      dsc.maxZones=32;
     // dsc.panelVersion=3;
      //dsc.addModule(9);
-     dsc.addModule(10);
+     ///dsc.addModule(10);
      dsc.addModule(11);
-    // dsc.addModule(12);
+     dsc.addModule(12);
     // dsc.addModule(13);
     // dsc.addModule(14);
      
