@@ -1,3 +1,6 @@
+#define dscalarm_h
+#ifndef dscalarm_h
+#define dscalarm_h
 #include "esphome.h"
 #include "dscKeybusInterface.h"
 //for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
@@ -428,3 +431,4 @@ const __FlashStringHelper *statusText(uint8_t statusCode)
 
 
 };
+#endif

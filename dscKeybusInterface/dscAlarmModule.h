@@ -1,3 +1,6 @@
+#ifndef dscalarmmodule_h
+#define dscalarmmodule_h
+
 #include "esphome.h"
 #include "dscKeybusInterface.h"
 //for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
@@ -52,12 +55,15 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
 	dsc.cmdWaitTime=cmdWaitTime;
 	dsc.resetStatus();
      dsc.begin();
+     dsc.maxZones=32;
+     dsc.panelVersion=2;
      dsc.addModule(9);
-     dsc.addModule(10);
-     dsc.addModule(11);
+    // dsc.addModule(10);
+    // dsc.addModule(11);
      dsc.addModule(12);
-     dsc.addModule(13);
-     dsc.addModule(14);
+    // dsc.addModule(13);
+    // dsc.addModule(14);
+     
      //dsc.addRelayModule();
      firstrun=true;
      
@@ -391,3 +397,4 @@ void set_zone_fault (int zone, bool fault) {
   }
 
 };
+#endif
