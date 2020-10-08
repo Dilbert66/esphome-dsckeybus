@@ -1,4 +1,3 @@
-#define dscalarm_h
 #ifndef dscalarm_h
 #define dscalarm_h
 #include "esphome.h"
@@ -8,7 +7,8 @@
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-  
+#define MAXZONES 32 //set to 64 if your system supports it
+ 
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool forceDisconnect;
 
@@ -59,7 +59,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   void onTroubleStatusChange(std::function<void (troubleStatus ts,bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
-  
+  char expanderAddr1,expanderAddr2,expanderAddr3,relayAddr1;
   byte debug;
   const char *accessCode;
   bool enable05Messages = true;
@@ -68,8 +68,12 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   private:
     uint8_t zone;
 	byte lastStatus[dscPartitions];
+    bool firstrun;
 	
   void setup() override {
+      if (debug > 2) 
+        Serial.begin(115200);
+
 	set_update_interval(10); 
     register_service(&DSCkeybushome::set_alarm_state,"set_alarm_state", {"partition","state","code"});
 	register_service(&DSCkeybushome::alarm_disarm,"alarm_disarm",{"code"});
@@ -79,14 +83,27 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
 	register_service(&DSCkeybushome::alarm_trigger_panic,"alarm_trigger_panic");
 	register_service(&DSCkeybushome::alarm_trigger_fire,"alarm_trigger_fire");
     register_service(&DSCkeybushome::alarm_keypress, "alarm_keypress",{"keys"});
+    register_service(&DSCkeybushome::set_zone_fault,"set_zone_fault",{"zone","fault"});
+    
+    firstrun=true;
 	systemStatusChangeCallback(STATUS_OFFLINE);
 	forceDisconnect = false;
 	dsc.cmdWaitTime=cmdWaitTime;
-    dsc.processModuleData = false;      // Controls if keypad and module data is processed and displayed (default: false)
+    dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
 	dsc.resetStatus();
+    dsc.maxZones=MAXZONES;
+    dsc.addModule(expanderAddr1);
+    dsc.addModule(expanderAddr2);
 	dsc.begin();
   }
   
+
+void set_zone_fault (int zone, bool fault) {
+	
+	dsc.setZoneFault(zone,fault);
+	
+}
+
 
 void alarm_disarm (std::string code) {
 	
@@ -182,23 +199,62 @@ bool isInt(std::string s, int base){
 	}
 }
 
+void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
+
+      std::string s;
+      char s1[4];
+       for (int c=0;c<len;c++) {
+           sprintf(s1,"%02X ",cbuf[c]);
+            s.append(s1);
+       }
+       ESP_LOGI(label,"%02X: %s",cmd,s.c_str());
+
+}
+
+  
+ void printTimestamp() {
+  float timeStamp = millis() / 1000.0;
+  if (timeStamp < 10) Serial.print("    ");
+  else if (timeStamp < 100) Serial.print("   ");
+  else if (timeStamp < 1000) Serial.print("  ");
+  else if (timeStamp < 10000) Serial.print(" ");
+  Serial.print(timeStamp, 2);
+  Serial.print(F(":"));
+}
+
   void update() override {
     	 
-		 
-	if (!forceDisconnect  && dsc.loop())  { 
+	if (!forceDisconnect){
+        if (dsc.loop())  {
+          if (firstrun) {
+            firstrun=false;
+            dsc.clearZoneRanges();
+          }
+            if (debug > 1 )  
+                printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
+            
+            if (debug > 2 )  {                
+                printTimestamp();
+                Serial.print("[PANEL] ");
+                dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
+                Serial.print(" [");
+                dsc.printPanelCommand();  // Prints the panel command as hex
+                Serial.print("] ");
+                dsc.printPanelMessage();  // Prints the decoded message
+                Serial.println();
+            }
+        } 
 
-		if (debug == 1 && (dsc.panelData[0] == 0x05 || dsc.panelData[0]==0x27)) ESP_LOGD("Debug11","Panel data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9],dsc.panelData[10],dsc.panelData[11]);
-	
-		if (debug > 2 ) ESP_LOGD("Debug11","Panel data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9],dsc.panelData[10],dsc.panelData[11]);
-		
-	} 
-    if (dsc.handleModule()) {
-        ESP_LOGD("Module data:","Module: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",dsc.moduleData[0],dsc.moduleData[1],dsc.moduleData[2],dsc.moduleData[3],dsc.moduleData[4],dsc.moduleData[5],dsc.moduleData[6],dsc.moduleData[7],dsc.moduleData[8],dsc.moduleData[9],dsc.moduleData[10],dsc.moduleData[11],dsc.moduleData[12],dsc.moduleData[13],dsc.moduleData[14],dsc.moduleData[15]);
-   }
-
+   
+      
+    }  
     if ( dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
-			 
+		
+
+        if (dsc.relayStatusChanged) {
+            ESP_LOGI("debug","relay status %02X",dsc.relayChannels);
+        }        
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
 		// handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
 		if (dsc.bufferOverflow) ESP_LOGD("Error","Keybus buffer overflow");
@@ -247,15 +303,12 @@ bool isInt(std::string s, int base){
 			if (dsc.trouble) troubleStatusChangeCallback(trStatus,true );  // Trouble alarm tripped
 			else troubleStatusChangeCallback(trStatus,false ); // Trouble alarm restored
 		}
-	if (debug > 0) ESP_LOGD("Debug22","Panel command data: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",dsc.panelData[0],dsc.panelData[1],dsc.panelData[2],dsc.panelData[3],dsc.panelData[4],dsc.panelData[5],dsc.panelData[6],dsc.panelData[7],dsc.panelData[8],dsc.panelData[9]);
-	 
+	
 		// Publishes status per partition
 		for (byte partition = 0; partition < dscPartitions; partition++) {
 			
 		if (dsc.disabled[partition]) continue; //skip disabled or partitions in install programming	
-		
-		if (debug > 0) ESP_LOGD("Debug33","Partition data %02X: %02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X",partition,dsc.lights[partition], dsc.status[partition], dsc.armed[partition],dsc.armedAway[partition],dsc.armedStay[partition],dsc.noEntryDelay[partition],dsc.fire[partition],dsc.armedChanged[partition],dsc.exitDelay[partition],dsc.readyChanged[partition],dsc.ready[partition],dsc.alarmChanged[partition],dsc.alarm[partition]);
-		 
+				 
 			if (lastStatus[partition] != dsc.status[partition]  ) {
 				lastStatus[partition]=dsc.status[partition];
 				char msg[50];
@@ -349,9 +402,18 @@ bool isInt(std::string s, int base){
 		}
 		
 	}
-		
+		if (dsc.handleModule()) {
+            if (debug > 2) {
+                printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
+                printTimestamp();
+                Serial.print("[MODULE] ");
+                dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
+                Serial.print(" ");
+                dsc.printModuleMessage();  // Prints the decoded message
+                Serial.println();
+            }
+        }
   }
-
 const __FlashStringHelper *statusText(uint8_t statusCode)
 {
     switch (statusCode) {
