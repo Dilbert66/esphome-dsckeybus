@@ -11,8 +11,15 @@ The following services are published to home assistant for use in various script
 	alarm_trigger_panic: Trigger a panic alarm.
     alarm_trigger_fire: Trigger a fire alarm.
 	alarm_keypress: Sends a string of characters to the alarm system. 
-
+    set_zone_fault: Triggers a open/close on one of the zone emulator virtual zones
+    
+    
 These are similar services to those provided by the Envisalink Home Assistant integration (which requires a more expensive Envisalink interface board to be installed in your alarm system panel). See: https://www.home-assistant.io/integrations/envisalink/
+
+A new feature on the firmware is now the ability to emulate multiple PC5108 zone adapaters to give you up to 64 zones if your system supports it.
+This function has not had extensive testing with multiple emulations though.
+
+Relay module emulation is also mostly working to give you PC5208 emulation.  This will give your panel the ability to trigger any external event.
 
 ## Example in Home Assistant
 ![Image of HASS example](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dsckeybusinterface.png)
@@ -97,6 +104,8 @@ alarm_control_panel:
 	- "alarm_arm_away"
 	- "alarm_trigger_panic"
 	- "alarm_trigger_fire"
+    - "set_zone_fault", Parameter: "zone" , "fault" eg zone: 17, fault: 1 (or true) 
+    
 
 
 - Intermediate command service. Use this service if you need more versatility such as setting alarm states on any partition:

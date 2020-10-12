@@ -64,6 +64,7 @@ byte dscKeybusInterface::maxFields05;
 byte dscKeybusInterface::maxFields11;
 byte dscKeybusInterface::maxZones;
 byte dscKeybusInterface::panelVersion;
+bool dscKeybusInterface::enableModuleSupervision;
 volatile byte  dscKeybusInterface::updateQueue[updateQueueSize];
 volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
@@ -79,6 +80,7 @@ volatile byte dscKeybusInterface::moduleSubCmd;
 volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
+
 
 
 #if defined(ESP32)
@@ -102,7 +104,8 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   panelVersion=2; //newer.  Version 2 uses older alternate zone addressing
   maxFields05=4;
   maxFields11=4;
-
+  enableModuleSupervision=false;
+  
   for (int x=0;x<6;x++) { //clear all statuses
      pendingZoneStatus[x]=0xff;
      moduleSlots[x]=0xff;
@@ -269,8 +272,9 @@ bool dscKeybusInterface::loop() {
             maxFields11=6; 
             panelVersion=3;
         }
-            
-  
+     //ok we should know what panel version and zones we have so we can init the module data with the correct slot info
+     updateModules();
+
     }
     else return false;
   }
@@ -392,7 +396,8 @@ bool dscKeybusInterface::handleModule() {
         break;
       }
     }
-    if (redundantData) return false;
+    if (redundantData) 
+        return false;
     else {
       for (byte i = 0; i < dscReadSize; i++) previousSlotData[i] = moduleData[i];
       return true;
@@ -738,23 +743,32 @@ for (int x=0;x<moduleIdx;x++) {
       }
 }
 
-void dscKeybusInterface::addModule(byte address) {
- if (!address) return;
-
- if (moduleIdx < maxModules ) {
-    modules[moduleIdx].address=address;
-    for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
-    //fetch the byte offset and mask for the 0x05 request to update response and store it with the module data
-    zoneMaskType zm=getUpdateMask(address);
-    modules[moduleIdx].zoneStatusByte=zm.idx;
-    modules[moduleIdx].zoneStatusMask=zm.mask;
-    setSupervisorySlot(address,true);
-    moduleIdx++;
+//once we know what panelversion we have, we can then update the modules with the correct info here
+void dscKeybusInterface::updateModules() {
+    for (int x=0;x<moduleIdx;x++) {
+        zoneMaskType zm=getUpdateMask(modules[x].address);
+        modules[x].zoneStatusByte=zm.idx;
+        modules[x].zoneStatusMask=zm.mask;
+        if (enableModuleSupervision)
+            setSupervisorySlot(modules[x].address,true);
     }
 }
 
+//add new expander modules and init zone fields
+void dscKeybusInterface::addModule(byte address) {
+    
+ if (!address) return;
+ if (address > 12 && maxZones <=32) return;
+ if (moduleIdx < maxModules ) {
+   modules[moduleIdx].address=address;
+   for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
+   moduleIdx++;
+ }
+}
+
 void dscKeybusInterface::addRelayModule() {
-    setSupervisorySlot(18,true);
+    if (enableModuleSupervision)
+        setSupervisorySlot(18,true);
 }
 
 void dscKeybusInterface::removeModule(byte address) {
@@ -871,6 +885,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 11111111 1 11111111 11111111 11111111 11111111 11111111 11101111 11111111 11111111 16
 */
      byte address=0;
+     writeModulePending=false;
      switch (cmd) {
        case 0x05:   if (!getPendingUpdate()) return;  //if nothing in queue for a zone update return
                     moduleCmd=cmd;
@@ -884,7 +899,8 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 device 16 in slot 24  
 //11111111 1 00111111 11111111 11110011 11111111 11111111 11111111 11111111  slot 11   
 //11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111    slot 9     
-       case 0x11:   moduleCmd=cmd; //return our supervision slot data
+       case 0x11:   if (!enableModuleSupervision) return;
+                    moduleCmd=cmd; //return our supervision slot data
                     moduleSubCmd=0;
                     moduleBufferLength=maxFields11;
                     currentModuleIdx=0;
@@ -909,6 +925,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
     for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
     moduleBufferLength=5;
     if (modules[idx].zoneStatusByte) { 
+    Serial.println("clearing update slot");
         pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
         writeModulePending=true;    //set flag that we need to write buffer data 
     }
@@ -1062,6 +1079,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
               if (currentModuleIdx==moduleBufferLength) {
                    writeStart = false;
                    writeModulePending=false;
+                   moduleCmd=0;
               }
           }
         }

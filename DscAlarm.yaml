@@ -1,15 +1,33 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 substitutions:
-  systemName: "dscalarm"
-  accessCode: !secret access_code #Only comes into effect if a password prompt occurs when arming eg. night mode
-  cmdWaitTime: "0" # milliseconds.  set how long to delay before accepting a new 05 cmd as valid to filter out intermittent short duration bogus commands that some panels send. default = 0
+  # change the name to suit your needs. This is what esphome will use as the friendly name for your component.
+  # also used as a prefix for all fields
+  systemName: "dscalarm" 
+  
+  #Only comes into effect if a password prompt occurs when arming eg. night mode
+  accessCode: !secret access_code 
+  
+   # milliseconds.  set how long to delay before accepting a new 05 cmd as valid to filter out intermittent short duration bogus commands that some panels send. default = 0
+  cmdWaitTime: "0"
 
+  #zone expander addresses:
+  # 9  - zones 9-16
+  # 10 - zones 17-24
+  # 11 - zones 25-32
+  # 12 - zones 33-40 (for systems with 64 zone support)
+  # 13 - zones 41-48 (for systems with 64 zone support)
+  # 14 - zones 49-56 (for systems with 64 zone support)
+  # 16 - zones 57-64 (for systems with 64 zone support)  
+  expanderAddr1: "10" # 1st zone expander emulator address to use . Set to 0 to disable. 
+  expanderAddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
+  
 esphome:
   name: $systemName
   platform: ESP8266
   board: nodemcuv2
   
   includes:
+    # subdirectory path where custom component *.h and *.cpp files are located
     - dscKeybusInterface/
 
 wifi:
@@ -22,7 +40,7 @@ wifi:
 
 logger:
   baud_rate: 0
-  level: info
+  level: debug
 
 api:
    password: !secret api_password  
@@ -43,23 +61,28 @@ custom_component:
     
     DSCkeybus->accessCode="$accessCode";
     DSCkeybus->cmdWaitTime=$cmdWaitTime;
-    DSCkeybus->debug=2; // 0 = off, 1 = status change data, 2 = + 05/27 packets, 3 = + all packets received
+    DSCkeybus->debug=3; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
+    DSCkeybus->expanderAddr1=$expanderAddr1; //zone expander
+    DSCkeybus->expanderAddr2=$expanderAddr2;
     
     DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
        id(system_status).publish_state(statusCode);
     });
+    
     DSCkeybus->onPartitionStatusChange([&](uint8_t partition,std::string statusCode) {
        switch(partition) {
          case 1: id(p1).publish_state(statusCode); break;
          case 2: id(p2).publish_state(statusCode); break;
-      }
+      } // if you only have one partition, remove the case 2 and corresponding p2 sensor. You can also add more partitions if needed
     });
+    
     DSCkeybus->onPartitionMsgChange([&](uint8_t partition,std::string msg) {
        switch(partition) {
          case 1: id(m1).publish_state(msg); break;
          case 2: id(m2).publish_state(msg); break;
-      }
+      } // if you only have one partition, remove the case 2 statement  and corresponding p2 sensor. You can also add more partitions if needed
     });
+    
     DSCkeybus->onTroubleStatusChange([&](troubleStatus ts,bool open) {
         switch(ts) {
             case trStatus: id(tr).publish_state(open);break;
@@ -69,11 +92,14 @@ custom_component:
             default: break;
         }
     });
+    DSCkeybus->onZoneMsgStatus([&](std::string msg) {
+            id(zone_status).publish_state(msg);
+    });
     DSCkeybus->onFireStatusChange([&](uint8_t partition, bool open) {
       switch (partition) {
           case 1: id(f1).publish_state(open); break;
       }
-    });
+    }); 
     DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
       switch (zone) {
         case 1: id(z1).publish_state(open); break;
@@ -87,27 +113,30 @@ custom_component:
         case 9: id(z9).publish_state(open); break;
         case 10: id(z10).publish_state(open); break;
         case 11: id(z11).publish_state(open); break;
-      }
+        case 17: id(z17).publish_state(open); break;
+      } // add or delete any zone you need above. Add the coresponding sensor id in the binary_sensor section
     });
-    DSCkeybus->onZoneAlarmChange([&](uint8_t zone, bool open) {
-      switch (zone) {
-        case 1: id(za1).publish_state(open); break;
-        case 2: id(za2).publish_state(open); break;
-        case 3: id(za3).publish_state(open); break;
-        case 4: id(za4).publish_state(open); break;
-        case 5: id(za5).publish_state(open); break;
-        case 6: id(za6).publish_state(open); break;
-        case 7: id(za7).publish_state(open); break;
-        case 8: id(za8).publish_state(open); break;
-        case 9: id(za9).publish_state(open); break;
-        case 10: id(za10).publish_state(open); break;
-        case 11: id(za11).publish_state(open); break;
+        DSCkeybus->onRelayChannelChange([&](uint8_t channel, bool state) {
+      switch (channel) {
+        case 1: id(r1).publish_state(state); break;
+        case 2: id(r2).publish_state(state); break;
+        case 3: id(r3).publish_state(state); break;
+        case 4: id(r4).publish_state(state); break;
+        case 5: id(r5).publish_state(state); break;
+        case 6: id(r6).publish_state(state); break;
+        case 7: id(r7).publish_state(state); break;
+        case 8: id(r8).publish_state(state); break;
       }
     });
     return {DSCkeybus};
+ 
+ 
 
+# add or remove any zone you need. Please ensure you also add/remove the corresonponding case statement above
+# change the name to match your own zone configurations
+# if you don't want to delete a zone, you can also comment out the name: field to hide it from home assistant
 binary_sensor:
-    #zone status
+    #zone status open/close for each zone 
   - platform: template
     id: z1
     name: "$systemName Front door"
@@ -152,100 +181,113 @@ binary_sensor:
     id: z11
     name: "$systemName Main floor motion"
     device_class: motion
+  - platform: template
+    id: z17
+    name: "$systemName Test zone"
+    device_class: motion    
     
-    #zone alarm status
-  - platform: template
-    id: za1
-    name: "$systemName Front door alarm"
-    #device_class: safety
-  - platform: template
-    id: za2
-    name: "$systemName Garage door alarm"
-    #device_class: safety
-  - platform: template
-    id: za3
-    name: "$systemName Back door alarm"
-    #device_class: safety
-  - platform: template
-    id: za4
-    name: "$systemName Living room window alarm"
-    #device_class: safety
-  - platform: template
-    id: za5
-    name: "$systemName Dining room window alarm"
-    #device_class: safety
-  - platform: template
-    id: za6
-    name: "$systemName Family room window LF alarm"
-    #device_class: safety
-  - platform: template
-    id: za7
-    name: "$systemName Family room window RF alarm"
-    #device_class: safety
-  - platform: template
-    id: za8
-    name: "$systemName Basement windows alarm"
-    #device_class: safety
-  - platform: template
-    id: za9
-    name: "$systemName Upstairs motion alarm"
-    #device_class: safety
-  - platform: template
-    id: za10
-    name: "$systemName Basement motion alarm"
-    #device_class: safety
-  - platform: template
-    id: za11
-    name: "$systemName Main floor motion alarm"
-    #device_class: safety
-    
+    #panel trouble status on/off
   - platform: template
     id: tr
     name: "$systemName Trouble Status"
     device_class: problem
+    #battery status ok/low
   - platform: template
     id: bat
     name: "$systemName Battery Status"
     device_class: problem
 
+    #AC power status ok/no power
   - platform: template
     id: ac
     name: "$systemName AC Status"
     device_class: plug
-
+    #panic alarm on/off
   - platform: template
     id: panic
     name: "$systemName Panic Status"
     device_class: safety
-    
+    #fire alarm on/off
   - platform: template
     id: f1
     device_class: safety
     name: "$systemName Fire Status"
+    
+#relay PGM channels. Will show the state of the activate relay channel on/off
+#uncomment the name: field if you wish to see it in home assistant
+  - platform: template
+    id: r1
+    name: "$systemName PGM 1"
+  - platform: template
+    id: r2
+    name: "$systemName PGM 2"
+  - platform: template
+    id: r3
+    #name: "$systemName PGM 3"
+  - platform: template
+    id: r4
+    #name: "$systemName PGM 4"
+  - platform: template
+    id: r5
+    #name: "$systemName PGM 5"
+  - platform: template
+    id: r6
+    #name: "$systemName PGM 6"
+  - platform: template
+    id: r7
+    #name: "$systemName PGM 7"
+  - platform: template
+    id: r8
+    #name: "$systemName PGM 8"
+  
+    
+# this sensor below is optional - example use of pin d8 as a zone trigger pin for the emulated zone expander  
+# this emulates the hardware connection for a pc5108 board. Use a pull down/pull up resistor.  Adjust logic accordingly for the correct logic output. ie invert
+ # - platform: gpio  
+ #   pin: D8
+ #   id: pind8
+ #   device_class: window
+ #   on_press:       #pin high=on(open), pin low=off(closed)
+ #     - lambda: |-
+ #         dsc.setZoneFault(17,1);  #set zone 17 as open
+ #   on_release:
+ #     - lambda: |-
+ #         dsc.setZoneFault(17,0);  #set zone 17 as closed
+               
   
 text_sensor:
+    #general system status online/disconnected 
   - platform: template
     id: system_status
     name: "$systemName System Status"
     icon: "mdi:shield"
+    #battery level status for wireless channels, tamper , in alarm, etc for individual zones
+  - platform: template
+    id: zone_status
+    name: "$systemName zone status "
+    icon: "mdi:shield"  
+    # partition status ie read/unavailable, in alarm, etc
   - platform: template
     id: p1
     name: "$systemName Partition 1 Status "
     icon: "mdi:shield"
   - platform: template
     id: p2
-    name: "$systemName Partition 2 Status "
+    #name: "$systemName Partition 2 Status " # uncomment to show in home assistent.  
     icon: "mdi:shield"  
+    # more verbose message regarding the partition status. ie zones open, bypassed, etc
   - platform: template
     id: m1
     name: "$systemName Partition 1 Msg "
     icon: "mdi:alert-box"
   - platform: template
     id: m2
-    name: "$systemName Partition 2 Msg "
+    #name: "$systemName Partition 2 Msg " # uncomment to show in home assistant
     icon: "mdi:alert-box"
+   
      
 switch:
+    #shows status of connection status to panel.  You can disconnect before upload using the switch.
   - platform: template
     name: "$systemName Connection"
     id: connection_status_switch

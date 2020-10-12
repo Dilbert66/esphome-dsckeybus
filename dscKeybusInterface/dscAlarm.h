@@ -8,7 +8,8 @@
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define MAXZONES 32 //set to 64 if your system supports it
- 
+#define MODULESUPERVISION 0   //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
+
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool forceDisconnect;
 
@@ -29,12 +30,13 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   {}
  
   std::function<void (uint8_t, bool)> zoneStatusChangeCallback;
-  std::function<void (uint8_t, bool)> zoneAlarmChangeCallback;
   std::function<void (std::string)> systemStatusChangeCallback;
   std::function<void (troubleStatus,bool)> troubleStatusChangeCallback;
   std::function<void (uint8_t, bool)> fireStatusChangeCallback;
   std::function<void (uint8_t,std::string)> partitionStatusChangeCallback; 
-  std::function<void (uint8_t,std::string)> partitionMsgChangeCallback;    
+  std::function<void (uint8_t,std::string)> partitionMsgChangeCallback; 
+  std::function<void (std::string)> zoneMsgStatusCallback; 
+  std::function<void (uint8_t,bool)> relayChannelChangeCallback;    
   
 
   const std::string STATUS_PENDING = "pending";
@@ -53,13 +55,14 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   const std::string MSG_NONE = "no_messages";
  
   void onZoneStatusChange(std::function<void (uint8_t zone, bool isOpen)> callback) { zoneStatusChangeCallback = callback; }
-  void onZoneAlarmChange(std::function<void (uint8_t zone, bool isOpen)> callback) { zoneAlarmChangeCallback = callback; }
   void onSystemStatusChange(std::function<void (std::string status)> callback) { systemStatusChangeCallback = callback; }
   void onFireStatusChange(std::function<void (uint8_t partition, bool isOpen)> callback) { fireStatusChangeCallback = callback; }
   void onTroubleStatusChange(std::function<void (troubleStatus ts,bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
-  char expanderAddr1,expanderAddr2,expanderAddr3,relayAddr1;
+  void onZoneMsgStatus(std::function<void (std::string msg)> callback) { zoneMsgStatusCallback = callback; }
+  void onRelayChannelChange(std::function<void (uint8_t channel,bool state)> callback) { relayChannelChangeCallback = callback; }
+  char expanderAddr1,expanderAddr2,expanderAddr3;
   byte debug;
   const char *accessCode;
   bool enable05Messages = true;
@@ -70,6 +73,18 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
 	byte lastStatus[dscPartitions];
     bool firstrun;
 	
+    struct zoneType {
+        bool tamper;
+        bool batteryLow;
+        bool open;
+        bool alarm;
+    } ;
+	
+    zoneType zoneStatus[MAXZONES];
+    std::string zoneStatusMsg,previousZoneStatusMsg;  
+    bool relayStatus[8],previousRelayStatus[8];
+    
+    
   void setup() override {
       if (debug > 2) 
         Serial.begin(115200);
@@ -88,13 +103,15 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     firstrun=true;
 	systemStatusChangeCallback(STATUS_OFFLINE);
 	forceDisconnect = false;
+    dsc.enableModuleSupervision=MODULESUPERVISION;
+    
 	dsc.cmdWaitTime=cmdWaitTime;
     dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
 	dsc.resetStatus();
     dsc.maxZones=MAXZONES;
     dsc.addModule(expanderAddr1);
     dsc.addModule(expanderAddr2);
-	dsc.begin();
+    dsc.begin();
   }
   
 
@@ -224,37 +241,46 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 
   void update() override {
     	 
-	if (!forceDisconnect){
-        if (dsc.loop())  {
-          if (firstrun) {
-            firstrun=false;
-            dsc.clearZoneRanges();
-          }
-            if (debug > 1 )  
-                printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
+    if (!forceDisconnect && dsc.loop() )  {
+        if (firstrun) {
+          firstrun=false;
+          dsc.clearZoneRanges();
+        }
+        if (debug > 1 )  
+            printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
             
-            if (debug > 2 )  {                
-                printTimestamp();
-                Serial.print("[PANEL] ");
-                dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
-                Serial.print(" [");
-                dsc.printPanelCommand();  // Prints the panel command as hex
-                Serial.print("] ");
-                dsc.printPanelMessage();  // Prints the decoded message
-                Serial.println();
-            }
-        } 
+        if (debug > 2 )  {                
+            printTimestamp();
+            Serial.print("[PANEL] ");
+            dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
+            Serial.print(" [");
+            dsc.printPanelCommand();  // Prints the panel command as hex
+            Serial.print("] ");
+            dsc.printPanelMessage();  // Prints the decoded message
+            Serial.println();
+        }
 
-   
-      
-    }  
-    if ( dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
+    } 
+
+    if (!forceDisconnect && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 		
 
         if (dsc.relayStatusChanged) {
-            ESP_LOGI("debug","relay status %02X",dsc.relayChannels);
-        }        
+            for (byte x = 0; x < 8; x++) {
+				if (bitRead(dsc.relayChannels, x)) {
+                   relayStatus[x]=true;
+
+                } else { 
+                   relayStatus[x]=false;
+                }
+                if (previousRelayStatus[x] != relayStatus[x])
+                       relayChannelChangeCallback( x+1,relayStatus[x]);
+                previousRelayStatus[x] = relayStatus[x];
+			}
+           
+        }  
+  
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
 		// handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
 		if (dsc.bufferOverflow) ESP_LOGD("Error","Keybus buffer overflow");
@@ -370,11 +396,17 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 				for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
 					if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
 						bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
-						zone=zoneBit + 1 + (zoneGroup * 8);
+						zone=zoneBit + (zoneGroup * 8);
 						if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
-							zoneStatusChangeCallback(zone, true);  // Zone open
+							zoneStatusChangeCallback(zone+1, true);  // Zone open
+                            if (zone < MAXZONES)
+                                zoneStatus[zone].open=true;
 						}
-						else  zoneStatusChangeCallback(zone, false);        // Zone closed
+						else  {
+                            zoneStatusChangeCallback(zone+1, false);        // Zone closed
+                            if (zone < MAXZONES)
+                                zoneStatus[zone].open=false;
+                        }
 					}
 				}
 			}
@@ -391,28 +423,83 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 				for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
 					if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
 						bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
-						zone=zoneBit + 1 + (zoneGroup * 8);
+						zone=zoneBit  + (zoneGroup * 8);
 						if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
-							zoneAlarmChangeCallback(zone, true);  // Zone alarm
+                            if (zone < MAXZONES)
+                                zoneStatus[zone].alarm=true;
 						}
-						else  zoneAlarmChangeCallback(zone, false);        // Zone restored
+						else { 
+                            if (zone < MAXZONES)
+                                zoneStatus[zone].alarm=false;
+                        }
 					}
 				}
 			}
 		}
-		
-	}
-		if (dsc.handleModule()) {
-            if (debug > 2) {
-                printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
-                printTimestamp();
-                Serial.print("[MODULE] ");
-                dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
-                Serial.print(" ");
-                dsc.printModuleMessage();  // Prints the decoded message
-                Serial.println();
+        
+        zoneStatusMsg="";
+        char s1[7];
+        for (int x=0;x<MAXZONES;x++) {
+            /*
+            if (zoneStatus[x].open) {
+                sprintf(s1,"OP:%d",x+1);
+                if (zoneStatusMsg!="") zoneStatusMsg.append(",");
+                zoneStatusMsg.append(s1);
+            }
+           */
+            if (zoneStatus[x].alarm) {
+                sprintf(s1,"AL:%d",x+1);
+                if (zoneStatusMsg!="") zoneStatusMsg.append(",");
+                zoneStatusMsg.append(s1);
+            }
+            if (zoneStatus[x].tamper) {
+                sprintf(s1,"TA:%d",x+1);
+                if (zoneStatusMsg!="") zoneStatusMsg.append(",");
+                zoneStatusMsg.append(s1);
+            }
+            if (zoneStatus[x].batteryLow) {
+                sprintf(s1,"BL:%d",x+1);
+                if (zoneStatusMsg!="") zoneStatusMsg.append(",");
+                zoneStatusMsg.append(s1);
             }
         }
+        
+
+		
+	}
+    
+    if (!forceDisconnect && dsc.handleModule()) {
+      
+       if (dsc.panelData[0]==0x41) { 
+        for (byte zoneByte = 0; zoneByte < 4; zoneByte++) {
+            byte zoneBit=0;
+            for (int x = 7; x >=0; x--) {
+                zone=zoneBit + (zoneByte * 8);
+                if (!bitRead(dsc.moduleData[zoneByte+2], x)) {  // Checks an individual zone battery status flag for low
+                   if (zone < MAXZONES)                
+                        zoneStatus[zone].batteryLow=true;                    
+                } else if (!bitRead(dsc.moduleData[zoneByte+6], x)) {  // Checks an individual zone battery status flag for restore
+                   if (zone < MAXZONES)                
+                        zoneStatus[zone].batteryLow=false;
+                }
+                zoneBit++;
+           }
+        }
+      } 
+            
+      if (debug > 2) {
+        printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
+        printTimestamp();
+        Serial.print("[MODULE] ");Serial.print(dsc.panelData[0],HEX);Serial.print(": ");
+        dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
+        Serial.print(" ");
+        dsc.printModuleMessage();  // Prints the decoded message
+        Serial.println();
+      }
+    }
+    if (zoneStatusMsg != previousZoneStatusMsg)
+        zoneMsgStatusCallback(zoneStatusMsg); 
+    previousZoneStatusMsg=zoneStatusMsg;
   }
 const __FlashStringHelper *statusText(uint8_t statusCode)
 {
