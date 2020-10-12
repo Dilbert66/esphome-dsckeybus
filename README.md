@@ -16,10 +16,29 @@ The following services are published to home assistant for use in various script
     
 These are similar services to those provided by the Envisalink Home Assistant integration (which requires a more expensive Envisalink interface board to be installed in your alarm system panel). See: https://www.home-assistant.io/integrations/envisalink/
 
-A new feature on the firmware is now the ability to emulate multiple PC5108 zone adapaters to give you up to 64 zones if your system supports it.
+A new feature of the firmware is the ability to emulate multiple PC5108 zone adapaters to give you up to 64 zones if your system supports it. Example configuration to add emulation of zones 17-24 in the dscalarm.yaml file.  
+
+Example config: 
+```
+  #zone expander addresses:
+  # 9  - zones 9-16
+  # 10 - zones 17-24
+  # 11 - zones 25-32
+  # 12 - zones 33-40 (for systems with 64 zone support)
+  # 13 - zones 41-48 (for systems with 64 zone support)
+  # 14 - zones 49-56 (for systems with 64 zone support)
+  # 16 - zones 57-64 (for systems with 64 zone support)  
+  expanderAddr1: "10" # 1st zone expander emulator address to use . Set to 0 to disable. 
+  expanderAddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
+```
+  
 This function has not had extensive testing with multiple emulations though.
 
-Relay module emulation is also mostly working to give you PC5208 emulation.  This will give your panel the ability to trigger any external event.
+Relay module support is also added.   This will give your panel the ability to trigger an event on any PGM channel output.  See the yaml file for an example configuration.
+
+This version now also adds the ability to display the low battery warning status of any wireless zones.  These will be showng in the "zone status" field of the yaml.   Also in that field, you will see the alarm status of any triggered zones.
+The display format for a low battery is BL:zz and alarm status will be shown as AL:zz  where zz is the zone number.
+
 
 ## Example in Home Assistant
 ![Image of HASS example](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dsckeybusinterface.png)
