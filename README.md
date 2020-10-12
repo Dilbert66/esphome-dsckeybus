@@ -31,13 +31,14 @@ Example config:
   expanderAddr1: "10" # 1st zone expander emulator address to use . Set to 0 to disable. 
   expanderAddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
 ```
-  
-This function has not had extensive testing with multiple emulations though.
+A new service is also made available in home assistant called  esphome.<yourdscsystemname>_set_zone_fault with attributes zone and fault: 
+zone is 2 digit zone number and fault is 0 or 1 where 1 sets a zone as open and 0 closes it. By calling this service from a home assistant function, you can enable any event, sensor, etc to trigger any one of your emulated zones in your alarm system.
 
-Relay module support is also added.   This will give your panel the ability to trigger an event on any PGM channel output.  See the yaml file for an example configuration.
+Relay module support is also added.   This will give your panel the ability to trigger an event on any PGM channel output.  See the yaml file for an example configuration.  An example output for pgm 1 will show in home assistant as <systemname> PGM 1. You can add more fields in the yaml config file.
 
 This version now also adds the ability to display the low battery warning status of any wireless zones.  These will be showng in the "zone status" field of the yaml.   Also in that field, you will see the alarm status of any triggered zones.
 The display format for a low battery is BL:zz and alarm status will be shown as AL:zz  where zz is the zone number.
+
 
 
 ## Example in Home Assistant
@@ -123,8 +124,7 @@ alarm_control_panel:
 	- "alarm_arm_away"
 	- "alarm_trigger_panic"
 	- "alarm_trigger_fire"
-    - "set_zone_fault", Parameter: "zone" , "fault" eg zone: 17, fault: 1 (or true) 
-    
+    - "set_zone_fault", Parameters: "zone" , "fault" eg zone: 17, fault: 1 (or true) 
 
 
 - Intermediate command service. Use this service if you need more versatility such as setting alarm states on any partition:
