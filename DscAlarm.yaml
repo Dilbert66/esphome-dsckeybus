@@ -18,7 +18,7 @@ substitutions:
   # 13 - zones 41-48 (for systems with 64 zone support)
   # 14 - zones 49-56 (for systems with 64 zone support)
   # 16 - zones 57-64 (for systems with 64 zone support)  
-  expanderAddr1: "0" # 1st zone expander emulator address to use . Set to 0 to disable. 
+  expanderAddr1: "10" # 1st zone expander emulator address to use . Set to 0 to disable. 
   expanderAddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
   
 esphome:
@@ -33,6 +33,7 @@ esphome:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  #use_address: 192.168.2.148
 
   ap:
     ssid: "$systemName"
@@ -40,7 +41,7 @@ wifi:
 
 logger:
   baud_rate: 0
-  level: debug
+  level: info
 
 api:
    password: !secret api_password  
@@ -61,7 +62,7 @@ custom_component:
     
     DSCkeybus->accessCode="$accessCode";
     DSCkeybus->cmdWaitTime=$cmdWaitTime;
-    DSCkeybus->debug=2; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
+    DSCkeybus->debug=1; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
     DSCkeybus->expanderAddr1=$expanderAddr1; //zone expander
     DSCkeybus->expanderAddr2=$expanderAddr2;
     

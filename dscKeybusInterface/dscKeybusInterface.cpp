@@ -761,7 +761,8 @@ void dscKeybusInterface::addModule(byte address) {
  if (address > 12 && maxZones <=32) return;
  if (moduleIdx < maxModules ) {
    modules[moduleIdx].address=address;
-   for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
+  // for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
+   memset(modules[moduleIdx].fields,0x55,4);
    moduleIdx++;
  }
 }
@@ -844,8 +845,9 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
         chk2=((modules[idx].fields[2]>>4)+(modules[idx].fields[2]&0x0f)+(modules[idx].fields[3]>>4)+(modules[idx].fields[3]&0x0f)) % 0x10;
     }
 
-    for (int x=0;x<5;x++)  modules[idx].faultBuffer[x]=0xFF;//clear buffer
-    
+    //for (int x=0;x<5;x++)  modules[idx].faultBuffer[x]=0xFF;//clear buffer
+    memset(modules[idx].faultBuffer,0xFF,5);
+
     if ( modules[idx].fields[0] != modules[idx].fields[1]) { //see if our current low channels changed from previous. 
          modules[idx].faultBuffer[0]=modules[idx].fields[0]; //populate faultbuffer with response data for low channel
          modules[idx].faultBuffer[1]=modules[idx].fields[1];
@@ -885,29 +887,22 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 11111111 1 11111111 11111111 11111111 11111111 11111111 11101111 11111111 11111111 16
 */
      byte address=0;
-     writeModulePending=false;
      switch (cmd) {
        case 0x05:   if (!getPendingUpdate()) return;  //if nothing in queue for a zone update return
-                    moduleCmd=cmd;
-                    moduleSubCmd=0; //setup to send our pending update message to the panel
                     moduleBufferLength=maxFields05;
-                    currentModuleIdx=0;
-                    writeModuleBit=9;
-                    for(int x=0;x<maxFields05;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
+                    //for(int x=0;x<maxFields05;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
+                    memcpy((void*) writeModuleBuffer,(void*) pendingZoneStatus,maxFields05);
                     writeModulePending=true;
-                    return;
+                    break;
 //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 device 16 in slot 24  
 //11111111 1 00111111 11111111 11110011 11111111 11111111 11111111 11111111  slot 11   
 //11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111    slot 9     
        case 0x11:   if (!enableModuleSupervision) return;
-                    moduleCmd=cmd; //return our supervision slot data
-                    moduleSubCmd=0;
                     moduleBufferLength=maxFields11;
-                    currentModuleIdx=0;
-                    writeModuleBit=9;
-                    for(int x=0;x<maxFields11;x++) writeModuleBuffer[x]=moduleSlots[x];
+                    //for(int x=0;x<maxFields11;x++) writeModuleBuffer[x]=moduleSlots[x];
+                    memcpy((void*) writeModuleBuffer,(void*) pendingZoneStatus,maxFields11);
                     writeModulePending=true;
-                    return;
+                    break;
        case 0x28:   address=9;break;  // the address will depend on the panel request command.
        case 0x33:   address=10;break;
        case 0x39:   address=11;break;
@@ -917,15 +912,16 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
     moduleSubCmd=0;
     currentModuleIdx=0;
     writeModuleBit=9; //set bit location where we start sending our own data on the command
+    if (!address) return;
     int idx;  
     for (idx=0;idx<moduleIdx;idx++) {  //get the buffer data from the module record that matches the address we need
         if (modules[idx].address==address) break;
     }
     if (idx==moduleIdx) return; //not found so not for us
-    for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
+   // for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
+    memcpy((void*)writeModuleBuffer,(void*) modules[idx].faultBuffer,5);
     moduleBufferLength=5;
     if (modules[idx].zoneStatusByte) { 
-    Serial.println("clearing update slot");
         pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
         writeModulePending=true;    //set flag that we need to write buffer data 
     }
@@ -956,7 +952,8 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
         if (modules[idx].address==address) break;
     }
     if (idx==moduleIdx) return; //not found so return
-    for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
+    //for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
+    memcpy((void*)writeModuleBuffer,(void*)modules[idx].faultBuffer,5);
     moduleBufferLength=5;
     if (modules[idx].zoneStatusByte) { 
         pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot

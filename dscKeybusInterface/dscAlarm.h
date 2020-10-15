@@ -246,10 +246,10 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
           firstrun=false;
           dsc.clearZoneRanges();
         }
-        if (debug > 1 )  
-            printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
-            
-        if (debug > 2 )  {                
+
+   
+        if (debug > 2 )  {  
+            printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);        
             printTimestamp();
             Serial.print("[PANEL] ");
             dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
@@ -265,7 +265,9 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
     if (!forceDisconnect && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 		
-
+        if (debug == 1 )  
+            printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
+        
         if (dsc.relayStatusChanged) {
             for (byte x = 0; x < 8; x++) {
 				if (bitRead(dsc.relayChannels, x)) {
@@ -471,6 +473,8 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
     if (!forceDisconnect && dsc.handleModule()) {
       
        if (dsc.panelData[0]==0x41) { 
+        if (debug == 1) 
+            printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
         for (byte zoneByte = 0; zoneByte < 4; zoneByte++) {
             byte zoneBit=0;
             for (int x = 7; x >=0; x--) {
@@ -486,7 +490,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
            }
         }
       } 
-            
+      
       if (debug > 2) {
         printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
         printTimestamp();
