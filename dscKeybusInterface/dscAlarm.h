@@ -259,7 +259,36 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
             dsc.printPanelMessage();  // Prints the decoded message
             Serial.println();
         }
-
+        
+        if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xBA) { //low battery zones
+            for (byte panelByte = 4; panelByte < 8; panelByte++) {
+            //    if (dsc.panelData[panelByte] != 0) {
+                    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+                        zone = zoneBit + ((panelByte-4) *  8);
+                        if (bitRead(dsc.panelData[panelByte],zoneBit)) {
+                            if (zone < MAXZONES)
+                                zoneStatus[zone].batteryLow=true;
+                        } else  if (zone < MAXZONES)
+                                    zoneStatus[zone].batteryLow=false;
+                    }
+              //  }
+            }
+        }
+        
+        if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xB9) { //tamper
+            for (byte panelByte = 4; panelByte < 8; panelByte++) {
+             //   if (dsc.panelData[panelByte] != 0) {
+                    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+                        zone=zoneBit + ((panelByte-4) *  8);
+                        if (bitRead(dsc.panelData[panelByte],zoneBit)) {
+                            if (zone < MAXZONES)
+                                zoneStatus[zone].tamper=true;
+                        } else  if (zone < MAXZONES)
+                                    zoneStatus[zone].tamper=false;
+                    }
+              //  }
+            }
+        }
     } 
 
     if (!forceDisconnect && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
@@ -449,6 +478,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                 zoneStatusMsg.append(s1);
             }
            */
+           
             if (zoneStatus[x].alarm) {
                 sprintf(s1,"AL:%d",x+1);
                 if (zoneStatusMsg!="") zoneStatusMsg.append(",");

@@ -110,6 +110,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
      pendingZoneStatus[x]=0xff;
      moduleSlots[x]=0xff;
   }
+ 
 
 }
 
@@ -651,9 +652,8 @@ byte ICACHE_RAM_ATTR dscKeybusInterface::getPendingUpdate() {
 byte  IRAM_ATTR dscKeybusInterface::getPendingUpdate() { 
 #endif
 //check for a pending update flag and clear it
-    byte addr=0;
 	if (inIdx == outIdx) return 0;
-    addr = updateQueue[outIdx];
+    byte addr = updateQueue[outIdx];
 	outIdx = (outIdx + 1) % updateQueueSize;
 	return addr;
 }
@@ -703,6 +703,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
 }
 
 void dscKeybusInterface::addRequestToQueue(byte address) {
+            if (!address) return;
             updateQueue[inIdx]=address;
             inIdx=(inIdx + 1) % updateQueueSize;
 }
@@ -725,6 +726,7 @@ zoneMaskType dscKeybusInterface::getUpdateMask(byte address) {
             case 14: if (maxZones>32) {zm.idx=5;zm.mask=0xdf;} break;
             case 16: if (maxZones>32) {zm.idx=5;zm.mask=0xef;} break;//5208 sends to slot 15
             case 18: zm.idx=2;zm.mask=0xfe; break; //relay board 5108 sends to slot 16
+            default: zm.idx=0;zm.mask=0;
         }
         return zm;
 }
@@ -738,6 +740,7 @@ for (int x=0;x<moduleIdx;x++) {
         modules[x].faultBuffer[2]=0x55;
         modules[x].faultBuffer[3]=0;
         modules[x].faultBuffer[4]= 0xaa ;  //cksum for 01010101 00000000 
+        if (!modules[x].zoneStatusByte) continue;
         pendingZoneStatus[modules[x].zoneStatusByte]&=modules[x].zoneStatusMask; //set update slot
         addRequestToQueue(modules[x].address);  //update queue to indicate pending request
       }
@@ -747,10 +750,15 @@ for (int x=0;x<moduleIdx;x++) {
 void dscKeybusInterface::updateModules() {
     for (int x=0;x<moduleIdx;x++) {
         zoneMaskType zm=getUpdateMask(modules[x].address);
-        modules[x].zoneStatusByte=zm.idx;
-        modules[x].zoneStatusMask=zm.mask;
-        if (enableModuleSupervision)
-            setSupervisorySlot(modules[x].address,true);
+        if (!zm.idx) {
+            //we don't have an update idx so it means our address is invalid. clear it
+            modules[x].address=0;
+        } else {
+            modules[x].zoneStatusByte=zm.idx;
+            modules[x].zoneStatusMask=zm.mask;
+            if (enableModuleSupervision)
+                setSupervisorySlot(modules[x].address,true);
+        }
     }
 }
 
@@ -863,7 +871,7 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
          change=true;
     }
     if (!change) return;  //nothing changed in our zones so return
-    if (modules[idx].zoneStatusByte) {
+    if (modules[idx].zoneStatusByte) { 
         pendingZoneStatus[modules[idx].zoneStatusByte]&=modules[idx].zoneStatusMask; //set update slot
         addRequestToQueue(address);  //update queue to indicate pending request
     }
@@ -912,21 +920,22 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
     moduleSubCmd=0;
     currentModuleIdx=0;
     writeModuleBit=9; //set bit location where we start sending our own data on the command
-    if (!address) return;
-    int idx;  
+    if (!address) return; //cmds 0x11/0x05 return here
+    
+    int idx;   
     for (idx=0;idx<moduleIdx;idx++) {  //get the buffer data from the module record that matches the address we need
         if (modules[idx].address==address) break;
     }
     if (idx==moduleIdx) return; //not found so not for us
    // for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
-    memcpy((void*)writeModuleBuffer,(void*) modules[idx].faultBuffer,5);
+    memcpy((void*)writeModuleBuffer,(void*) modules[idx].faultBuffer,5); //get the fault data for that emulated board
     moduleBufferLength=5;
-    if (modules[idx].zoneStatusByte) { 
-        pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
-        writeModulePending=true;    //set flag that we need to write buffer data 
-    }
+    pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
+    writeModulePending=true;    //set flag that we need to write buffer data 
  
 }
+
+
 #if defined(__AVR__)
 void dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
 #elif defined(ESP8266)
@@ -955,10 +964,8 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
     //for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
     memcpy((void*)writeModuleBuffer,(void*)modules[idx].faultBuffer,5);
     moduleBufferLength=5;
-    if (modules[idx].zoneStatusByte) { 
-        pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
-        writeModulePending=true;   //set flag to send it
-    }
+    pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
+    writeModulePending=true;   //set flag to send it
 }
 
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
