@@ -244,7 +244,8 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
     if (!forceDisconnect && dsc.loop() )  {
         if (firstrun) {
           firstrun=false;
-          dsc.clearZoneRanges();
+          dsc.clearZoneRanges(); // start with clear expanded zones
+          dsc.write("*27##"); //fetch low battery status
         }
 
    
