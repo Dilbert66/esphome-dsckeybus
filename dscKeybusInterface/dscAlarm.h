@@ -274,7 +274,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
               //  }
             }
         }
-        
+        /*
         if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xB9) { //tamper
             for (byte panelByte = 4; panelByte < 8; panelByte++) {
              //   if (dsc.panelData[panelByte] != 0) {
@@ -288,7 +288,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                     }
               //  }
             }
-        }
+        }*/
     } 
 
     if (!forceDisconnect && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
