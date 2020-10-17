@@ -82,7 +82,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
 	
     zoneType zoneStatus[MAXZONES];
     std::string zoneStatusMsg,previousZoneStatusMsg;  
-    bool relayStatus[8],previousRelayStatus[8];
+    bool relayStatus[16],previousRelayStatus[16];
     
     
   void setup() override {
@@ -102,6 +102,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     
     firstrun=true;
 	systemStatusChangeCallback(STATUS_OFFLINE);
+    zoneMsgStatusCallback("OK"); 
 	forceDisconnect = false;
     dsc.enableModuleSupervision=MODULESUPERVISION;
     
@@ -241,9 +242,8 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 
   void update() override {
     	 
-    if (!forceDisconnect && dsc.loop() )  {
+    if (!forceDisconnect && dsc.loop() )  { //Processes data only when a valid Keybus command has been read
         if (firstrun) {
-          firstrun=false;
           dsc.clearZoneRanges(); // start with clear expanded zones
           dsc.write("*27##"); //fetch low battery status
         }
@@ -263,7 +263,6 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
         
         if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xBA) { //low battery zones
             for (byte panelByte = 4; panelByte < 8; panelByte++) {
-            //    if (dsc.panelData[panelByte] != 0) {
                     for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
                         zone = zoneBit + ((panelByte-4) *  8);
                         if (bitRead(dsc.panelData[panelByte],zoneBit)) {
@@ -272,13 +271,47 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                         } else  if (zone < MAXZONES)
                                     zoneStatus[zone].batteryLow=false;
                     }
-              //  }
             }
+        }
+        if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xA1) { //system status
+                        if (bitRead(dsc.panelData[4],1)) //ac status bit
+                            troubleStatusChangeCallback(acStatus,false ); //no ac
+                        else 
+                            troubleStatusChangeCallback(acStatus,true );
+   
+        }
+        if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xC8) { //service required menu
+                        if (bitRead(dsc.panelData[4],0))  //battery status bit
+                             troubleStatusChangeCallback(batStatus,true ); 
+                        else troubleStatusChangeCallback(batStatus,false );
+                               
+        }
+        if (dsc.panelData[0]==0xE6 && dsc.panelData[2]==0x1A) { //ac status
+                        if (bitRead(dsc.panelData[6],4))  //ac status bit
+                             troubleStatusChangeCallback(acStatus,false ); 
+                        else troubleStatusChangeCallback(acStatus,true );
+                               
+        }
+        
+        if (dsc.panelData[0]==0x87 ) { //relay cmd
+            byte rchan;
+           for (byte relayByte=2;relayByte<4;relayByte++) {
+            for (byte x = 0; x < 8; x++) {
+                 rchan=x + ((relayByte-2) *  8);
+				if (bitRead(dsc.panelData[relayByte], x)) {
+                   relayStatus[rchan]=true;
+                } else { 
+                   relayStatus[rchan]=false;
+                }
+                if (previousRelayStatus[rchan] != relayStatus[rchan])
+                       relayChannelChangeCallback( rchan+1,relayStatus[rchan]);
+                previousRelayStatus[rchan] = relayStatus[rchan];
+			}
+           } 
         }
         /*
         if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xB9) { //tamper
             for (byte panelByte = 4; panelByte < 8; panelByte++) {
-             //   if (dsc.panelData[panelByte] != 0) {
                     for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
                         zone=zoneBit + ((panelByte-4) *  8);
                         if (bitRead(dsc.panelData[panelByte],zoneBit)) {
@@ -287,31 +320,18 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                         } else  if (zone < MAXZONES)
                                     zoneStatus[zone].tamper=false;
                     }
-              //  }
             }
         }*/
+        firstrun=false;
     } 
 
-    if (!forceDisconnect && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
+    if (!forceDisconnect && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read and statuses were changed
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 		
         if (debug == 1 )  
             printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
         
-        if (dsc.relayStatusChanged) {
-            for (byte x = 0; x < 8; x++) {
-				if (bitRead(dsc.relayChannels, x)) {
-                   relayStatus[x]=true;
-
-                } else { 
-                   relayStatus[x]=false;
-                }
-                if (previousRelayStatus[x] != relayStatus[x])
-                       relayChannelChangeCallback( x+1,relayStatus[x]);
-                previousRelayStatus[x] = relayStatus[x];
-			}
-           
-        }  
+  
   
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
 		// handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
@@ -332,7 +352,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 			dsc.write(accessCode);
 			if (debug > 0) ESP_LOGD("Debug","got access code prompt");
 		}
-
+        
 		if (dsc.powerChanged ) {
 			dsc.powerChanged=false;
 			if (dsc.powerTrouble) {
@@ -372,6 +392,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 				char msg[50];
 				sprintf(msg,"%02X: %s", dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
 				if (enable05Messages) partitionMsgChangeCallback(partition+1,msg);
+
 			}
 
 			// Publishes alarm status
@@ -496,7 +517,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                 zoneStatusMsg.append(s1);
             }
         }
-        
+        if (zoneStatusMsg=="") zoneStatusMsg="OK";
 
 		
 	}

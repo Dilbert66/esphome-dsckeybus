@@ -143,8 +143,6 @@ class dscKeybusInterface {
     void setZoneFault(byte zone,bool fault) ;
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
-    bool relayStatusChanged;
-    byte relayChannels,previousRelayChannels;
     void addModule(byte address); //add zone expanders
     void updateModules();
     void addRelayModule(); 
@@ -199,7 +197,6 @@ class dscKeybusInterface {
     void processPanel_0xE6_0x0D();
     void processPanel_0xE6_0x0F();
     void processPanel_0xEB();
-    void processPanel_0x87();
 
     void printPanelLights(byte panelByte);
     void printPanelMessages(byte panelByte);
