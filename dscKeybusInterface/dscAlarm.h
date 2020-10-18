@@ -36,6 +36,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   std::function<void (uint8_t,std::string)> partitionStatusChangeCallback; 
   std::function<void (uint8_t,std::string)> partitionMsgChangeCallback; 
   std::function<void (std::string)> zoneMsgStatusCallback; 
+  std::function<void (std::string)> troubleMsgStatusCallback; 
   std::function<void (uint8_t,bool)> relayChannelChangeCallback;    
   
 
@@ -61,6 +62,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
   void onZoneMsgStatus(std::function<void (std::string msg)> callback) { zoneMsgStatusCallback = callback; }
+  void onTroubleMsgStatus(std::function<void (std::string msg)> callback) { troubleMsgStatusCallback = callback; }
   void onRelayChannelChange(std::function<void (uint8_t channel,bool state)> callback) { relayChannelChangeCallback = callback; }
   char expanderAddr1,expanderAddr2,expanderAddr3;
   byte debug;
@@ -81,8 +83,10 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     } ;
 	
     zoneType zoneStatus[MAXZONES];
-    std::string zoneStatusMsg,previousZoneStatusMsg;  
+    std::string zoneStatusMsg,previousZoneStatusMsg,systemMsg,previousSystemMsg;  
     bool relayStatus[16],previousRelayStatus[16];
+    bool sendCmd;
+    byte system0,system1;
     
     
   void setup() override {
@@ -274,25 +278,25 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
             }
         }
         if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xA1) { //system status
-                        if (bitRead(dsc.panelData[4],1)) //ac status bit
-                            troubleStatusChangeCallback(acStatus,false ); //no ac
-                        else 
-                            troubleStatusChangeCallback(acStatus,true );
-                       // if (bitRead(dsc.panelData[4],0) //if service required is on, get info
-                          //  dsc.write("*21##");
+                        system0=dsc.panelData[4];
    
         }
         if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xC8) { //service required menu
-                        if (bitRead(dsc.panelData[4],0))  //battery status bit
-                             troubleStatusChangeCallback(batStatus,true ); 
-                        else troubleStatusChangeCallback(batStatus,false );
-                               
+                        system1=dsc.panelData[4];
+     
         }
-        if (dsc.panelData[0]==0xE6 && dsc.panelData[2]==0x1A) { //ac status
+        if (dsc.panelData[0]==0xE6 && dsc.panelData[2]==0x1A) { //system status comm/time/ac
                         if (bitRead(dsc.panelData[6],4))  //ac status bit
                              troubleStatusChangeCallback(acStatus,false ); 
                         else troubleStatusChangeCallback(acStatus,true );
+                        sendCmd=true;
                                
+        }
+        if (dsc.panelData[0]==0x11 && sendCmd ) { 
+                   sendCmd=false;
+                   dsc.write("*21##");
+               // we only send the system status request a minute or so after the trouble status so that we don't impact warning beeps sent after the trouble light is turned on.  We send it after the supervision cmd 
+
         }
         
         if (dsc.panelData[0]==0x87 ) { //relay cmd
@@ -382,7 +386,8 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 			dsc.troubleChanged = false;  // Resets the trouble status flag
 			if (dsc.trouble) troubleStatusChangeCallback(trStatus,true );  // Trouble alarm tripped
 			else troubleStatusChangeCallback(trStatus,false ); // Trouble alarm restored
-           //dsc.write("*21##"); //fetch system status
+            // we set a flag to only send the system status request a minute or so after the trouble status so that we don't impact warning beeps sent after the trouble light is turned on.
+            sendCmd=true;
 		}
 	
 		// Publishes status per partition
@@ -521,9 +526,77 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
             }
         }
         if (zoneStatusMsg=="") zoneStatusMsg="OK";
+        
+            systemMsg="";
+            if (bitRead(system1,0)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("BAT");
+            }
+            if (bitRead(system1,1)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("BELL");
+            }
+            if (bitRead(system1,2)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("SYS");
+            }
+            if (bitRead(system1,3)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("TAMP");
+            }
+            if (bitRead(system1,4)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("SUP");
+            }
+            if (bitRead(system1,5)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("RF");
+            }
+            if (bitRead(system1,6)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("B4");
+            }
+            if (bitRead(system1,7)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("A4");
+            } 
 
-		
+
+            if (bitRead(system0,1)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("AC");
+            }
+            if (bitRead(system0,2)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("TEL");
+            }
+            if (bitRead(system0,3)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("COM");
+            }
+            if (bitRead(system0,4)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("ZF");
+            }
+            if (bitRead(system0,5)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("ZT");
+            }
+            if (bitRead(system0,6)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("DBAT");
+            }
+            if (bitRead(system0,7)) {
+                if (systemMsg!="") systemMsg.append(",");
+                systemMsg.append("TIME");
+            }             
+
+        if (previousSystemMsg != systemMsg) 
+           troubleMsgStatusCallback(systemMsg);
+        previousSystemMsg=systemMsg;
+
 	}
+
     
     if (!forceDisconnect && dsc.handleModule()) {
       

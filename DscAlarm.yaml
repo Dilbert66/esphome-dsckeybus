@@ -100,7 +100,10 @@ custom_component:
       switch (partition) {
           case 1: id(f1).publish_state(open); break;
       }
-    }); 
+    });
+    DSCkeybus->onTroubleMsgStatus([&](std::string msg) {
+            id(tr_msg).publish_state(msg);
+    });
     DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
       switch (zone) {
         case 1: id(z1).publish_state(open); break;
@@ -195,8 +198,8 @@ binary_sensor:
     #battery status ok/low
   - platform: template
     id: bat
-    name: "$systemName Battery Status"
-    device_class: problem
+    #name: "$systemName Battery Status"
+    #device_class: problem
 
     #AC power status ok/no power
   - platform: template
@@ -285,7 +288,11 @@ text_sensor:
     id: m2
     #name: "$systemName Partition 2 Msg " # uncomment to show in home assistant
     icon: "mdi:alert-box"
-   
+    
+  - platform: template
+    id: tr_msg
+    name: "$systemName Trouble Msg " # uncomment to show in home assistant
+    icon: "mdi:alert-box"   
      
 switch:
     #shows status of connection status to panel.  You can disconnect before upload using the switch.
