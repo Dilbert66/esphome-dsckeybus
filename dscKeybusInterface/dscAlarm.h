@@ -382,7 +382,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 			dsc.troubleChanged = false;  // Resets the trouble status flag
 			if (dsc.trouble) troubleStatusChangeCallback(trStatus,true );  // Trouble alarm tripped
 			else troubleStatusChangeCallback(trStatus,false ); // Trouble alarm restored
-            dsc.write("*21##"); //fetch system status
+           //dsc.write("*21##"); //fetch system status
 		}
 	
 		// Publishes status per partition
