@@ -278,6 +278,8 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                             troubleStatusChangeCallback(acStatus,false ); //no ac
                         else 
                             troubleStatusChangeCallback(acStatus,true );
+                       // if (bitRead(dsc.panelData[4],0) //if service required is on, get info
+                          //  dsc.write("*21##");
    
         }
         if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xC8) { //service required menu
@@ -380,6 +382,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 			dsc.troubleChanged = false;  // Resets the trouble status flag
 			if (dsc.trouble) troubleStatusChangeCallback(trStatus,true );  // Trouble alarm tripped
 			else troubleStatusChangeCallback(trStatus,false ); // Trouble alarm restored
+            dsc.write("*21##"); //fetch system status
 		}
 	
 		// Publishes status per partition
