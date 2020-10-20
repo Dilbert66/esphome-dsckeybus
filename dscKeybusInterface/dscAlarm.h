@@ -86,7 +86,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     std::string zoneStatusMsg,previousZoneStatusMsg,systemMsg,previousSystemMsg;  
     bool relayStatus[16],previousRelayStatus[16];
     bool sendCmd;
-    byte system0,system1;
+    byte system0,system1,previousSystem0,previousSystem1;
     
     
   void setup() override {
@@ -106,7 +106,6 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     
     firstrun=true;
 	systemStatusChangeCallback(STATUS_OFFLINE);
-    zoneMsgStatusCallback("OK"); 
 	forceDisconnect = false;
     dsc.enableModuleSupervision=MODULESUPERVISION;
     
@@ -249,7 +248,8 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
     if (!forceDisconnect && dsc.loop() )  { //Processes data only when a valid Keybus command has been read
         if (firstrun) {
           dsc.clearZoneRanges(); // start with clear expanded zones
-          dsc.write("*27##"); //fetch low battery status
+          dsc.write("*");
+          dsc.write("27##"); //fetch low battery status
         }
 
    
@@ -289,16 +289,17 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                         if (bitRead(dsc.panelData[6],4))  //ac status bit
                              troubleStatusChangeCallback(acStatus,false ); 
                         else troubleStatusChangeCallback(acStatus,true );
-                        sendCmd=true;
+                         dsc.write("*");
+                         dsc.write("21##");
                                
         }
-        if (dsc.panelData[0]==0x11 && sendCmd ) { 
+        if (dsc.panelData[0]==0x16 && (dsc.trouble || sendCmd) ) { 
                    sendCmd=false;
-                   dsc.write("*21##");
-               // we only send the system status request a minute or so after the trouble status so that we don't impact warning beeps sent after the trouble light is turned on.  We send it after the supervision cmd 
+                   dsc.write("*");
+                   dsc.write("21##");
+               // we only send the system status request a minute or so after the trouble status so that we don't impact warning beeps sent after the trouble light is turned on. 
 
         }
-        
         if (dsc.panelData[0]==0x87 ) { //relay cmd
             byte rchan;
            for (byte relayByte=2;relayByte<4;relayByte++) {
@@ -327,7 +328,9 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                                     zoneStatus[zone].tamper=false;
                     }
             }
-        }*/
+        }
+        */
+        
         firstrun=false;
     } 
 
@@ -590,11 +593,35 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                 if (systemMsg!="") systemMsg.append(",");
                 systemMsg.append("TIME");
             }             
-
+        if (systemMsg=="") systemMsg="OK";
         if (previousSystemMsg != systemMsg) 
            troubleMsgStatusCallback(systemMsg);
         previousSystemMsg=systemMsg;
+        /*
+        if (system0 != previousSystem0) {
+            byte diff = system0 ^ previousSystem0;
+            if (bitRead(diff,5)) {
+                if (bitRead(system0,5))
+                    previousSystem0|=0x20;
+                else
+                    previousSystem0&=0xdf;
+                dsc.write("*25##");
+             } else if (bitRead(diff,6)) {
+               if (bitRead(system0,5))
+                    previousSystem0|=0x30;
+                else
+                    previousSystem0&=0xbf;
+                 dsc.write("*26##");
+             } else if (bitRead(diff,7)) {
+                 if (bitRead(system0,5))
+                    previousSystem0|=0x80;
+                else
+                    previousSystem0&=0x7f;
+                dsc.write("*27##");
+             } else previousSystem0=system0;
 
+        }
+        */
 	}
 
     
