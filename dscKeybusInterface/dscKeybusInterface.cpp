@@ -65,7 +65,7 @@ byte dscKeybusInterface::maxFields11;
 byte dscKeybusInterface::maxZones;
 byte dscKeybusInterface::panelVersion;
 bool dscKeybusInterface::enableModuleSupervision;
-volatile byte  dscKeybusInterface::updateQueue[updateQueueSize];
+//volatile byte  dscKeybusInterface::updateQueue[updateQueueSize];
 volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
 volatile byte dscKeybusInterface::isrPanelBitCount;
@@ -537,7 +537,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
       case '7': writeKey = 0x1C; break;
       case '8': writeKey = 0x22; break;
       case '9': writeKey = 0x27; break;
-      case '*': writeKey = 0x28; writeAsterisk = true; break; //was true but causes lockup on unused partions
+      case '*': writeKey = 0x28; writeAsterisk = true; break; 
       case '#': writeKey = 0x2D; break;
       case 'F':
       case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
@@ -643,20 +643,6 @@ bool dscKeybusInterface::validCRC() {
   else return false;
 }
 
-#if defined(__AVR__)
-byte dscKeybusInterface::getPendingUpdate() { 
-#elif defined(ESP8266)
-byte ICACHE_RAM_ATTR dscKeybusInterface::getPendingUpdate() { 
-#elif defined(ESP32)
-byte  IRAM_ATTR dscKeybusInterface::getPendingUpdate() { 
-#endif
-//check for a pending update flag and clear it
-	if (inIdx == outIdx) return 0;
-    byte addr = updateQueue[outIdx];
-	outIdx = (outIdx + 1) % updateQueueSize;
-	return addr;
-}
-
 
 void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
        //set our response data for the 0x11 supervisory request
@@ -676,6 +662,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
             case 11:  moduleSlots[3]=set?moduleSlots[3]&0x3f:moduleSlots[3]|~0x3f;//pc5108
                       moduleSlots[3]=set?moduleSlots[3]&0xcf:moduleSlots[3]|~0xcf;
                       break; 
+            //case 17:  moduleSlots[3]=set?moduleSlots[3]&0xf3:moduleSlots[3]|~0xf3;break;   //rf5132      
             case 18:  moduleSlots[3]=set?moduleSlots[3]&0xfc:moduleSlots[3]|~0xfc;break;  // pc5208 relay board reports as 18
             default: return;
         }
@@ -694,7 +681,8 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
             case 14:  if  (maxZones>32) {moduleSlots[3]=set?moduleSlots[3]&0xcf:moduleSlots[3]|~0xcf;}break; //pc5108
             case 16:  if  (maxZones>32) {moduleSlots[5]=set?moduleSlots[5]&0x3f:moduleSlots[5]|~0x3f;}break; //pc5108 (shows on slot24)// reports as 16 in panel
             //reports as 18 in panel
-            case 18:  moduleSlots[3]=set?moduleSlots[3]&0xfc:moduleSlots[3]|~0xfc;break;  // pc5208 relay board reports as 18
+            //case 17:  moduleSlots[3]=set?moduleSlots[3]&0xf3:moduleSlots[3]|~0xf3;break;   //rf5132      reports as 17 (but in slot 15)
+            case 18:  moduleSlots[3]=set?moduleSlots[3]&0xfc:moduleSlots[3]|~0xfc;break;  // pc5208 relay board reports as 18 (in slot 16)
             default: return;
         }
        }
@@ -702,10 +690,11 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
 }
 
 void dscKeybusInterface::addRequestToQueue(byte address) {
-            if (!address) return;
-            updateQueue[inIdx]=address;
+           // if (!address) return;
+            //updateQueue[inIdx]=address; //not used right now 
             inIdx=(inIdx + 1) % updateQueueSize;
 }
+
 
 zoneMaskType dscKeybusInterface::getUpdateMask(byte address) {
 
@@ -724,6 +713,7 @@ zoneMaskType dscKeybusInterface::getUpdateMask(byte address) {
             case 13: if (maxZones>32) {zm.idx=5;zm.mask=0xbf;} break;
             case 14: if (maxZones>32) {zm.idx=5;zm.mask=0xdf;} break;
             case 16: if (maxZones>32) {zm.idx=5;zm.mask=0xef;} break;//5208 sends to slot 15
+            //case 17: zm.idx=2;zm.mask=0xf7; //rf 5132 slot 12 for cmd 41 other wise use same slots as 5208 depending on zone range
             case 18: zm.idx=2;zm.mask=0xfe; break; //relay board 5108 sends to slot 16
             default: zm.idx=0;zm.mask=0;
         }
@@ -742,6 +732,7 @@ for (int x=0;x<moduleIdx;x++) {
         if (!modules[x].zoneStatusByte) continue;
         pendingZoneStatus[modules[x].zoneStatusByte]&=modules[x].zoneStatusMask; //set update slot
         addRequestToQueue(modules[x].address);  //update queue to indicate pending request
+ 
       }
 }
 
@@ -875,7 +866,28 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
         addRequestToQueue(address);  //update queue to indicate pending request
     }
 }
- 
+
+#if defined(__AVR__)
+void dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
+#elif defined(ESP8266)
+void  ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
+#endif
+    if (!address) return;
+    int idx;
+    for (idx=0;idx<moduleIdx;idx++) {  //get the buffer data from the module record that matches the address we need
+        if (modules[idx].address==address) break;
+    }
+    if (idx==moduleIdx) return;
+    memcpy((void*)writeModuleBuffer,(void*)modules[idx].faultBuffer,5);
+    moduleBufferLength=5;
+    pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
+    writeModulePending=true;   //set flag to send it
+    Serial.println("set flag for response");
+}
+
+
 #if defined(__AVR__)
 void dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
 #elif defined(ESP8266)
@@ -894,22 +906,25 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 11111111 1 11111111 11111111 11111111 11111111 11111111 11101111 11111111 11111111 16
 */
      byte address=0;
+
      switch (cmd) {
-       case 0x05:   if (!getPendingUpdate()) return;  //if nothing in queue for a zone update return
+       case 0x05:    //if nothing in queue for a zone update return
+                    if (inIdx == outIdx ) return;
+                    outIdx = (outIdx + 1) % updateQueueSize;
                     moduleBufferLength=maxFields05;
-                    //for(int x=0;x<maxFields05;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
-                    memcpy((void*) writeModuleBuffer,(void*) pendingZoneStatus,maxFields05);
+                    memcpy((void*) writeModuleBuffer,(void*) pendingZoneStatus, moduleBufferLength);
                     writeModulePending=true;
-                    break;
+                    return;
 //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 device 16 in slot 24  
 //11111111 1 00111111 11111111 11110011 11111111 11111111 11111111 11111111  slot 11   
 //11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111    slot 9     
        case 0x11:   if (!enableModuleSupervision) return;
                     moduleBufferLength=maxFields11;
-                    //for(int x=0;x<maxFields11;x++) writeModuleBuffer[x]=moduleSlots[x];
-                    memcpy((void*) writeModuleBuffer,(void*) pendingZoneStatus,maxFields11);
+                    memcpy((void*) writeModuleBuffer,(void*) pendingZoneStatus, moduleBufferLength);
                     writeModulePending=true;
-                    break;
+                    return;
+      // case 0x94:   return;//future - rf5132 key registration  //wait for second one to respond
+       //case 0x41:   return; //future - rf5132 battery status cmd
        case 0x28:   address=9;break;  // the address will depend on the panel request command.
        case 0x33:   address=10;break;
        case 0x39:   address=11;break;
@@ -919,18 +934,18 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
     moduleSubCmd=0;
     currentModuleIdx=0;
     writeModuleBit=9; //set bit location where we start sending our own data on the command
+    prepareResponse(address);
+    /*
     if (!address) return; //cmds 0x11/0x05 return here
-    
-    int idx;   
-    for (idx=0;idx<moduleIdx;idx++) {  //get the buffer data from the module record that matches the address we need
-        if (modules[idx].address==address) break;
-    }
-    if (idx==moduleIdx) return; //not found so not for us
-   // for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
+    int idx=findIdx(address);
+    if (idx < 0) return;
+    //for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
     memcpy((void*)writeModuleBuffer,(void*) modules[idx].faultBuffer,5); //get the fault data for that emulated board
     moduleBufferLength=5;
     pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
     writeModulePending=true;    //set flag that we need to write buffer data 
+    */
+
  
 }
 
@@ -955,16 +970,24 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
     moduleSubCmd=subcmd;
     currentModuleIdx=0;
     writeModuleBit=17;
-    int idx;  
+    prepareResponse(address);
+    /*
+    int idx;
     for (idx=0;idx<moduleIdx;idx++) {
         if (modules[idx].address==address) break;
     }
     if (idx==moduleIdx) return; //not found so return
+    */
+   
+    /*
     //for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
     memcpy((void*)writeModuleBuffer,(void*)modules[idx].faultBuffer,5);
     moduleBufferLength=5;
     pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
     writeModulePending=true;   //set flag to send it
+    */
+    
+
 }
 
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
@@ -1144,13 +1167,15 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
           case 0x28: 
           case 0x33:
           case 0xEB: 
+         // case 0x94:
+         // case 0x41:
           case 0x39: processModuleResponse(isrPanelData[0]);break;
           case 0x0A: statusCmd = 0x05; break;
           case 0x1B: statusCmd = 0x1B; break;
           default: statusCmd = 0; break;
         
         }
-      
+
         // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with panelData[] bytes
         isrPanelBitCount = 0;
         isrPanelByteCount++;
@@ -1166,7 +1191,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         isrPanelBitCount = 0;
         isrPanelByteCount++;
       }
-      if (isrPanelBitTotal == 16) {
+      if (isrPanelBitTotal == 16 ) {
             switch (isrPanelData[0]) {
                 case 0xE6: processModuleResponse_0xE6(isrPanelData[2]);break;//check subcommand
                 
@@ -1216,13 +1241,14 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
     // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
     if (clockHighTime > 1000) {
       keybusTime = millis();
-
       // Skips incomplete and redundant data from status commands - these are sent constantly on the keybus at a high
       // rate, so they are always skipped.  Checking is required in the ISR to prevent flooding the buffer.
-      if (isrPanelBitTotal < 8) skipData = true;
+      if (isrPanelBitTotal < 8)
+          skipData = true;
       else switch (isrPanelData[0]) {
         static byte previousCmd05[dscReadSize];
         static byte previousCmd1B[dscReadSize];
+
         case 0x05:  // Status: partitions 1-4
 		  if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)){
 			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {

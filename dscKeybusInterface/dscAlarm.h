@@ -293,7 +293,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
                          dsc.write("21##");
                                
         }
-        if (dsc.panelData[0]==0x16 && (dsc.trouble || sendCmd) ) { 
+        if (dsc.panelData[0]==0xA5 && dsc.panelData[6]==0 && (dsc.trouble || sendCmd) ) { //periodic - sent every 4 minutes
                    sendCmd=false;
                    dsc.write("*");
                    dsc.write("21##");
@@ -374,6 +374,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 			if (dsc.batteryTrouble) {
                 troubleStatusChangeCallback(batStatus,true ); 
             } else troubleStatusChangeCallback(batStatus,false );
+            sendCmd=true;
 		}	
 		if (dsc.keypadFireAlarm ) {
 			dsc.keypadFireAlarm=false;

@@ -274,10 +274,10 @@ class dscKeybusInterface {
     static void processModuleResponse_0xE6(byte cmd);
     static void addRequestToQueue(byte slot);
     static void setSupervisorySlot(byte slot,bool set);
-    static byte getPendingUpdate();
+    static void prepareResponse(byte);
     static zoneMaskType getUpdateMask(byte address);
 
-    static volatile byte updateQueue[updateQueueSize];
+  //  static volatile byte updateQueue[updateQueueSize];
     static byte outIdx,inIdx;
     static byte moduleIdx; 
     static moduleType modules[maxModules];
