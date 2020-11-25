@@ -800,7 +800,10 @@ void dscKeybusInterface::printPanel_0x16() {
   }
 
   if (panelData[2] == 0x0E) {
-
+      
+    stream->print(F("Panel version: "));
+    stream->print(panelData[3],HEX);
+/*
     switch (panelData[3]) {
       case 0x10: stream->print(F("PC5015 ")); break;
       case 0x11: stream->print(F("PC5016 ")); break;
@@ -810,7 +813,7 @@ void dscKeybusInterface::printPanel_0x16() {
       case 0x42: stream->print(F("PC1864 ")); break;
       default: stream->print(F("Unknown panel ")); break;
     }
-
+*/
     switch (panelData[4] & 0x03) {
       case 0x01: stream->print(F("| Zone wiring: NC ")); break;
       case 0x02: stream->print(F("| Zone wiring: EOL ")); break;

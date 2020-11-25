@@ -139,7 +139,7 @@ class dscKeybusInterface {
     byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
-    static unsigned long cmdWaitTime; // time to delay treating 05/1b command as valid in ms
+    static bool debounce05;
     void setZoneFault(byte zone,bool fault) ;
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
@@ -179,7 +179,8 @@ class dscKeybusInterface {
     //static void dscDataInterrupt(dscKeybusInterface *dscPointer);
     // Deprecated
     bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
-
+    static volatile byte currentCmd;
+    
   private:
     
     void processPanelStatus();
@@ -327,7 +328,7 @@ class dscKeybusInterface {
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte currentCmd, statusCmd,moduleCmd,moduleSubCmd;
+    static volatile byte statusCmd,moduleCmd,moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };

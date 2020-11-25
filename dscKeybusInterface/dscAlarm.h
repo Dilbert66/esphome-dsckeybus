@@ -109,7 +109,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
 	forceDisconnect = false;
     dsc.enableModuleSupervision=MODULESUPERVISION;
     
-	dsc.cmdWaitTime=cmdWaitTime;
+	dsc.debounce05=(cmdWaitTime > 0);
     dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
 	dsc.resetStatus();
     dsc.maxZones=MAXZONES;
@@ -650,7 +650,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
       if (debug > 2) {
         printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
         printTimestamp();
-        Serial.print("[MODULE] ");Serial.print(dsc.panelData[0],HEX);Serial.print(": ");
+        Serial.print("[MODULE] ");Serial.print(dsc.currentCmd,HEX);Serial.print(": ");
         dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
         Serial.print(" ");
         dsc.printModuleMessage();  // Prints the decoded message
