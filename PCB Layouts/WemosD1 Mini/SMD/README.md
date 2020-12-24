@@ -42,8 +42,9 @@ For the rest of components you may order via Aliexpress (my favorite) or you may
 
 Building and instalation
 ------------
-**IMPORTANT**: Please follow this instructions. Plug the jumper in the wrong place without adjusting the LM2596 voltage first, may fry your ESP8266 chip making useless your WemosD1 mini.
-Considerations: Work on a clean area and clean your board first before start soldering.
+**IMPORTANT:** Please follow this instructions. Plug the jumper in the wrong place without adjusting the LM2596 voltage first, may fry your ESP8266 chip making useless your WemosD1 mini.
+
+**Considerations:** Work on a clean area and clean your board first before start soldering.
 
 1.- Solder all resistances first. Make sure to place the correct values on the labeled pads.
 
@@ -55,13 +56,13 @@ Considerations: Work on a clean area and clean your board first before start sol
 
 5.- Last, solder the LM2596 Module. After finish, clean your board.
 
-6.- On this step we need to plug the board on the DSC Alarm Panel.
+6.- On this step we need to plug the board to the DSC Alarm Panel.
 
 **Warning** I Recomend to unplug your DSC Alarm Panel from power, includding the battery before you plug the board to avoid any short circuit mistake when manipulating powered cables. You can plug the board with DSC panel powered, but at your own risk.
 
-Connect each terminal labeled, RED-RED, YEL-YEL, GRN-GRN, BLK-BKL. Then you may plug again to power DSC Alarm Panel. If everything is ok, a blue LED should light on the LM2596 module.
+Connect each terminal labeled, RED-RED, YEL-YEL, GRN-GRN, BLK-BKL. Then you may power again your DSC Alarm Panel. If everything is ok, a blue LED should light on the LM2596 module.
 
-7.- Regulate the LM2596 module at the right voltage:
+7.- Regulate the LM2596 module to the right voltage:
 With a multimeter, place the points on the OUT + and - pads and measure the voltage
 with a small (-) screwdriver turn the potentiometer to start drop the voltage till 3.3v (highly recommended)
 **Please double check the voltage, this is very important where to place the jumper in step 9**
