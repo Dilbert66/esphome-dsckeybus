@@ -42,7 +42,7 @@ For the rest of components you may order via Aliexpress (my favorite) or you may
 
 Building and instalation
 ------------
-**IMPORTANT**: Please follow this instructions. Plug the jumper in the wrong place whithout adjusting the LM2596 voltage first, may fry your ESP8266 chip making useless your WemosD1 mini.
+**IMPORTANT**: Please follow this instructions. Plug the jumper in the wrong place without adjusting the LM2596 voltage first, may fry your ESP8266 chip making useless your WemosD1 mini.
 Considerations: Work on a clean area and clean your board first before start soldering.
 
 1.- Solder all resistances first. Make sure to place the correct values on the labeled pads.
