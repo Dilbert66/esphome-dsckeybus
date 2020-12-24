@@ -21,6 +21,9 @@ Materials and Components:
  * LM2596 Module
  * 4 Terminalblocks (can be 2 terminal block x2)
 
+![Top view](https://raw.githubusercontent.com/PipeDeveloper/esphome-dsckeybus/master/PCB%20Layouts/WemosD1%20Mini/SMD/WemosD1_Mini_SMD1206_boardtop.png)
+
+![Top view](https://raw.githubusercontent.com/PipeDeveloper/esphome-dsckeybus/master/PCB%20Layouts/WemosD1%20Mini/SMD/WemosD1_SMD1206_schematic.png)
 
 How to order
 ------------
