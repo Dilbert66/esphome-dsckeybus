@@ -1,14 +1,14 @@
 DSC Alarm Shield for WemosD1 Mini and WemosD1 Mini PRO
 ==================================
 
-Tools that you need to build it:
+Tools you need to build:
 
  * Multimeter
  * Solder Iron + thin tip
  * Solder Wire, best quality you can get, 0.5mm recomended or lower for SMD components, 0.8mm for the rest of components
- * Optional: flux and solder paste
  * Isopropilic Alcohol (to clean your board once finished)
  * Small (-) screwdriver
+ * flux and solder paste (Optional)
 
 Materials and Components:
  * 8 Female Headerpins x2
