@@ -46,31 +46,31 @@ Building and instalation
  
 **Considerations:** Work on a clean area and clean your board first before start soldering.
 
-**1.** Solder all resistances first. Make sure to place the correct values on the labeled pads.
+1. Solder all resistances first. Make sure to place the correct values on the labeled pads.
 
-**2.** Solder the transistor.
+2. Solder the transistor.
 
-**3.** solder the terminalblocks.
+3. solder the terminalblocks.
 
-**4.** solder the headerpins.
+4. solder the headerpins.
 
-**5.** Last, solder the LM2596 Module. After finish, clean your board.
+5. Last, solder the LM2596 Module. After finish, clean your board.
 
-**6.** On this step we need to plug the board to the DSC Alarm Panel.
+6. On this step we need to plug the board to the DSC Alarm Panel.
 
 :warning: **Warning** I Recomend to unplug your DSC Alarm Panel from power, includding the battery before you plug the board. This is to avoid any short circuit mistake when manipulating powered cables.
 
 Connect each terminal labeled, RED-RED, YEL-YEL, GRN-GRN, BLK-BKL. Then you may power again your DSC Alarm Panel. If everything is ok, a blue LED should light on the LM2596 module.
 
-**7.** Regulate the LM2596 module to the right voltage:
+7. Regulate the LM2596 module to the right voltage:
 With a multimeter, place the points on the OUT + and - pads and measure the voltage.
 
 Use a small (-) screwdriver and turn the potentiometer to start drop the voltage till 3.3v (highly recommended).
 **Double check the voltage and ensure to set the correct tension**
 
-**8.** Plug in your WemosD1 Mini / WemosD1 Mini PRO facing as the board footprint. Make sure that pins labeled on the board match. (dont forget load the firmware first)
+8. Plug in your WemosD1 Mini / WemosD1 Mini PRO facing as the board footprint. Make sure that pins labeled on the board match. (dont forget load the firmware first)
 
-**9.** Final step: place the jumper to the selected voltage.
+9. Final step: place the jumper to the selected voltage.
 
 :warning: **Warning: regulate the LM2596 with 5v or more and plug the jumper on 3.3v pin may fry your ESP8266. Be sure to plug the jumper on the correct position.**
 
