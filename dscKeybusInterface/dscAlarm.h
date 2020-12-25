@@ -302,9 +302,20 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
         }
         if (dsc.panelData[0]==0x87 ) { //relay cmd
             byte rchan;
+            byte pgm=2;
            for (byte relayByte=2;relayByte<4;relayByte++) {
-            for (byte x = 0; x < 8; x++) {
-                 rchan=x + ((relayByte-2) *  8);
+              for (byte x = 0; x < 8; x++) {
+                 
+                if (relayByte==3) {
+                    if (x<2) 
+                        pgm=0;
+                    else if (x==2 || x==3) 
+                        continue;
+                    else if (x>3) 
+                        pgm=6;
+                    
+                }
+                rchan=pgm + x;
 				if (bitRead(dsc.panelData[relayByte], x)) {
                    relayStatus[rchan]=true;
                 } else { 

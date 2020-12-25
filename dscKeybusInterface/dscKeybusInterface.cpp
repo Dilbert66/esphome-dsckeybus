@@ -648,11 +648,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
        //set our response data for the 0x11 supervisory request
        if (panelVersion < 3) {
             switch (address) {
-            //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 16
-            //11111111 1 00111111 11111111 11111111 00111111 11111111 11111111 11111111 13
-            // 1111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111 slots 9
-            //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 slots 16
-             //for older versions we need to set 2 slots since they expect groups of 4 zones per slot
+                     //for older versions we need to set 2 slots since they expect groups of 4 zones per slot
             case 9:   moduleSlots[2]=set?moduleSlots[2]&0x3f:moduleSlots[2]|~0x3f; //pc5108 
                       moduleSlots[2]=set?moduleSlots[2]&0xcf:moduleSlots[2]|~0xcf;
                       break; 
@@ -662,7 +658,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
             case 11:  moduleSlots[3]=set?moduleSlots[3]&0x3f:moduleSlots[3]|~0x3f;//pc5108
                       moduleSlots[3]=set?moduleSlots[3]&0xcf:moduleSlots[3]|~0xcf;
                       break; 
-            case 18:  moduleSlots[3]=set?moduleSlots[3]&0xfc:moduleSlots[3]|~0xfc;break;  // pc5208 relay board reports as 18
+            case 18:  moduleSlots[3]=set?moduleSlots[3]&0xfc:moduleSlots[3]|~0xfc;break;  // pc5208 relay board reports as 18 but reports on slot 16
             default: return;
         }
            
@@ -680,7 +676,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
             case 14:  if  (maxZones>32) {moduleSlots[3]=set?moduleSlots[3]&0xcf:moduleSlots[3]|~0xcf;}break; //pc5108
             case 16:  if  (maxZones>32) {moduleSlots[5]=set?moduleSlots[5]&0x3f:moduleSlots[5]|~0x3f;}break; //pc5108 (shows on slot24)// reports as 16 in panel
             //reports as 18 in panel
-            case 18:  moduleSlots[3]=set?moduleSlots[3]&0xfc:moduleSlots[3]|~0xfc;break;  // pc5208 relay board reports as 18
+            case 18:  moduleSlots[3]=set?moduleSlots[3]&0xfc:moduleSlots[3]|~0xfc;break;  // pc5208 relay board shows on slot 16 but reports as 18
             default: return;
         }
        }
@@ -710,7 +706,6 @@ zoneMaskType dscKeybusInterface::getUpdateMask(byte address) {
             case 13: if (maxZones>32) {zm.idx=5;zm.mask=0xbf;} break;
             case 14: if (maxZones>32) {zm.idx=5;zm.mask=0xdf;} break;
             case 16: if (maxZones>32) {zm.idx=5;zm.mask=0xef;} break;//5208 sends to slot 15
-            case 18: zm.idx=2;zm.mask=0xfe; break; //relay board 5108 sends to slot 16
             default: zm.idx=0;zm.mask=0;
         }
         return zm;
