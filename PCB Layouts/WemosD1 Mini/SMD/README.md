@@ -26,7 +26,6 @@ Materials and Components:
  * 2N3904 or 2N2222 Transistor
  * LM2596 Module
  * 4 Terminal Blocks (can be 2 terminal blocks x2)
-
  * Optional: M3 screws or standoffs / spacers to secure the board. x4
 
 How to order
