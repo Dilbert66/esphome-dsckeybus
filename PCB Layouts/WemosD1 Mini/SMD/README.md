@@ -77,7 +77,7 @@ Connect each terminal labeled, RED-RED, YEL-YEL, GRN-GRN, BLK-BKL. Then you may 
 2. Regulate the LM2596 module to the right voltage:
 With a multimeter, place the points on the OUT + and - pads and measure the voltage.
 
-Use a small (-) screwdriver and turn the patentiometer to start to drop the voltage till 3.3v (highly recommended)
+Use a small (-) screwdriver and turn the potentiometer to start to drop the voltage till 3.3v (highly recommended)
 **Double check the voltage and ensure you set the correct tension**
 
 3. Plug your WemosD1 Mini / WemosD1 Mini PRO facing as the board footprint. Make sure that pins labeled on the board match. **Don't forget load the firmware first**
