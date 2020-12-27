@@ -31,7 +31,7 @@ Materials and Components:
 How to order
 ------------
 If you think that the board is enough and you dont need to modify it, you can download the `gerber.zip` file and that's all. PCB manufacturer will ask for that file in order for you to start building the board.
-There are a lot of chinese webpages where you can order 5 units for about 2-10dollars, just choose one where the shipping cost isn't too high in your country.
+There are a lot of chinese webpages where you can order 5 units for about 2-10 dollars, just choose one where the shipping cost isn't too high in your country.
 
 Some popular sites:
 
@@ -41,7 +41,7 @@ Some popular sites:
 
 [PCBway](https://www.pcbway.com/setinvite.aspx?inviteid=432106)
 
-You can order the rest of the components on Aliexpress (my favorite) or you may buy them locally at any electronic store
+You can order the rest of the components on Aliexpress (my favorite) or you may buy them locally at any electronic store.
 
 Building
 ------------
