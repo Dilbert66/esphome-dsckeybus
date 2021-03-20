@@ -21,7 +21,8 @@ void disconnectKeybus() {
  
 }
 enum troubleStatus {acStatus,batStatus,trStatus,fireStatus,panicStatus};
-
+   
+   
 class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
  public:
    DSCkeybushome( const char *accessCode="",  unsigned long cmdWaitTime=0)
@@ -37,9 +38,12 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   std::function<void (uint8_t,std::string)> partitionMsgChangeCallback; 
   std::function<void (std::string)> zoneMsgStatusCallback; 
   std::function<void (std::string)> troubleMsgStatusCallback; 
-  std::function<void (uint8_t,bool)> relayChannelChangeCallback;    
-  
-
+  std::function<void (uint8_t,bool)> relayChannelChangeCallback; 
+  std::function<void (std::string)> line1DisplayCallback; 
+  std::function<void (std::string)> line2DisplayCallback;   
+  std::function<void (std::string)> eventInfoCallback; 
+  std::function<void (std::string)> lightsCallback;  
+   
   const std::string STATUS_PENDING = "pending";
   const std::string STATUS_ARM = "armed_away";
   const std::string STATUS_STAY = "armed_home";
@@ -64,17 +68,31 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   void onZoneMsgStatus(std::function<void (std::string msg)> callback) { zoneMsgStatusCallback = callback; }
   void onTroubleMsgStatus(std::function<void (std::string msg)> callback) { troubleMsgStatusCallback = callback; }
   void onRelayChannelChange(std::function<void (uint8_t channel,bool state)> callback) { relayChannelChangeCallback = callback; }
+  
+   void onLine1Display(std::function<void (std::string msg)> callback) { line1DisplayCallback = callback; }
+   void onLine2Display(std::function<void (std::string msg)> callback) { line2DisplayCallback = callback; }
+   void onEventInfo(std::function<void (std::string msg)> callback) { eventInfoCallback = callback; }
+   void onLights(std::function<void (std::string msg)> callback) { lightsCallback = callback; }
+  
+  /*
+    std::function<void (std::string)> line1DisplayCallback; 
+  std::function<void (std::string)> line2DisplayCallback;   
+    std::function<void (std::string)> eventInfoCallback;   
+    */
+  
   char expanderAddr1,expanderAddr2,expanderAddr3;
   byte debug;
   const char *accessCode;
   bool enable05Messages = true;
   unsigned long cmdWaitTime;
+  bool extendedBuffer,partitionChanged,pausedZones;
+  int keypadPartition=0;
   
   private:
     uint8_t zone;
 	byte lastStatus[dscPartitions];
     bool firstrun;
-	
+
     struct zoneType {
         bool tamper;
         bool batteryLow;
@@ -87,7 +105,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     bool relayStatus[16],previousRelayStatus[16];
     bool sendCmd;
     byte system0,system1,previousSystem0,previousSystem1;
-    
+    byte programZones[dscZones];
     
   void setup() override {
       if (debug > 2) 
@@ -251,19 +269,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
           dsc.write("*");
           dsc.write("27##"); //fetch low battery status
         }
-
-   
-        if (debug > 2 )  {  
-            printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);        
-            printTimestamp();
-            Serial.print("[PANEL] ");
-            dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
-            Serial.print(" [");
-            dsc.printPanelCommand();  // Prints the panel command as hex
-            Serial.print("] ");
-            dsc.printPanelMessage();  // Prints the decoded message
-            Serial.println();
-        }
+        processStatus();
         
         if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xBA) { //low battery zones
             for (byte panelByte = 4; panelByte < 8; panelByte++) {
@@ -347,11 +353,12 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 
     if (!forceDisconnect && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read and statuses were changed
 		dsc.statusChanged = false;                   // Reset the status tracking flag
-		
+
         if (debug == 1 )  
             printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
         
-  
+        //setLights(keypadPartition);
+        setStatus(keypadPartition);
   
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
 		// handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
@@ -409,15 +416,15 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 		for (byte partition = 0; partition < dscPartitions; partition++) {
 			
 		if (dsc.disabled[partition]) continue; //skip disabled or partitions in install programming	
-				 
+				 /*
 			if (lastStatus[partition] != dsc.status[partition]  ) {
 				lastStatus[partition]=dsc.status[partition];
 				char msg[50];
 				sprintf(msg,"%02X: %s", dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
-				if (enable05Messages) partitionMsgChangeCallback(partition+1,msg);
+				//if (enable05Messages) partitionMsgChangeCallback(partition+1,msg);
 
 			}
-
+*/
 			// Publishes alarm status
 			if (dsc.alarmChanged[partition] ) {
 				dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
@@ -672,82 +679,1198 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
         zoneMsgStatusCallback(zoneStatusMsg); 
     previousZoneStatusMsg=zoneStatusMsg;
   }
-const __FlashStringHelper *statusText(uint8_t statusCode)
-{
-    switch (statusCode) {
-        case 0x01: return F("Ready");
-        case 0x02: return F("Stay zones open");
-        case 0x03: return F("Zones open");
-        case 0x04: return F("Armed stay");
-        case 0x05: return F("Armed away");
-        case 0x06: return F("No entry delay");
-        case 0x07: return F("Failed to arm");
-        case 0x08: return F("Exit delay");
-        case 0x09: return F("No entry delay");
-        case 0x0B: return F("Quick exit");
-        case 0x0C: return F("Entry delay");
-        case 0x0D: return F("Alarm memory");
-        case 0x10: return F("Keypad lockout");
-        case 0x11: return F("Alarm");
-        case 0x14: return F("Auto-arm");
-        case 0x15: return F("Arm with bypass");
-        case 0x16: return F("No entry delay");
-        case 0x17: return F("Power failure");//??? not sure
-        case 0x22: return F("Alarm memory");
-        case 0x33: return F("Busy");
-        case 0x3D: return F("Disarmed");
-        case 0x3E: return F("Disarmed");
-        case 0x40: return F("Keypad blanked");
-        case 0x8A: return F("Activate zones");
-        case 0x8B: return F("Quick exit");
-        case 0x8E: return F("Invalid option");
-        case 0x8F: return F("Invalid code");
-        case 0x9E: return F("Enter * code");
-        case 0x9F: return F("Access code");
-        case 0xA0: return F("Zone bypass");
-        case 0xA1: return F("Trouble menu");
-        case 0xA2: return F("Alarm memory");
-        case 0xA3: return F("Door chime on");
-        case 0xA4: return F("Door chime off");
-        case 0xA5: return F("Master code");
-        case 0xA6: return F("Access codes");
-        case 0xA7: return F("Enter new code");
-        case 0xA9: return F("User function");
-        case 0xAA: return F("Time and Date");
-        case 0xAB: return F("Auto-arm time");
-        case 0xAC: return F("Auto-arm on");
-        case 0xAD: return F("Auto-arm off");
-        case 0xAF: return F("System test");
-        case 0xB0: return F("Enable DLS");
-        case 0xB2: return F("Command output");
-        case 0xB7: return F("Installer code");
-        case 0xB8: return F("Enter * code");
-        case 0xB9: return F("Zone tamper");
-        case 0xBA: return F("Zones low batt.");
-        case 0xC6: return F("Zone fault menu");
-        case 0xC8: return F("Service required");
-        case 0xD0: return F("Keypads low batt");
-        case 0xD1: return F("Wireless low bat");
-        case 0xE4: return F("Installer menu");
-        case 0xE5: return F("Keypad slot");
-        case 0xE6: return F("Input: 2 digits");
-        case 0xE7: return F("Input: 3 digits");
-        case 0xE8: return F("Input: 4 digits");
-        case 0xEA: return F("Code: 2 digits");
-        case 0xEB: return F("Code: 4 digits");
-        case 0xEC: return F("Input: 6 digits");
-        case 0xED: return F("Input: 32 digits");
-        case 0xEE: return F("Input: option");
-        case 0xF0: return F("Function key 1");
-        case 0xF1: return F("Function key 2");
-        case 0xF2: return F("Function key 3");
-        case 0xF3: return F("Function key 4");
-        case 0xF4: return F("Function key 5");
-        case 0xF8: return F("Keypad program");
-        case 0xFF: return F("Disabled");
-        default: return F("Unknown");
+
+
+//
+void resetZones() {}
+
+void setStatus(byte partition) {
+  static byte lastStatus[8];
+  if ( dsc.status[partition] == lastStatus[partition] ) return;
+  lastStatus[partition] = dsc.status[partition];
+
+    std::string lcdLine1;
+    std::string lcdLine2;
+    switch (dsc.status[partition]) {
+      case 0x01: lcdLine1 = "Partition    ";
+                 lcdLine2 = "ready           ";
+                 resetZones(); break;
+      case 0x02: lcdLine1 = "Stay         ";
+                 lcdLine2 = "zones open      ";
+                 resetZones(); break;
+      case 0x03: lcdLine1 = "Zones open   ";
+                 lcdLine2 = " ";
+                 resetZones(); break;
+      case 0x04: lcdLine1 = "Armed:       ";
+                 lcdLine2 = "Stay            ";
+                 resetZones(); break;
+      case 0x05: lcdLine1 = "Armed:       ";
+                 lcdLine2 = "Away            ";
+                 resetZones(); break;
+      case 0x06: lcdLine1 = "Armed: Stay  ";
+                 lcdLine2 = "No entry delay  ";
+                 resetZones(); break;
+      case 0x07: lcdLine1 = "Failed       ";
+                 lcdLine2 = "to arm          "; break;
+      case 0x08: lcdLine1 = "Exit delay   ";
+                 lcdLine2 = "in progress     ";
+                 resetZones(); break;
+      case 0x09: lcdLine1 = "Arming:      ";
+                 lcdLine2 = "No entry delay  "; break;
+      case 0x0B: lcdLine1 = "Quick exit   ";
+                 lcdLine2 = "in progress     "; break;
+      case 0x0C: lcdLine1 = "Entry delay  ";
+                 lcdLine2 = "in progress     "; break;
+      case 0x0D: lcdLine1 = "Entry delay  ";
+                 lcdLine2 = "after alarm     "; break;
+      case 0x0E: lcdLine1 = "Not          ";
+                 lcdLine2 = "available       "; break;
+      case 0x10: lcdLine1 = "Keypad       ";
+                 lcdLine2 = "lockout         "; break;
+      case 0x11: lcdLine1 = "Partition    ";
+                 lcdLine2 = "in alarm        "; break;
+      case 0x12: lcdLine1 = "Battery check";
+                 lcdLine2 = "in progress     "; break;
+      case 0x14: lcdLine1 = "Auto-arm     ";
+                 lcdLine2 = "in progress     "; break;
+      case 0x15: lcdLine1 = "Arming with  ";
+                 lcdLine2 = "bypass zones    "; break;
+      case 0x16: lcdLine1 = "Armed: Away  ";
+                 lcdLine2 = "No entry delay  ";
+                 resetZones(); break;
+      case 0x17: lcdLine1 = "Power saving ";
+                 lcdLine2 = "Keypad blanked  "; break;
+      case 0x19: lcdLine1 = "Alarm        ";
+                 lcdLine2 = "occurred        "; break;
+      case 0x22: lcdLine1 = "Recent       ";
+                 lcdLine2 = "closing         "; break;
+      case 0x2F: lcdLine1 = "Keypad LCD   ";
+                 lcdLine2 = "test            "; break;
+      case 0x33: lcdLine1 = "Command      ";
+                 lcdLine2 = "output active   "; break;
+      case 0x3D: lcdLine1 = "Alarm        ";
+                 lcdLine2 = "occurred        "; break;
+      case 0x3E: lcdLine1 = "Disarmed     ";
+                 lcdLine2 = " "; break;
+      case 0x40: lcdLine1 = "Keypad       ";
+                 lcdLine2 = "blanked         "; break;
+      case 0x8A: lcdLine1 = "Activate     ";
+                 lcdLine2 = "stay/away zones "; break;
+      case 0x8B: lcdLine1 = "Quick exit   ";
+                 lcdLine2 = " "; break;
+      case 0x8E: lcdLine1 = "Invalid      ";
+                 lcdLine2 = "option          "; break;
+      case 0x8F: lcdLine1 = "Invalid      ";
+                 lcdLine2 = "access code     "; break;
+      case 0x9E: lcdLine1 = "Enter *      ";
+                 lcdLine2 = "function code   "; break;
+      case 0x9F: lcdLine1 = "Enter        ";
+                 lcdLine2 = "access code     "; break;
+      case 0xA0: lcdLine1 = "*1:          ";
+                 lcdLine2 = "Zone bypass     "; break;
+      case 0xA1: lcdLine1 = "*2:          ";
+                 lcdLine2 = "Trouble menu    "; break;
+      case 0xA2: lcdLine1 = "*3:          ";
+                 lcdLine2 = "Alarm memory    "; break;
+      case 0xA3: lcdLine1 = "Door         ";
+                 lcdLine2 = "chime enabled   "; break;
+      case 0xA4: lcdLine1 = "Door         ";
+                 lcdLine2 = "chime disabled  "; break;
+      case 0xA5: lcdLine1 = "Enter        ";
+                 lcdLine2 = "master code     "; break;
+      case 0xA6: lcdLine1 = "*5:          ";
+                 lcdLine2 = "Access codes    "; break;
+      case 0xA7: lcdLine1 = "*5 Enter new ";
+                 lcdLine2 = "4-digit code    "; break;
+      case 0xA9: lcdLine1 = "*6:          ";
+                 lcdLine2 = "User functions  "; break;
+      case 0xAA: lcdLine1 = "*6:          ";
+                 lcdLine2 = "Time and date   "; break;
+      case 0xAB: lcdLine1 = "*6:          ";
+                 lcdLine2 = "Auto-arm time   "; break;
+      case 0xAC: lcdLine1 = "*6:          ";
+                 lcdLine2 = "Auto-arm on     "; break;
+      case 0xAD: lcdLine1 = "*6:          ";
+                 lcdLine2 = "Auto-arm off    "; break;
+      case 0xAF: lcdLine1 = "*6:          ";
+                 lcdLine2 = "System test     "; break;
+      case 0xB0: lcdLine1 = "*6:          ";
+                 lcdLine2 = "Enable DLS      "; break;
+      case 0xB2: lcdLine1 = "*7:          ";
+                 lcdLine2 = "Command output  "; break;
+      case 0xB7: lcdLine1 = "Enter        ";
+                 lcdLine2 = "installer code  "; break;
+      case 0xB8: lcdLine1 = "Enter *      ";
+                 lcdLine2 = "function code   "; break;
+      case 0xB9: lcdLine1 = "*2:          ";
+                 lcdLine2 = "Zone tamper menu"; break;
+      case 0xBA: lcdLine1 = "*2: Zones    ";
+                 lcdLine2 = "low battery     "; break;
+      case 0xBC: lcdLine1 = "*5 Enter new ";
+                 lcdLine2 = "6-digit code    "; break;
+      case 0xC6: lcdLine1 = "*2:          ";
+                 lcdLine2 = "Zone fault menu "; break;
+      case 0xC7: lcdLine1 = "Partition    ";
+                 lcdLine2 = "disabled        "; break;
+      case 0xC8: lcdLine1 = "*2:          ";
+                 lcdLine2 = "Service required"; break;
+      case 0xCE: lcdLine1 = "Active camera";
+                 lcdLine2 = "monitor select. "; break;
+      case 0xD0: lcdLine1 = "*2: Keypads  ";
+                 lcdLine2 = "low battery     "; break;
+      case 0xD1: lcdLine1 = "*2: Keyfobs  ";
+                 lcdLine2 = "low battery     "; break;
+      case 0xD4: lcdLine1 = "*2: Sensors  ";
+                 lcdLine2 = "RF Delinquency  "; break;
+      case 0xE4: lcdLine1 = "*8: Installer";
+                 lcdLine2 = "menu, 3 digits  "; break;
+      case 0xE5: lcdLine1 = "Keypad       ";
+                 lcdLine2 = "slot assignment "; break;
+      case 0xE6: lcdLine1 = "Input:       ";
+                 lcdLine2 = "2 digits        "; break;
+      case 0xE7: lcdLine1 = "Input:       ";
+                 lcdLine2 = "3 digits        "; break;
+      case 0xE8: lcdLine1 = "Input:       ";
+                 lcdLine2 = "4 digits        "; break;
+      case 0xE9: lcdLine1 = "Input:       ";
+                 lcdLine2 = "5 digits        "; break;
+      case 0xEA: lcdLine1 = "Input HEX:   ";
+                 lcdLine2 = "2 digits        "; break;
+      case 0xEB: lcdLine1 = "Input HEX:   ";
+                 lcdLine2 = "4 digits        "; break;
+      case 0xEC: lcdLine1 = "Input HEX:   ";
+                 lcdLine2 = "6 digits        "; break;
+      case 0xED: lcdLine1 = "Input HEX:   ";
+                 lcdLine2 = "32 digits       "; break;
+      case 0xEE: lcdLine1 = "Input: 1     ";
+                 lcdLine2 = "option per zone "; break;
+      case 0xEF: lcdLine1 = "Module       ";
+                 lcdLine2 = "supervision     "; break;
+      case 0xF0: lcdLine1 = "Function     ";
+                 lcdLine2 = "key 1           "; break;
+      case 0xF1: lcdLine1 = "Function     ";
+                 lcdLine2 = "key 2           "; break;
+      case 0xF2: lcdLine1 = "Function     ";
+                 lcdLine2 = "key 3           "; break;
+      case 0xF3: lcdLine1 = "Function     ";
+                 lcdLine2 = "key 4           "; break;
+      case 0xF4: lcdLine1 = "Function     ";
+                 lcdLine2 = "key 5           "; break;
+      case 0xF5: lcdLine1 = "Wireless mod.";
+                 lcdLine2 = "placement test  "; break;
+      case 0xF6: lcdLine1 = "Activate     ";
+                 lcdLine2 = "device for test "; break;
+      case 0xF7: lcdLine1 = "*8: Installer";
+                 lcdLine2 = "menu, 2 digits  "; break;
+      case 0xF8: lcdLine1 = "Keypad       ";
+                 lcdLine2 = "programming     "; break;
+      case 0xFA: lcdLine1 = "Input:       ";
+                 lcdLine2 = "6 digits        "; break;
+      default: lcdLine2 = dsc.status[partition];
     }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+  
 }
+
+
+void setLights(byte partition) {
+  static byte previousLights = 0;
+
+  if ((dsc.lights[partition] != previousLights ) ) {
+   // root["status_lights"] = dsc.lights[partition];
+//callback
+    char out[2];
+     sprintf(out,"%02X ",(char) dsc.lights[partition]);
+    //lightsCallback(out);
+    previousLights = dsc.lights[partition];
+  }
+}
+
+
+// Processes status data not natively handled within the library
+void processStatus() {
+  #ifndef dscClassicSeries
+  switch (dsc.panelData[0]) {
+    case 0x05:
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) ) {
+        
+      }
+      break;
+    case 0x0A:
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) ) {
+        
+      }
+      processProgramZones(4);
+      break;
+    case 0x5D:
+      if ((dsc.panelData[2] & 0x04) == 0x04) {  // Alarm memory zones 1-32
+        processProgramZones(3);
+      }
+      break;
+    case 0xAA: processEventBufferAA(); break;
+    case 0xE6:
+      switch (dsc.panelData[2]) {
+        case 0x01:
+        case 0x02:
+        case 0x03:
+        case 0x04:
+        case 0x05:
+        case 0x06:
+        case 0x20:
+        case 0x21: processProgramZones(5); break;         // Programming zone lights 33-64
+        case 0x18: if ((dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5); break;  // Alarm memory zones 33-64
+      }
+      break;
+    case 0xEC: processEventBufferEC(); break;
+  }
+  #endif
+}
+
+
+void processProgramZones(byte startByte) {
+  byte byteCount = 0;
+  byte zoneStart = 0;
+  if (startByte == 5) zoneStart = 4;
+  /*
+  for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
+    programZones[zoneGroup] = dsc.panelData[startByte + byteCount];
+    byteCount++;
+  }
+*/
+
+  std::string s="";
+  char s1[4];
+  for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
+      for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+        if (bitRead(dsc.panelData[startByte+byteCount],zoneBit)) {
+             sprintf(s1,"%02d ",(zoneBit + 1) + ((zoneGroup - zoneStart) *  8));
+            s.append(s1);
+
+        }
+    }
+        byteCount++;
+  }
+ if (startByte==4)
+    lightsCallback(s);
+
+}
+
+
+void processEventBufferAA() {
+  #ifndef dscClassicSeries
+  if (extendedBuffer) return;  // Skips 0xAA data when 0xEC extended event buffer data is available
+
+  char eventInfo[45] = "Event: ";
+  char charBuffer[4];
+  itoa(dsc.panelData[7], charBuffer, 10);
+  if (dsc.panelData[7] < 10) strcat(eventInfo, "00");
+  else if (dsc.panelData[7] < 100) strcat(eventInfo, "0");
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, " | ");
+
+  byte dscYear3 = dsc.panelData[2] >> 4;
+  byte dscYear4 = dsc.panelData[2] & 0x0F;
+  byte dscMonth = dsc.panelData[2 + 1] << 2; dscMonth >>= 4;
+  byte dscDay1 = dsc.panelData[2 + 1] << 6; dscDay1 >>= 3;
+  byte dscDay2 = dsc.panelData[2 + 2] >> 5;
+  byte dscDay = dscDay1 | dscDay2;
+  byte dscHour = dsc.panelData[2 + 2] & 0x1F;
+  byte dscMinute = dsc.panelData[2 + 3] >> 2;
+
+  if (dscYear3 >= 7) strcat(eventInfo, "19");
+  else strcat(eventInfo, "20");
+  itoa(dscYear3, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  itoa(dscYear4, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ".");
+  if (dscMonth < 10) strcat(eventInfo, "0");
+  itoa(dscMonth, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ".");
+  if (dscDay < 10) strcat(eventInfo, "0");
+  itoa(dscDay, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, " ");
+  if (dscHour < 10) strcat(eventInfo, "0");
+  itoa(dscHour, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ":");
+  if (dscMinute < 10) strcat(eventInfo, "0");
+  itoa(dscMinute, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+
+  strcat(eventInfo, " | Partition ");
+  itoa(dsc.panelData[3] >> 6, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+
+
+   eventInfoCallback(eventInfo);
+  
+
+  switch (dsc.panelData[5] & 0x03) {
+    case 0x00: printPanelStatus0(6); break;
+    case 0x01: printPanelStatus1(6); break;
+    case 0x02: printPanelStatus2(6); break;
+    case 0x03: printPanelStatus3(6); break;
+  }
+  #endif
+}
+
+
+void processEventBufferEC() {
+  #ifndef dscClassicSeries
+  if (!extendedBuffer) extendedBuffer = true;
+
+  char eventInfo[45] = "Event: ";
+  char charBuffer[4];
+  int eventNumber = dsc.panelData[9] + ((dsc.panelData[4] >> 6) * 256);
+  itoa(eventNumber, charBuffer, 10);
+  if (eventNumber < 10) strcat(eventInfo, "00");
+  else if (eventNumber < 100) strcat(eventInfo, "0");
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, " | ");
+
+  byte dscYear3 = dsc.panelData[3] >> 4;
+  byte dscYear4 = dsc.panelData[3] & 0x0F;
+  byte dscMonth = dsc.panelData[4] << 2; dscMonth >>= 4;
+  byte dscDay1 = dsc.panelData[4] << 6; dscDay1 >>= 3;
+  byte dscDay2 = dsc.panelData[5] >> 5;
+  byte dscDay = dscDay1 | dscDay2;
+  byte dscHour = dsc.panelData[5] & 0x1F;
+  byte dscMinute = dsc.panelData[6] >> 2;
+
+  if (dscYear3 >= 7) strcat(eventInfo, "19");
+  else strcat(eventInfo, "20");
+  itoa(dscYear3, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  itoa(dscYear4, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ".");
+  if (dscMonth < 10) strcat(eventInfo, "0");
+  itoa(dscMonth, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ".");
+  if (dscDay < 10) strcat(eventInfo, "0");
+  itoa(dscDay, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, " ");
+  if (dscHour < 10) strcat(eventInfo, "0");
+  itoa(dscHour, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ":");
+  if (dscMinute < 10) strcat(eventInfo, "0");
+  itoa(dscMinute, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+
+  if (dsc.panelData[2] != 0) {
+    strcat(eventInfo, " | Partition ");
+
+    byte bitCount = 0;
+    for (byte bit = 0; bit <= 7; bit++) {
+      if (bitRead(dsc.panelData[2], bit)) {
+        itoa((bitCount + 1), charBuffer, 10);
+      }
+      bitCount++;
+    }
+    strcat(eventInfo, charBuffer);
+  }
+
+    eventInfoCallback(eventInfo);
+  
+
+  switch (dsc.panelData[7]) {
+    case 0x00: printPanelStatus0(8); break;
+    case 0x01: printPanelStatus1(8); break;
+    case 0x02: printPanelStatus2(8); break;
+    case 0x03: printPanelStatus3(8); break;
+    case 0x04: printPanelStatus4(8); break;
+    case 0x05: printPanelStatus5(8); break;
+    case 0x14: printPanelStatus14(8); break;
+    case 0x16: printPanelStatus16(8); break;
+    case 0x17: printPanelStatus17(8); break;
+    case 0x18: printPanelStatus18(8); break;
+    case 0x1B: printPanelStatus1B(8); break;
+  }
+  #endif
+}
+
+
+void printPanelStatus0(byte panelByte) {
+  bool decoded = true;
+
+    std::string lcdLine1;
+    std::string lcdLine2;
+  switch (dsc.panelData[panelByte]) {
+    case 0x49: lcdLine1 = "Duress alarm";
+               lcdLine2 = " "; break;
+    case 0x4A: lcdLine1 = "Disarmed:";
+               lcdLine2 = "Alarm memory"; break;
+    case 0x4B: lcdLine1 = "Recent";
+               lcdLine2 = "closing alarm"; break;
+    case 0x4C: lcdLine1 = "Zone expander";
+               lcdLine2 = "suprvis. alarm"; break;
+    case 0x4D: lcdLine1 = "Zone expander";
+               lcdLine2 = "suprvis. restore"; break;
+    case 0x4E: lcdLine1 = "Keypad Fire";
+               lcdLine2 = "alarm"; break;
+    case 0x4F: lcdLine1 = "Keypad Aux";
+               lcdLine2 = "alarm"; break;
+    case 0x50: lcdLine1 = "Keypad Panic";
+               lcdLine2 = "alarm"; break;
+    case 0x51: lcdLine1 = "Auxiliary input";
+               lcdLine2 = "alarm"; break;
+    case 0x52: lcdLine1 = "Keypad Fire";
+               lcdLine2 = "alarm restored"; break;
+    case 0x53: lcdLine1 = "Keypad Aux";
+               lcdLine2 = "alarm restored"; break;
+    case 0x54: lcdLine1 = "Keypad Panic";
+               lcdLine2 = "alarm restored"; break;
+    case 0x55: lcdLine1 = "Auxiliary input";
+               lcdLine2 = "alarm restored"; break;
+    case 0x98: lcdLine1 = "Keypad";
+               lcdLine2 = "lockout"; break;
+    case 0xBE: lcdLine1 = "Armed:";
+               lcdLine2 = "Partial"; break;
+    case 0xBF: lcdLine1 = "Armed:";
+               lcdLine2 = "Special"; break;
+    case 0xE5: lcdLine1 = "Auto-arm";
+               lcdLine2 = "cancelled"; break;
+    case 0xE6: lcdLine1 = "Disarmed:";
+               lcdLine2 = "Special"; break;
+    case 0xE7: lcdLine1 = "Panel battery";
+               lcdLine2 = "trouble"; break;
+    case 0xE8: lcdLine1 = "Panel AC power";
+               lcdLine2 = "trouble"; break;
+    case 0xE9: lcdLine1 = "Bell trouble";
+               lcdLine2 = " "; break;
+    case 0xEA: lcdLine1 = "Fire zone";
+               lcdLine2 = "trouble"; break;
+    case 0xEB: lcdLine1 = "Panel aux supply";
+               lcdLine2 = "trouble"; break;
+    case 0xEC: lcdLine1 = "Telephone line";
+               lcdLine2 = "trouble"; break;
+    case 0xEF: lcdLine1 = "Panel battery";
+               lcdLine2 = "restored"; break;
+    case 0xF0: lcdLine1 = "Panel AC power";
+               lcdLine2 = "restored"; break;
+    case 0xF1: lcdLine1 = "Bell restored";
+               lcdLine2 = " "; break;
+    case 0xF2: lcdLine1 = "Fire zone";
+               lcdLine2 = "trouble restored"; break;
+    case 0xF3: lcdLine1 = "Panel aux supply";
+               lcdLine2 = "restored"; break;
+    case 0xF4: lcdLine1 = "Telephone line";
+               lcdLine2 = "restored"; break;
+    case 0xF7: lcdLine1 = "Phone 1 FTC";
+               lcdLine2 = " "; break;
+    case 0xF8: lcdLine1 = "Phone 2 FTC";
+               lcdLine2 = " "; break;
+    case 0xF9: lcdLine1 = "Event buffer";
+               lcdLine2 = "threshold"; break;
+    case 0xFA: lcdLine1 = "DLS lead-in";
+               lcdLine2 = " "; break;
+    case 0xFB: lcdLine1 = "DLS lead-out";
+               lcdLine2 = " "; break;
+    case 0xFE: lcdLine1 = "Periodic test";
+               lcdLine2 = "transmission"; break;
+    case 0xFF: lcdLine1 = "System test";
+               lcdLine2 = " "; break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] >= 0x09 && dsc.panelData[panelByte] <= 0x28) {
+    strcpy(lcdMessage, "Zone alarm: ");
+    itoa(dsc.panelData[panelByte] - 8, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x29 && dsc.panelData[panelByte] <= 0x48) {
+    lcdLine1 = "Zone alarm";
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 40, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x56 && dsc.panelData[panelByte] <= 0x75) {
+    strcpy(lcdMessage, "Zone tamper: ");
+    itoa(dsc.panelData[panelByte] - 85, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x76 && dsc.panelData[panelByte] <= 0x95) {
+    lcdLine1 = "Zone tamper";
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 117, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x99 && dsc.panelData[panelByte] <= 0xBD) {
+    lcdLine1 = "Armed:";
+    byte dscCode = dsc.panelData[panelByte] - 0x98;
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xC0 && dsc.panelData[panelByte] <= 0xE4) {
+    lcdLine1 = "Disarmed:";
+    byte dscCode = dsc.panelData[panelByte] - 0xBF;
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+void printPanelStatus1(byte panelByte) {
+  bool decoded = true;
+    std::string lcdLine1;
+    std::string lcdLine2;
+  switch (dsc.panelData[panelByte]) {
+    case 0x03: lcdLine1 = "Cross zone";
+               lcdLine2 = "alarm"; break;
+    case 0x04: lcdLine1 = "Delinquency";
+               lcdLine2 = "alarm"; break;
+    case 0x05: lcdLine1 = "Late to close";
+               lcdLine2 = " "; break;
+    case 0x29: lcdLine1 = "Downloading";
+               lcdLine2 = "forced answer"; break;
+    case 0x2B: lcdLine1 = "Armed:";
+               lcdLine2 = "Auto-arm"; break;
+    case 0xAC: lcdLine1 = "Exit installer";
+               lcdLine2 = "programming"; break;
+    case 0xAD: lcdLine1 = "Enter installer";
+               lcdLine2 = "programming"; break;
+    case 0xAE: lcdLine1 = "Walk test";
+               lcdLine2 = "end"; break;
+    case 0xAF: lcdLine1 = "Walk test";
+               lcdLine2 = "begin"; break;
+    case 0xD0: lcdLine1 = "Command";
+               lcdLine2 = "output 4"; break;
+    case 0xD1: lcdLine1 = "Exit fault";
+               lcdLine2 = "pre-alert"; break;
+    case 0xD2: lcdLine1 = "Armed:";
+               lcdLine2 = "Entry delay"; break;
+    case 0xD3: lcdLine1 = "Downlook remote";
+               lcdLine2 = "trigger"; break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+  if (dsc.panelData[panelByte] >= 0x24 && dsc.panelData[panelByte] <= 0x28) {
+    byte dscCode = dsc.panelData[panelByte] - 0x03;
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x2C && dsc.panelData[panelByte] <= 0x4B) {
+    lcdLine1 = "Zone battery";
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 43, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x4C && dsc.panelData[panelByte] <= 0x6B) {
+    lcdLine1 = "Zone battery";
+    strcpy(lcdMessage, "low: ");
+    itoa(dsc.panelData[panelByte] - 75, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x6C && dsc.panelData[panelByte] <= 0x8B) {
+    lcdLine1 = "Zone fault";
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 107, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x8C && dsc.panelData[panelByte] <= 0xAB) {
+    strcpy(lcdMessage, "Zone fault: ");
+    itoa(dsc.panelData[panelByte] - 139, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xB0 && dsc.panelData[panelByte] <= 0xCF) {
+    strcpy(lcdMessage, "Zone bypass: ");
+    itoa(dsc.panelData[panelByte] - 175, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+void printPanelStatus2(byte panelByte) {
+  bool decoded = true;
+    std::string lcdLine1;
+    std::string lcdLine2;
+  switch (dsc.panelData[panelByte]) {
+    case 0x2A: lcdLine1 = "Quick exit";
+               lcdLine2 = " "; break;
+    case 0x63: lcdLine1 = "Keybus fault";
+               lcdLine2 = "restored"; break;
+    case 0x64: lcdLine1 = "Keybus fault";
+               lcdLine2 = " "; break;
+    case 0x66: lcdLine1 = "*1: Zone bypass";
+               lcdLine2 = "programming"; break;
+    case 0x67: lcdLine1 = "Command";
+               lcdLine2 = "output 1"; break;
+    case 0x68: lcdLine1 = "Command";
+               lcdLine2 = "output 2"; break;
+    case 0x69: lcdLine1 = "Command";
+               lcdLine2 = "output 3"; break;
+    case 0x8C: lcdLine1 = "Cold start";
+               lcdLine2 = " "; break;
+    case 0x8D: lcdLine1 = "Warm start";
+               lcdLine2 = " "; break;
+    case 0x8E: lcdLine1 = "Panel factory";
+               lcdLine2 = "default"; break;
+    case 0x91: lcdLine1 = "Swinger shutdown";
+               lcdLine2 = " "; break;
+    case 0x93: lcdLine1 = "Disarmed:";
+               lcdLine2 = "Keyswitch"; break;
+    case 0x96: lcdLine1 = "Armed:";
+               lcdLine2 = "Keyswitch"; break;
+    case 0x97: lcdLine1 = "Armed:";
+               lcdLine2 = "Keypad away"; break;
+    case 0x98: lcdLine1 = "Armed:";
+               lcdLine2 = "Quick-arm"; break;
+    case 0x99: lcdLine1 = "Activate";
+               lcdLine2 = "stay/away zones"; break;
+    case 0x9A: lcdLine1 = "Armed:";
+               lcdLine2 = "Stay"; break;
+    case 0x9B: lcdLine1 = "Armed:";
+               lcdLine2 = "Away"; break;
+    case 0x9C: lcdLine1 = "Armed:";
+               lcdLine2 = "No entry delay"; break;
+    case 0xFF: lcdLine1 = "Zone expander";
+               lcdLine2 = "trouble: 1"; break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] >= 0x9E && dsc.panelData[panelByte] <= 0xC2) {
+    byte dscCode = dsc.panelData[panelByte] - 0x9D;
+    lcdLine1 = "*1: ";
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xC3 && dsc.panelData[panelByte] <= 0xC5) {
+    byte dscCode = dsc.panelData[panelByte] - 0xA0;
+    lcdLine1 = "*5: ";
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xC6 && dsc.panelData[panelByte] <= 0xE5) {
+    byte dscCode = dsc.panelData[panelByte] - 0xC5;
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xE6 && dsc.panelData[panelByte] <= 0xE8) {
+    byte dscCode = dsc.panelData[panelByte] - 0xC3;
+    lcdLine1 = "*6: ";
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xE9 && dsc.panelData[panelByte] <= 0xF0) {
+    lcdLine1 = "Keypad restored:";
+    strcpy(lcdMessage, "Slot ");
+    itoa(dsc.panelData[panelByte] - 232, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xF1 && dsc.panelData[panelByte] <= 0xF8) {
+    lcdLine1 = "Keypad trouble:";
+    strcpy(lcdMessage, "Slot ");
+    itoa(dsc.panelData[panelByte] - 240, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xF9 && dsc.panelData[panelByte] <= 0xFE) {
+    strcpy(lcdMessage, "Zone expander ");
+    itoa(dsc.panelData[panelByte] - 248, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = "restored";
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+void printPanelStatus3(byte panelByte) {
+  bool decoded = true;
+    std::string lcdLine1;
+    std::string lcdLine2;
+  switch (dsc.panelData[panelByte]) {
+    case 0x05: lcdLine1 = "PC/RF5132:";
+               lcdLine2 = "Suprvis. restore"; break;
+    case 0x06: lcdLine1 = "PC/RF5132:";
+               lcdLine2 = "Suprvis. trouble"; break;
+    case 0x09: lcdLine1 = "PC5204:";
+               lcdLine2 = "Suprvis. restore"; break;
+    case 0x0A: lcdLine1 = "PC5204:";
+               lcdLine2 = "Suprvis. trouble"; break;
+    case 0x17: lcdLine1 = "Zone expander 7";
+               lcdLine2 = "restored"; break;
+    case 0x18: lcdLine1 = "Zone expander 7";
+               lcdLine2 = "trouble"; break;
+    case 0x41: lcdLine1 = "PC/RF5132:";
+               lcdLine2 = "Tamper restored"; break;
+    case 0x42: lcdLine1 = "PC/RF5132: Tamper";
+               lcdLine2 = " "; break;
+    case 0x43: lcdLine1 = "PC5208: Tamper";
+               lcdLine2 = "restored"; break;
+    case 0x44: lcdLine1 = "PC5208: Tamper";
+               lcdLine2 = " "; break;
+    case 0x45: lcdLine1 = "PC5204: Tamper";
+               lcdLine2 = "restored"; break;
+    case 0x46: lcdLine1 = "PC5204: Tamper";
+               lcdLine2 = " "; break;
+    case 0x51: lcdLine1 = "Zone expander 7";
+               lcdLine2 = "tamper restored"; break;
+    case 0x52: lcdLine1 = "Zone expander 7";
+               lcdLine2 = "tamper"; break;
+    case 0xB3: lcdLine1 = "PC5204:";
+               lcdLine2 = "Battery restored"; break;
+    case 0xB4: lcdLine1 = "PC5204:";
+               lcdLine2 = "Battery trouble"; break;
+    case 0xB5: lcdLine1 = "PC5204: Aux";
+               lcdLine2 = "supply restored"; break;
+    case 0xB6: lcdLine1 = "PC5204: Aux";
+               lcdLine2 = "supply trouble"; break;
+    case 0xB7: lcdLine1 = "PC5204: Output 1";
+               lcdLine2 = "restored"; break;
+    case 0xB8: lcdLine1 = "PC5204: Output 1";
+               lcdLine2 = "trouble"; break;
+    case 0xFF: lcdLine1 = "Extended status";
+               lcdLine2 = " "; break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] <= 0x04) {
+    strcpy(lcdMessage, "Zone expander ");
+    itoa(dsc.panelData[panelByte] + 2, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = "trouble";
+    return;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x35 && dsc.panelData[panelByte] <= 0x3A) {
+    strcpy(lcdMessage, "Zone expander ");
+    itoa(dsc.panelData[panelByte] - 52, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = "tamper restored";
+    return;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x3B && dsc.panelData[panelByte] <= 0x40) {
+    strcpy(lcdMessage, "Zone expander ");
+    itoa(dsc.panelData[panelByte] - 58, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = "tamper";
+    return;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+void printPanelStatus4(byte panelByte) {
+  bool decoded = true;
+    std::string lcdLine1;
+    std::string lcdLine2;
+  switch (dsc.panelData[panelByte]) {
+    case 0x86: lcdLine1 = "Periodic test";
+               lcdLine2 = "with trouble"; break;
+    case 0x87: lcdLine1 = "Exit fault";
+               lcdLine2 = " "; break;
+    case 0x89: lcdLine1 = "Alarm cancelled";
+               lcdLine2 = " "; break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] <= 0x1F) {
+    strcpy(lcdMessage, "Zone alarm: ");
+    itoa(dsc.panelData[panelByte] + 33, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  else if (dsc.panelData[panelByte] >= 0x20 && dsc.panelData[panelByte] <= 0x3F) {
+    lcdLine1 = "Zone alarm";
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] + 1, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  else if (dsc.panelData[panelByte] >= 0x40 && dsc.panelData[panelByte] <= 0x5F) {
+    strcpy(lcdMessage, "Zone tamper: ");
+    itoa(dsc.panelData[panelByte] - 31, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  else if (dsc.panelData[panelByte] >= 0x60 && dsc.panelData[panelByte] <= 0x7F) {
+    lcdLine1 = "Zone tamper";
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 63, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+void printPanelStatus5(byte panelByte) {
+  bool decoded = true;
+
+    std::string lcdLine1;
+    std::string lcdLine2;
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] <= 0x39) {
+    byte dscCode = dsc.panelData[panelByte] + 0x23;
+    lcdLine1 = "Armed: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x3A && dsc.panelData[panelByte] <= 0x73) {
+    byte dscCode = dsc.panelData[panelByte] - 0x17;
+    lcdLine1 = "Disarmed: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+void printPanelStatus14(byte panelByte) {
+  bool decoded = true;
+
+    std::string lcdLine1;
+    std::string lcdLine2;
+  switch (dsc.panelData[panelByte]) {
+    case 0xC0: lcdLine1 = "TLink";
+               lcdLine2 = "com fault"; break;
+    case 0xC2: lcdLine1 = "Tlink";
+               lcdLine2 = "network fault"; break;
+    case 0xC4: lcdLine1 = "TLink receiver";
+               lcdLine2 = "trouble"; break;
+    case 0xC5: lcdLine1 = "TLink receiver";
+               lcdLine2 = "restored"; break;
+    default: decoded = false;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+void printPanelStatus16(byte panelByte) {
+  bool decoded = true;
+    std::string lcdLine1;
+    std::string lcdLine2;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0x80: lcdLine1 = "Trouble";
+               lcdLine2 = "acknowledged"; break;
+    case 0x81: lcdLine1 = "RF delinquency";
+               lcdLine2 = "trouble"; break;
+    case 0x82: lcdLine1 = "RF delinquency";
+               lcdLine2 = "restore"; break;
+    default: decoded = false;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+void printPanelStatus17(byte panelByte) {
+  bool decoded = true;
+    std::string lcdLine1;
+    std::string lcdLine2;
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] >= 0x4A && dsc.panelData[panelByte] <= 0x83) {
+    byte dscCode = dsc.panelData[panelByte] - 0x27;
+    lcdLine1 = "*1: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] <= 0x24) {
+    byte dscCode = dsc.panelData[panelByte] + 1;
+    lcdLine1 = "*2: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x84 && dsc.panelData[panelByte] <= 0xBD) {
+    byte dscCode = dsc.panelData[panelByte] - 0x61;
+    lcdLine1 = "*2: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x25 && dsc.panelData[panelByte] <= 0x49) {
+    byte dscCode = dsc.panelData[panelByte] - 0x24;
+    lcdLine1 = "*3: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xBE && dsc.panelData[panelByte] <= 0xF7) {
+    byte dscCode = dsc.panelData[panelByte] - 0x9B;
+    lcdLine1 = "*3: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+
+}
+
+
+void printPanelStatus18(byte panelByte) {
+  bool decoded = true;
+
+  char lcdMessage[20];
+  char charBuffer[4];
+    std::string lcdLine1;
+    std::string lcdLine2;
+  if (dsc.panelData[panelByte] <= 0x39) {
+    byte dscCode = dsc.panelData[panelByte] + 0x23;
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine1 = lcdMessage;
+    lcdLine2 = " ";
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x3A && dsc.panelData[panelByte] <= 0x95) {
+    byte dscCode = dsc.panelData[panelByte] - 0x39;
+    lcdLine1 = "*5: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x96 && dsc.panelData[panelByte] <= 0xF1) {
+    byte dscCode = dsc.panelData[panelByte] - 0x95;
+    lcdLine1 = "*6: ";
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcdLine2 = lcdMessage;
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+void printPanelStatus1B(byte panelByte) {
+  bool decoded = true;
+    std::string lcdLine1;
+    std::string lcdLine2;
+  switch (dsc.panelData[panelByte]) {
+    case 0xF1: lcdLine1 = "System reset";
+               lcdLine2 = "transmission"; break;
+    default: decoded = false;
+  }
+
+  if (!decoded) {
+    lcdLine1 = "Unknown data";
+    lcdLine2 = " ";
+  }
+  line1DisplayCallback(lcdLine1);
+  line2DisplayCallback(lcdLine2);
+}
+
+
+
+
+//
 
 
 };

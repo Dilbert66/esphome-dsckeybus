@@ -180,7 +180,7 @@ class dscKeybusInterface {
     // Deprecated
     bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
     static volatile byte currentCmd;
-    
+    char buffer[30];
   private:
     
     void processPanelStatus();
@@ -331,6 +331,7 @@ class dscKeybusInterface {
     static volatile byte statusCmd,moduleCmd,moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
+
 };
 
 #endif  // dscKeybusInterface_h
