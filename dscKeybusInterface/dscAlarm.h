@@ -85,8 +85,8 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   const char *accessCode;
   bool enable05Messages = true;
   unsigned long cmdWaitTime;
-  bool extendedBuffer,partitionChanged,pausedZones;
-  int keypadPartition=0;
+  bool extendedBuffer,partitionChanged;
+  int defaultPartition=1;
   
   private:
     uint8_t zone;
@@ -106,6 +106,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     bool sendCmd;
     byte system0,system1,previousSystem0,previousSystem1;
     byte programZones[dscZones];
+    bool pausedZones;
     
   void setup() override {
       if (debug > 2) 
@@ -121,6 +122,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
 	register_service(&DSCkeybushome::alarm_trigger_fire,"alarm_trigger_fire");
     register_service(&DSCkeybushome::alarm_keypress, "alarm_keypress",{"keys"});
     register_service(&DSCkeybushome::set_zone_fault,"set_zone_fault",{"zone","fault"});
+    register_service(&DSCkeybushome::default_partition,"default_partition",{"partition"});
     
     firstrun=true;
 	systemStatusChangeCallback(STATUS_OFFLINE);
@@ -136,6 +138,11 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     dsc.begin();
   }
   
+void default_partition(int partition) {
+    if (partition > 0) 
+       defaultPartition=partition;
+    
+}
 
 void set_zone_fault (int zone, bool fault) {
 	
@@ -357,8 +364,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
         if (debug == 1 )  
             printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
         
-        //setLights(keypadPartition);
-        setStatus(keypadPartition);
+        setStatus(defaultPartition-1);
   
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
 		// handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
@@ -668,7 +674,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
       if (debug > 2) {
         printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
         printTimestamp();
-        Serial.print("[MODULE] ");Serial.print(dsc.currentCmd,HEX);Serial.print(": ");
+       // Serial.print("[MODULE] ");Serial.print(dsc.currentCmd,HEX);Serial.print(": ");
         dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
         Serial.print(" ");
         dsc.printModuleMessage();  // Prints the decoded message
@@ -682,7 +688,6 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 
 
 //
-void resetZones() {}
 
 void setStatus(byte partition) {
   static byte lastStatus[8];
@@ -694,27 +699,27 @@ void setStatus(byte partition) {
     switch (dsc.status[partition]) {
       case 0x01: lcdLine1 = "Partition    ";
                  lcdLine2 = "ready           ";
-                 resetZones(); break;
+                  if (pausedZones) resetZones();; break;
       case 0x02: lcdLine1 = "Stay         ";
                  lcdLine2 = "zones open      ";
-                 resetZones(); break;
+                  if (pausedZones) resetZones();; break;
       case 0x03: lcdLine1 = "Zones open   ";
                  lcdLine2 = " ";
-                 resetZones(); break;
+                  if (pausedZones) resetZones();; break;
       case 0x04: lcdLine1 = "Armed:       ";
                  lcdLine2 = "Stay            ";
-                 resetZones(); break;
+                  if (pausedZones) resetZones();; break;
       case 0x05: lcdLine1 = "Armed:       ";
                  lcdLine2 = "Away            ";
-                 resetZones(); break;
+                  if (pausedZones) resetZones();; break;
       case 0x06: lcdLine1 = "Armed: Stay  ";
                  lcdLine2 = "No entry delay  ";
-                 resetZones(); break;
+                  if (pausedZones) resetZones();; break;
       case 0x07: lcdLine1 = "Failed       ";
                  lcdLine2 = "to arm          "; break;
       case 0x08: lcdLine1 = "Exit delay   ";
                  lcdLine2 = "in progress     ";
-                 resetZones(); break;
+                  if (pausedZones) resetZones();; break;
       case 0x09: lcdLine1 = "Arming:      ";
                  lcdLine2 = "No entry delay  "; break;
       case 0x0B: lcdLine1 = "Quick exit   ";
@@ -737,7 +742,7 @@ void setStatus(byte partition) {
                  lcdLine2 = "bypass zones    "; break;
       case 0x16: lcdLine1 = "Armed: Away  ";
                  lcdLine2 = "No entry delay  ";
-                 resetZones(); break;
+                  if (pausedZones) resetZones();; break;
       case 0x17: lcdLine1 = "Power saving ";
                  lcdLine2 = "Keypad blanked  "; break;
       case 0x19: lcdLine1 = "Alarm        ";
@@ -874,41 +879,27 @@ void setStatus(byte partition) {
 }
 
 
-void setLights(byte partition) {
-  static byte previousLights = 0;
-
-  if ((dsc.lights[partition] != previousLights ) ) {
-   // root["status_lights"] = dsc.lights[partition];
-//callback
-    char out[2];
-     sprintf(out,"%02X ",(char) dsc.lights[partition]);
-    //lightsCallback(out);
-    previousLights = dsc.lights[partition];
-  }
-}
-
-
 // Processes status data not natively handled within the library
 void processStatus() {
   #ifndef dscClassicSeries
   switch (dsc.panelData[0]) {
     case 0x05:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) ) {
-        
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) && !pausedZones ) {
+          pauseZones();
       }
       break;
     case 0x0A:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) ) {
-        
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8 ) && !pausedZones ) {
+          pauseZones();
       }
-      processProgramZones(4);
+       if (pausedZones) processProgramZones(4);
       break;
     case 0x5D:
       if ((dsc.panelData[2] & 0x04) == 0x04) {  // Alarm memory zones 1-32
-        processProgramZones(3);
+        if (pausedZones) processProgramZones(3);
       }
       break;
-    case 0xAA: processEventBufferAA(); break;
+    case 0xAA:  if (pausedZones) processEventBufferAA(); break;
     case 0xE6:
       switch (dsc.panelData[2]) {
         case 0x01:
@@ -918,11 +909,11 @@ void processStatus() {
         case 0x05:
         case 0x06:
         case 0x20:
-        case 0x21: processProgramZones(5); break;         // Programming zone lights 33-64
-        case 0x18: if ((dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5); break;  // Alarm memory zones 33-64
+        case 0x21:  if (pausedZones) processProgramZones(5); break;         // Programming zone lights 33-64
+        case 0x18: if ( pausedZones &&(dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5); break;  // Alarm memory zones 33-64
       }
       break;
-    case 0xEC: processEventBufferEC(); break;
+    case 0xEC:  if (pausedZones) processEventBufferEC(); break;
   }
   #endif
 }
@@ -951,7 +942,7 @@ void processProgramZones(byte startByte) {
     }
         byteCount++;
   }
- if (startByte==4)
+ if (startByte==4 || startByte==5)
     lightsCallback(s);
 
 }
@@ -1867,10 +1858,30 @@ void printPanelStatus1B(byte panelByte) {
   line2DisplayCallback(lcdLine2);
 }
 
+void pauseZones() {
+  pausedZones = true;
+
+/*
+    root["open_zone_0"] = 0;
+    root["open_zone_1"] = 0;
+    root["open_zone_2"] = 0;
+    root["open_zone_3"] = 0;
+    root["open_zone_4"] = 0;
+    root["open_zone_5"] = 0;
+    root["open_zone_6"] = 0;
+    root["open_zone_7"] = 0;
+*/
+   //clear open zones
+    lightsCallback(""); //clear program line
+}
 
 
+void resetZones() {
+  pausedZones = false;
+  dsc.openZonesStatusChanged = true;
 
-//
+   eventInfoCallback("");
+}
 
 
 };

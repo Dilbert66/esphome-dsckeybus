@@ -39,6 +39,32 @@ const DRAM_ATTR byte dscBufferSize = 50;
 const DRAM_ATTR byte dscReadSize = 16;
 #endif
 
+//start expander
+#if defined(__AVR__)
+const byte maxModules = 4;
+const byte updateQueueSize=5; //zone pending update queue
+#elif defined(ESP8266) || defined(ESP32)
+const byte maxModules = 4;
+const byte updateQueueSize=10; //zone pending update queue
+#endif
+
+    struct zoneMaskType {
+        byte idx;
+        byte mask;
+    };
+
+
+    struct moduleType {
+        byte address;
+        byte fields[4];
+        byte faultBuffer[5];
+        byte zoneStatusMask;
+        byte zoneStatusByte;
+    };
+
+    
+//end expander
+
 // Exit delay target states
 #define DSC_EXIT_STAY 1
 #define DSC_EXIT_AWAY 2
@@ -121,7 +147,7 @@ class dscKeybusInterface {
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
     bool pgmOutputsStatusChanged;
     byte pgmOutputs[2], pgmOutputsChanged[2];
-    byte panelVersion;
+    static byte panelVersion;
 
     /* panelData[] and moduleData[] store panel and keypad/module data in an array: command [0], stop bit by itself [1],
      * followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -163,9 +189,8 @@ class dscKeybusInterface {
     void addRelayModule(); 
     void clearZoneRanges();
     static byte maxZones;
-    static byte panelVersion;
     static bool enableModuleSupervision;    
-    
+    static bool debounce05;
     //end expander
 
   private:
@@ -356,11 +381,13 @@ class dscKeybusInterface {
     static volatile byte isrModuleData[dscReadSize];
     
     //start expander
-    static volatile byte statusCmd,moduleCmd,moduleSubCmd;
-    static volatile bool writeKeyPending,writeModulePending,pendingDeviceUpdate;   
+
+    const byte zoneOpen=3; //fault 
+    const byte zoneClosed=2;// Normal 
+    static volatile bool writeModulePending,pendingDeviceUpdate;   
     static byte outIdx,inIdx;
     static byte moduleIdx;    
-    
+  
     static void prepareResponse(byte); 
     void removeModule(byte address);
     static void setPendingZoneUpdate();
@@ -371,11 +398,16 @@ class dscKeybusInterface {
     static byte getPendingUpdate();
     static void fillBuffer(byte* src,int len);
     static zoneMaskType getUpdateMask(byte address);    
-    volatile byte dscKeybusInterface::moduleCmd;
-    volatile byte dscKeybusInterface::moduleSubCmd;
-    volatile byte dscKeybusInterface::statusCmd;
     static byte maxFields05; 
     static byte maxFields11;
+    static byte writeModuleBit;
+    static volatile byte moduleBufferLength,currentModuleIdx;
+    volatile static byte pendingZoneStatus[6];
+    volatile static byte writeModuleBuffer[6];
+    static moduleType modules[maxModules];
+    static byte moduleSlots[6];
+
+
 
     //end expander
 };
