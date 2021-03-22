@@ -185,12 +185,13 @@ class dscKeybusInterface {
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
     void addModule(byte address); //add zone expanders
-    void updateModules();
+    void updateModules(bool keybusVersion1);
     void addRelayModule(); 
     void clearZoneRanges();
     static byte maxZones;
     static bool enableModuleSupervision;    
     static bool debounce05;
+    static volatile byte currentCmd; 
     //end expander
 
   private:
@@ -376,7 +377,7 @@ class dscKeybusInterface {
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte currentCmd, statusCmd, moduleCmd, moduleSubCmd;
+    static volatile byte statusCmd, moduleCmd, moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize];
     
@@ -393,11 +394,11 @@ class dscKeybusInterface {
     static void setPendingZoneUpdate();
     static void processModuleResponse(byte cmd);
     static void processModuleResponse_0xE6(byte cmd);
-    static void addRequestToQueue(byte slot);
-    static void setSupervisorySlot(byte slot,bool set);
+    void addRequestToQueue(byte slot);
+    void setSupervisorySlot(byte slot,bool set);
     static byte getPendingUpdate();
     static void fillBuffer(byte* src,int len);
-    static zoneMaskType getUpdateMask(byte address);    
+    zoneMaskType getUpdateMask(byte address);    
     static byte maxFields05; 
     static byte maxFields11;
     static byte writeModuleBit;
