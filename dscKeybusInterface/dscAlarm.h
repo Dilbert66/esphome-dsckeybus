@@ -101,12 +101,12 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     } ;
 	
     zoneType zoneStatus[MAXZONES];
-    std::string zoneStatusMsg,previousZoneStatusMsg,systemMsg,previousSystemMsg;  
+    std::string zoneStatusMsg,previousZoneStatusMsg,systemMsg,previousSystemMsg,group1msg,group2msg;  
     bool relayStatus[16],previousRelayStatus[16];
     bool sendCmd;
     byte system0,system1,previousSystem0,previousSystem1;
     byte programZones[dscZones];
-    bool pausedZones;
+    bool pausedZones,decimalInput;
     
   void setup() override {
       if (debug > 2) 
@@ -375,6 +375,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
         if (debug > 0  )  
             printPacket(" Paneldata:",dsc.panelData[0],dsc.panelData,12);
         
+        setLights(defaultPartition-1);
         setStatus(defaultPartition-1);
   
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
@@ -433,15 +434,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 		for (byte partition = 0; partition < dscPartitions; partition++) {
 			
 		if (dsc.disabled[partition]) continue; //skip disabled or partitions in install programming	
-				 /*
-			if (lastStatus[partition] != dsc.status[partition]  ) {
-				lastStatus[partition]=dsc.status[partition];
-				char msg[50];
-				sprintf(msg,"%02X: %s", dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
-				//if (enable05Messages) partitionMsgChangeCallback(partition+1,msg);
 
-			}
-*/
 			// Publishes alarm status
 			if (dsc.alarmChanged[partition] ) {
 				dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
@@ -491,6 +484,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 		//   ...
 		//   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
 		if (dsc.openZonesStatusChanged  ) {
+            char s1[4];
 			dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
 			for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
 				for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
@@ -498,6 +492,17 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 						bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
 						zone=zoneBit + (zoneGroup * 8);
 						if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
+                            
+                            if (!pausedZones) {
+                                sprintf(s1,"%02d ",zone+1);
+                                if (zone < 16) 
+                                    group1msg.append(s1);
+                                else    
+                                    group2msg.append(s1);
+                                group1msg.append(group2msg);
+                                lightsCallback(group1msg);  
+                            }
+                            
 							zoneStatusChangeCallback(zone+1, true);  // Zone open
                             if (zone < MAXZONES)
                                 zoneStatus[zone].open=true;
@@ -633,31 +638,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
         if (previousSystemMsg != systemMsg) 
            troubleMsgStatusCallback(systemMsg);
         previousSystemMsg=systemMsg;
-        /*
-        if (system0 != previousSystem0) {
-            byte diff = system0 ^ previousSystem0;
-            if (bitRead(diff,5)) {
-                if (bitRead(system0,5))
-                    previousSystem0|=0x20;
-                else
-                    previousSystem0&=0xdf;
-                dsc.write("*25##");
-             } else if (bitRead(diff,6)) {
-               if (bitRead(system0,5))
-                    previousSystem0|=0x30;
-                else
-                    previousSystem0&=0xbf;
-                 dsc.write("*26##");
-             } else if (bitRead(diff,7)) {
-                 if (bitRead(system0,5))
-                    previousSystem0|=0x80;
-                else
-                    previousSystem0&=0x7f;
-                dsc.write("*27##");
-             } else previousSystem0=system0;
 
-        }
-        */
 	}
 
     
@@ -701,6 +682,19 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
 
 
 //
+
+
+void setLights(byte partition) {
+  static byte previousLights = 0;
+
+  if ((dsc.lights[partition] != previousLights )) {
+
+    //root["status_lights"] = dsc.lights[partition];
+
+    previousLights = dsc.lights[partition];
+  }
+}
+
 
 void setStatus(byte partition) {
   static byte lastStatus[8];
@@ -840,14 +834,14 @@ void setStatus(byte partition) {
                  lcdLine2 = "low battery     "; break;
       case 0xD4: lcdLine1 = "*2: Sensors  ";
                  lcdLine2 = "RF Delinquency  "; break;
-      case 0xE4: lcdLine1 = "*8: Installer";
+      case 0xE4: lcdLine1 = "*8: Installer"; decimalInput=false;
                  lcdLine2 = "menu, 3 digits  "; break;
       case 0xE5: lcdLine1 = "Keypad       ";
                  lcdLine2 = "slot assignment "; break;
       case 0xE6: lcdLine1 = "Input:       ";
                  lcdLine2 = "2 digits        "; break;
       case 0xE7: lcdLine1 = "Input:       ";
-                 lcdLine2 = "3 digits        "; break;
+                 lcdLine2 = "3 digits        ";decimalInput=true; break;
       case 0xE8: lcdLine1 = "Input:       ";
                  lcdLine2 = "4 digits        "; break;
       case 0xE9: lcdLine1 = "Input:       ";
@@ -878,7 +872,7 @@ void setStatus(byte partition) {
                  lcdLine2 = "placement test  "; break;
       case 0xF6: lcdLine1 = "Activate     ";
                  lcdLine2 = "device for test "; break;
-      case 0xF7: lcdLine1 = "*8: Installer";
+      case 0xF7: lcdLine1 = "*8: Installer"; decimalInput=false;
                  lcdLine2 = "menu, 2 digits  "; break;
       case 0xF8: lcdLine1 = "Keypad       ";
                  lcdLine2 = "programming     "; break;
@@ -913,6 +907,7 @@ void processStatus() {
       }
       break;
     case 0xAA:  if (pausedZones) processEventBufferAA(); break;
+  //  case 0x6E: printPanel_0x6E(); break;
     case 0xE6:
       switch (dsc.panelData[2]) {
         case 0x01:
@@ -932,6 +927,28 @@ void processStatus() {
 }
 
 
+void printPanel_0x6E() {
+      char s1[2];
+  if (decimalInput) {
+    if (dsc.panelData[2] <= 0x63) group1msg.append("0");
+    if (dsc.panelData[2] <= 0x09) group1msg.append("0");
+    sprintf(s1,"%02d",dsc.panelData[2]);
+    group1msg.append(s1);
+  }
+  else  {
+    for (byte panelByte = 2; panelByte <= 5; panelByte ++) {
+      //stream->print(panelData[panelByte] >> 4, HEX);
+      sprintf(s1,"%02x",dsc.panelData[panelByte] >> 4);
+      group1msg.append(s1);
+      //stream->print(panelData[panelByte] & 0x0F, HEX);
+       sprintf(s1,"%02x",dsc.panelData[panelByte] & 0x0f);
+       group1msg.append(s1);
+    }
+  }
+      lightsCallback(group1msg);
+}
+
+
 void processProgramZones(byte startByte) {
   byte byteCount = 0;
   byte zoneStart = 0;
@@ -943,21 +960,23 @@ void processProgramZones(byte startByte) {
   }
 */
 
-  std::string s;
-  char s1[4];
   
+  char s1[4];
+  if (startByte==4 || startByte==3) group1msg="";
+  if (startByte==5) group2msg="";
   for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         if (bitRead(dsc.panelData[startByte+byteCount],zoneBit)) {
              sprintf(s1,"%02d ",(zoneBit + 1) + ((zoneGroup - zoneStart) *  8));
-            s.append(s1);
+                 if (startByte==4 || startByte==3)  group1msg.append(s1);
+                 if (startByte==5) group2msg.append(s1);
 
         }
     }
         byteCount++;
   }
- if (startByte==4 )
-    lightsCallback(s);
+    group1msg.append(group2msg);
+    lightsCallback(group1msg);
 
 }
 
@@ -1886,7 +1905,7 @@ void pauseZones() {
     root["open_zone_7"] = 0;
 */
    //clear open zones
-  //  lightsCallback(""); //clear program line
+    lightsCallback(""); //clear program line
 }
 
 

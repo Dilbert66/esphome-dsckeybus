@@ -55,13 +55,13 @@ zoneMaskType dscKeybusInterface::getUpdateMask(byte address) {
 
         zoneMaskType zm;
         switch (address) {
-            case 9:  zm.idx=2;zm.mask=0xbf; break; //5208
-            case 10: zm.idx=2;zm.mask=0xdf; break; //5208
-            case 11: zm.idx=2;zm.mask=0xef; break;//5208
+            case 9:  zm.idx=2;zm.mask=0xbf; break; //5108
+            case 10: zm.idx=2;zm.mask=0xdf; break; //5108
+            case 11: zm.idx=2;zm.mask=0xef; break;//5108
             case 12: if (maxZones>32) {zm.idx=5;zm.mask=0x7f;} break;
             case 13: if (maxZones>32) {zm.idx=5;zm.mask=0xbf;} break;
             case 14: if (maxZones>32) {zm.idx=5;zm.mask=0xdf;} break;
-            case 16: if (maxZones>32) {zm.idx=5;zm.mask=0xef;} break;//5208 sends to slot 15
+            case 16: if (maxZones>32) {zm.idx=5;zm.mask=0xef;} break;//5108 sends to slot 15
             default: zm.idx=0;zm.mask=0;
         }
         return zm;
@@ -83,7 +83,7 @@ for (int x=0;x<moduleIdx;x++) {
 }
 
 //once we know what panelversion we have, we can then update the modules with the correct info here
-void dscKeybusInterface::updateModules(bool keybusVersion1) {
+void dscKeybusInterface::updateModules() {
           
     //start expander
           //sanity check - we make sure that our module responses fit the cmd size
@@ -114,8 +114,7 @@ void dscKeybusInterface::updateModules(bool keybusVersion1) {
 //add new expander modules and init zone fields
 void dscKeybusInterface::addModule(byte address) {
     
- if (!address) return;
- if (address > 12 && maxZones <=32) return;
+if (!address || (address > 12 && maxZones <=32)) return;
  if (moduleIdx < maxModules ) {
    modules[moduleIdx].address=address;
   // for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
@@ -280,7 +279,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
      byte address=0;
      switch (cmd) {
        case 0x05:   if (inIdx == outIdx) return;
-                    outIdx = (outIdx + 1) % updateQueueSize;
+                    outIdx = (outIdx + 1) % updateQueueSize; // pop entry from queue 
                     fillBuffer((byte*) pendingZoneStatus,maxFields05);
                   
                     break;
@@ -288,7 +287,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 //11111111 1 00111111 11111111 11110011 11111111 11111111 11111111 11111111  slot 11   
 //11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111    slot 9     
        case 0x11:   if (!enableModuleSupervision) return;
-                    fillBuffer((byte*) moduleSlots,maxFields11);
+                    fillBuffer((byte*) moduleSlots,maxFields11); //setup supervisory slot response for devices
                     break;
        case 0x28:   address=9;break;  // the address will depend on the panel request command.
        case 0x33:   address=10;break;

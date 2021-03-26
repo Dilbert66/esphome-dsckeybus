@@ -46,7 +46,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   writePartition = 1;
   pauseStatus = false;
   
-  // star expander
+  // start expander
   maxFields05=4;
   maxFields11=4;
   enableModuleSupervision=false;
@@ -211,7 +211,7 @@ bool dscKeybusInterface::loop() {
       startupCycle = false;
       writeReady = true;
       //start expander
-      updateModules(keybusVersion1);
+      updateModules();
       //end expander
 
     }

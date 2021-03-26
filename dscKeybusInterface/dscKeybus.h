@@ -61,8 +61,6 @@ const byte updateQueueSize=10; //zone pending update queue
         byte zoneStatusMask;
         byte zoneStatusByte;
     };
-
-    
 //end expander
 
 // Exit delay target states
@@ -185,7 +183,7 @@ class dscKeybusInterface {
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
     void addModule(byte address); //add zone expanders
-    void updateModules(bool keybusVersion1);
+    void updateModules();
     void addRelayModule(); 
     void clearZoneRanges();
     static byte maxZones;
@@ -382,13 +380,11 @@ class dscKeybusInterface {
     static volatile byte isrModuleData[dscReadSize];
     
     //start expander
-
     const byte zoneOpen=3; //fault 
     const byte zoneClosed=2;// Normal 
     static volatile bool writeModulePending,pendingDeviceUpdate;   
     static byte outIdx,inIdx;
     static byte moduleIdx;    
-  
     static void prepareResponse(byte); 
     void removeModule(byte address);
     static void setPendingZoneUpdate();
@@ -407,9 +403,6 @@ class dscKeybusInterface {
     volatile static byte writeModuleBuffer[6];
     static moduleType modules[maxModules];
     static byte moduleSlots[6];
-
-
-
     //end expander
 };
 
