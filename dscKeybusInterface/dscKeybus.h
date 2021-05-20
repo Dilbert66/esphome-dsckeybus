@@ -180,6 +180,7 @@ class dscKeybusInterface {
     
     //start expander
     void setZoneFault(byte zone,bool fault) ;
+    void setLCDReceive();
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
     void addModule(byte address); //add zone expanders
@@ -189,7 +190,8 @@ class dscKeybusInterface {
     static byte maxZones;
     static bool enableModuleSupervision;    
     static bool debounce05;
-    static volatile byte currentCmd; 
+    static volatile byte currentCmd;
+    bool forceRedundant;    
     //end expander
 
   private:

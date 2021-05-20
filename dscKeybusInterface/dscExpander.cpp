@@ -77,6 +77,7 @@ for (int x=0;x<moduleIdx;x++) {
         modules[x].faultBuffer[3]=0;
         modules[x].faultBuffer[4]= 0xaa ;  //cksum for 01010101 00000000 
         if (!modules[x].zoneStatusByte) continue;
+        pendingZoneStatus[2]=0xFF;
         pendingZoneStatus[modules[x].zoneStatusByte]&=modules[x].zoneStatusMask; //set update slot
         addRequestToQueue(modules[x].address);  //update queue to indicate pending request
       }
@@ -136,6 +137,12 @@ void dscKeybusInterface::removeModule(byte address) {
     if (idx==moduleIdx) return;
    modules[idx].address=0;
    setSupervisorySlot(address,false); //remove it from the supervisory response
+
+}
+
+void dscKeybusInterface::setLCDReceive() {
+    pendingZoneStatus[0]=0xA5;
+    addRequestToQueue(1);  //update queue to indicate pending request
 
 }
 
@@ -277,6 +284,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 11111111 1 11111111 11111111 11111111 11111111 11111111 11101111 11111111 11111111 16
 */
      byte address=0;
+     
      switch (cmd) {
        case 0x05:   if (inIdx == outIdx) return;
                     outIdx = (outIdx + 1) % updateQueueSize; // pop entry from queue 
@@ -292,6 +300,9 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
        case 0x28:   address=9;break;  // the address will depend on the panel request command.
        case 0x33:   address=10;break;
        case 0x39:   address=11;break;
+       case 0x70:   //process send; 
+                    return;
+       case 0x6E:   pendingZoneStatus[0]=0xFF;return; // lcd response from a5 request.  Clear flag;
        default:     return;            
     }
     

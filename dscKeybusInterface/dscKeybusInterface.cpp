@@ -229,21 +229,21 @@ bool dscKeybusInterface::loop() {
   static byte previousCmdE6_21[dscReadSize];
   switch (panelData[0]) {
     case 0x0A:  // Partition 1 status in programming
-      if (redundantPanelData(previousCmd0A, panelData)) return false;
+      if (redundantPanelData(previousCmd0A, panelData) && !forceRedundant) return false;
       break;
 
     case 0x0F:  // Partition 2 status in programming
-      if (redundantPanelData(previousCmd0F, panelData)) return false;
+      if (redundantPanelData(previousCmd0F, panelData) && !forceRedundant) return false;
       break;
 
     case 0xE6:
-      if (panelData[2] == 0x20 && redundantPanelData(previousCmdE6_20, panelData)) return false;  // Partition 1 status in programming, zone lights 33-64
+      if (panelData[2] == 0x20 && redundantPanelData(previousCmdE6_20, panelData) && !forceRedundant) return false;  // Partition 1 status in programming, zone lights 33-64
       if (panelData[2] == 0x21 && redundantPanelData(previousCmdE6_21, panelData)) return false;  // Partition 2 status in programming
       break;
   }
   if (dscPartitions > 4) {
     static byte previousCmdE6_03[dscReadSize];
-    if (panelData[0] == 0xE6 && panelData[2] == 0x03 && redundantPanelData(previousCmdE6_03, panelData, 8)) return false;  // Status in alarm/programming, partitions 5-8
+    if (panelData[0] == 0xE6 && panelData[2] == 0x03 && redundantPanelData(previousCmdE6_03, panelData, 8) && !forceRedundant) return false;  // Status in alarm/programming, partitions 5-8
   }
 
   // Processes valid panel data
@@ -895,6 +895,8 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
           case 0x28: 
           case 0x33:
           case 0xEB: 
+          case 0x6E:
+          case 0x70:
           case 0x39: processModuleResponse(isrPanelData[0]);break;
           //end expander
           case 0x0A: statusCmd = 0x05; break;
