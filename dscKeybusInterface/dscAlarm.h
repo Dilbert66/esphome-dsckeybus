@@ -100,7 +100,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
         bool alarm;
         bool enabled;
         bool partition;
-        bool bypass;
+        bool bypassed;
     } ;
 	menuLevel currentMenuLevel;
     zoneType zoneStatus[MAXZONES];
@@ -110,7 +110,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     byte system0,system1,previousSystem0,previousSystem1,keySent;
     byte programZones[dscZones];
     bool pausedZones,decimalInput;
-    byte line2Digit,line2Status,beeps; 
+    byte line2Digit,line2Status,beeps,currentSelection; 
     
   void setup() override {
       if (debug > 2) 
@@ -129,7 +129,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     register_service(&DSCkeybushome::default_partition,"default_partition",{"partition"});
     
     firstrun=true;
-    currentMenuLevel=startLevel;
+    currentSelection=MAXZONES;
 	systemStatusChangeCallback(STATUS_OFFLINE);
 	forceDisconnect = false;
     dsc.enableModuleSupervision=MODULESUPERVISION;
@@ -194,40 +194,41 @@ void alarm_trigger_panic () {
 
 
 void processMenu(byte key) {
-   /*
-    switch (key) {
-        case '*': switch (currentMenuLevel) {
-                    case startLevel: ESP_LOGD("info","Press * for bypass");currentMenuLevel=bypassLevel;break;
-                    case bypassLevel: ESP_LOGD("info","Select zone (*)");break;
-                  }
-    } */
+   
+    ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
     
-    /*
-    switch( dsc.status[defaultPartition-1]) {
-        case 
-        
-        
-        
-        
-        
+    
+    if (key=='#') currentSelection=MAXZONES;
+
+    if (dsc.status[defaultPartition-1] < 0x04) { 
+       if (currentSelection > MAXZONES) currentSelection=MAXZONES;
+        if (key=='<') {
+            currentSelection=getPreviousOpenZone(currentSelection);
+        }
+        if (key=='>' && currentSelection < MAXZONES) {
+           
+            currentSelection=getNextOpenZone(currentSelection);
+        }
+        setStatus(defaultPartition-1,true);
     }
     
-    
-    */
-    /*
-   ESP_LOGD("info","Current status %02X,%02X", dsc.status[defaultPartition-1],key);
-   for (int x=0;x<MAXZONES;x++) {
-       if (zoneStatus[x].open) {
-          ESP_LOGD("info","Open Zone %02d", x+1); 
-           
-       }
-       if (zoneStatus[x].bypass) {
-          ESP_LOGD("info","Bypass Zone %02d", x+1); 
-           
-       }
-       
-   }
-    */
+    if (dsc.status[defaultPartition-1]==0xA0) { //bypass
+        if (currentSelection==MAXZONES) currentSelection=0xFF;
+        if (key=='*') {
+            char s[2];
+            sprintf(s,"%02d",currentSelection+1);
+            const char* out =  strcpy(new char[3],s);
+            dsc.write(out);
+        }
+        byte t;
+        t=0-1;
+
+              
+        if (key=='>') currentSelection=getNextEnabledZone(currentSelection);
+        if (key=='<') currentSelection=getPreviousEnabledZone(currentSelection);
+        lastStatus[defaultPartition-1]=0;
+        setStatus(defaultPartition-1,true);
+    }
     
 }
 
@@ -235,7 +236,12 @@ void processMenu(byte key) {
 	  const char* keys =  strcpy(new char[keystring.length() +1],keystring.c_str());
 	   if (debug > 0) ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
 	   dsc.write(keys);
-       if (keystring.length()==1) keySent=keys[0];;
+       if (keystring.length()==1) keySent=keys[0];
+       
+               if (keySent) {
+            processMenu(keySent);
+        }
+        
        
  }		
 
@@ -362,6 +368,54 @@ std::string getOptions() {
             return options;
 }
 
+
+byte getPreviousOpenZone(byte start) {
+    byte zone;
+    for (zone=start-1;zone >=0 && zone <MAXZONES;zone--) {
+       // ESP_LOGD("info","openzone check %d",zone);
+        if (zoneStatus[zone].open ) break;
+    }
+    if (zone >= MAXZONES) {
+      return start;
+    } else
+        return zone;
+}
+
+byte getNextOpenZone(byte start) {
+    byte zone;
+    for (zone=start+1;zone < MAXZONES;zone++) {
+        if (zoneStatus[zone].open ) break;
+    }
+    if (zone>=MAXZONES) {
+        return start;
+    } else 
+        return zone;
+}
+
+byte getNextEnabledZone(byte start) {
+    byte zone;
+    for (zone=start+1;zone < MAXZONES;zone++) {
+        if (zoneStatus[zone].enabled ) break;
+    }
+    if (zone>=MAXZONES) {
+        return start;
+    } else 
+        return zone;
+}
+
+
+
+byte getPreviousEnabledZone(byte start) {
+    byte zone;
+    for (zone=start-1;zone >=0 && zone <MAXZONES;zone--) {
+        if (zoneStatus[zone].enabled ) break;
+    }
+    if (zone >= MAXZONES) {
+      return start;
+    } else
+        return zone;
+}
+
 void getBypassZones(byte partition) {
     if (dsc.status[partition] == 0xA0) { //bypass zones
    			for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
@@ -369,11 +423,11 @@ void getBypassZones(byte partition) {
 						zone=zoneBit + (zoneGroup * 8);
 						if (bitRead(programZones[zoneGroup], zoneBit)) {
                             if (zone < MAXZONES)
-                                zoneStatus[zone].bypass=true;
+                                zoneStatus[zone].bypassed=true;
 						}
 						else  {
                             if (zone < MAXZONES)
-                                zoneStatus[zone].bypass=false;
+                                zoneStatus[zone].bypassed=false;
                         }
 
 				}
@@ -390,7 +444,7 @@ void getBypassZones(byte partition) {
           dsc.write("*");
           dsc.write("27##"); //fetch low battery status
         }
-                ESP_LOGD("info","cmd=%02X",dsc.panelData[0]);
+                //ESP_LOGD("info","cmd=%02X",dsc.panelData[0]);
             if (debug > 2) {
           printTimestamp();
       Serial.print(" ");
@@ -503,10 +557,7 @@ void getBypassZones(byte partition) {
         
         firstrun=false;
 
-        if (keySent) {
-            processMenu(keySent);
-        }
-        
+
     } 
 
     if (!forceDisconnect && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read and statuses were changed
@@ -846,9 +897,10 @@ void setLights(byte partition) {
 }
 
 
-void setStatus(byte partition) {
+void setStatus(byte partition,bool force=false) {
   static byte lastStatus[8];
-  if ( dsc.status[partition] == lastStatus[partition]  && line2Status !=dsc.status[partition] && beeps==0) return;
+  if ( dsc.status[partition] == lastStatus[partition]  && line2Status !=dsc.status[partition] && beeps==0 && !force) return;
+  
   lastStatus[partition] = dsc.status[partition];
 
     std::string lcdLine1;
@@ -864,7 +916,7 @@ void setStatus(byte partition) {
       case 0x02: lcdLine1 = "Stay         ";
                  lcdLine2 = "zones open      ";
                   if (pausedZones) resetZones();; break;
-      case 0x03: lcdLine1 = "Zones open   ";
+      case 0x03: lcdLine1 = "Zones open ";
                  lcdLine2 = " ";
                   if (pausedZones) resetZones();; break;
       case 0x04: lcdLine1 = "Armed:       ";
@@ -932,8 +984,8 @@ void setStatus(byte partition) {
                  lcdLine2 = "function code   "; break;
       case 0x9F: lcdLine1 = "Enter        ";
                  lcdLine2 = "access code     "; break;
-      case 0xA0: lcdLine1 = "*1: Zone bypass         ";
-                 lcdLine2 = "     "; break;
+      case 0xA0: lcdLine1 = "*1: Zone bypass        ";
+                 lcdLine2 = "ENTER ZONE#"; break;
       case 0xA1: lcdLine1 = "*2: Trouble menu         ";
                  lcdLine2 = "    "; break;
       case 0xA2: lcdLine1 = "*3: Alarm memory         ";
@@ -1053,7 +1105,34 @@ void setStatus(byte partition) {
                  lcdLine2 = "6 digits        "; break;
       default: lcdLine2 = dsc.status[partition];
     }
-  line1DisplayCallback(lcdLine1);
+
+    if (dsc.status[defaultPartition-1] < 0x04 && currentSelection < MAXZONES) { 
+          char s[16];
+          lcdLine2="";
+          sprintf(s,"%02d     <>",currentSelection+1);
+          lcdLine2.append(s);
+    }
+    
+  if (dsc.status[partition]==0xA0) {
+          if (currentSelection==MAXZONES)
+            currentSelection=getNextEnabledZone(0xFF);
+          if (currentSelection != 0xFF) {
+            char s[16];
+            lcdLine2="";
+            char bypassStatus=' ';
+ 
+            if (zoneStatus[currentSelection].bypassed) 
+              bypassStatus='B';
+            else if (zoneStatus[currentSelection].open)
+              bypassStatus='O';
+
+            sprintf(s,"%02d   %c  <>",currentSelection+1,bypassStatus);
+            lcdLine2.append(s);
+          }
+ }      
+    
+    
+
   
   if (options) {
       
@@ -1079,6 +1158,8 @@ void setStatus(byte partition) {
         dsc.forceRedundant=true;
        
    }
+   
+  line1DisplayCallback(lcdLine1);
   line2DisplayCallback(lcdLine2);
   
   
@@ -1100,21 +1181,21 @@ void processStatus() {
       if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8 ) && !pausedZones ) {
           pauseZones();
       } 
-       ESP_LOGD("info","data2=%d",dsc.panelData[2]);
+       //ESP_LOGD("info","data2=%d",dsc.panelData[2]);
        //capture potential program digit if in programming mode
         line2Digit=dsc.panelData[4];
         line2Status=dsc.panelData[3];
         dsc.statusChanged=true;
 
-            ESP_LOGD("info","got digit %02x, status=%02x",dsc.panelData[4],dsc.panelData[3]);
+           // ESP_LOGD("info","got digit %02x, status=%02x",dsc.panelData[4],dsc.panelData[3]);
 
-         ESP_LOGD("info","0a case");
+        // ESP_LOGD("info","0a case");
        if (pausedZones) processProgramZones(4); //bypass zones ?
       break;
     case 0x5D:
     case 0x63:
       if ((dsc.panelData[2] & 0x04) == 0x04) {  // Alarm memory zones 1-32
-         ESP_LOGD("info","5d case");
+         //ESP_LOGD("info","5d case");
         if (pausedZones) processProgramZones(3);
       }
       break;
@@ -1132,8 +1213,10 @@ void processStatus() {
         case 0x06:
         case 0x19: printBeeps(4);break;
         case 0x20:
-        case 0x21:   ESP_LOGD("info","21 case");if (pausedZones) processProgramZones(5); dsc.statusChanged=true;  break;         // Programming zone lights 33-64 //bypass?
-        case 0x18: ESP_LOGD("info","18 case");if ( pausedZones &&(dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5);    break;  // Alarm memory zones 33-64
+        case 0x21:   //ESP_LOGD("info","21 case");
+                    if (pausedZones) processProgramZones(5); dsc.statusChanged=true;  break;         // Programming zone lights 33-64 //bypass?
+        case 0x18: //ESP_LOGD("info","18 case");
+                    if ( pausedZones &&(dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5);    break;  // Alarm memory zones 33-64
       }
       break;
     case 0xEC:  if (pausedZones) processEventBufferEC(); break;
@@ -1144,7 +1227,7 @@ void processStatus() {
 void printBeeps(byte panelByte) {
       dsc.statusChanged=true;
       beeps=dsc.panelData[panelByte] / 2;
-      ESP_LOGD("info","Beeps %02d",beeps);
+     // ESP_LOGD("info","Beeps %02d",beeps);
     
 }
 
@@ -1168,7 +1251,7 @@ void printPanel_0x6E() {
        group1msg.append(s1);
     }
   }
-     ESP_LOGD("info","printpanel6e");
+     //ESP_LOGD("info","printpanel6e");
       lightsCallback(group1msg);
 }
 
@@ -1200,7 +1283,7 @@ void processProgramZones(byte startByte) {
         byteCount++;
   }
     group1msg.append(group2msg);
-       ESP_LOGD("info","processprogramzones %02X",startByte);
+       //ESP_LOGD("info","processprogramzones %02X",startByte);
     lightsCallback(group1msg);
 
 
