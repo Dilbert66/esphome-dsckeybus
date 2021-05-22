@@ -62,8 +62,16 @@ class AlarmKeypadCard extends Polymer.Element {
           margin-bottom: 8px;
           margin-left: 8px;
         }
+        
+        .mdc-icon {
+          height: 42px;
+          margin-top: 4px;
+          margin-right: 4px;
+          margin-bottom: 4px;
+          margin-left: 4px;
+        }
 
-        .quickset {
+        .bottom {
           padding-left: 2px;
           text-align:center;
           justify-content: center;
@@ -96,15 +104,49 @@ class AlarmKeypadCard extends Polymer.Element {
 
                 <template is='dom-if' if='{{_view_display}}'>
                   <div class="keypad_display">
-                   <div class="keypad_state" id="keypad_state0">[[_line0]]</div>
                     <div class="keypad_state" id="keypad_state1">[[_line1]]</div>
                     <div class="keypad_state" id="keypad_state2">[[_line2]]</div>
-                    <div class="keypad_state" id="keypad_state3">[[_line3]]</div>
                   </div>
                 </template>
 
-                <template is='dom-if' if='{{_view_pad}}'>
+
+                <template is='dom-if' if='{{_view_status}}'>                
+                <div class='pad'>
+                    <div class='mdc-button  mdc-icon'>[[_status_A]]
+                        <ha-icon id="icon-a" icon="[[_iconA]]"/>
+                    </div>
+                    <div class='mdc-button  mdc-icon'>[[_status_B]]
+                        <ha-icon id="icon-b" icon="[[_iconB]]"/>
+                    </div>
+                    <div class='mdc-button  mdc-icon'>[[_status_C]]
+                        <ha-icon id="icon-c" icon="[[_iconC]]"/>
+                    </div>
+                    <div class='mdc-button mdc-icon'>[[_status_D]]
+                        <ha-icon id="icon-d" icon="[[_iconD]]"/>
+                    </div>                    
+                </div>
+                 <template is='dom-if' if='{{_view_status2}}'>                
+                <div class='pad'>
+                    <div class='mdc-button  mdc-icon'>[[_status_E]]
+                        <ha-icon id="icon-e" icon="[[_iconE]]"/>
+                    </div>
+  
+                    <div class='mdc-button  mdc-icon'>[[_status_F]]
+                        <ha-icon id="icon-f" icon="[[_iconF]]"/>
+                    </div>
+
+                    <div class='mdc-button  mdc-icon'>[[_status_G]]
+                        <ha-icon id="icon-g" icon="[[_iconG]]"/>
+                    </div>
+                    <div class='mdc-button mdc-icon'>[[_status_H]]
+                        <ha-icon id="icon-h" icon="[[_iconH]]"/>
+                    </div>                    
+                </div>
+                </template>
+                </template>
+                <template is='dom-if' if='{{_view_pad}}'>                
                   <div class="pad">
+                                 
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
@@ -216,31 +258,44 @@ class AlarmKeypadCard extends Polymer.Element {
                   </div>
                 </template>
 
-                <template is='dom-if' if='{{_view_quickset}}'>
-                    <div class="quickset">
-                      <button
+                <template is='dom-if' if='{{_view_bottom}}'>
+                    <div class="pad">
+                     <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="A"
+                        toggles state="E"
                         on-click='setState'
-                        title='Unset'>Timed set
+                        title='Unset'>[[_button_E]]
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="B"
+                        toggles state="F"
                         on-click='setState'
-                        title='Unset'>Part set
+                        title='Unset'>[[_button_F]]
                       </button>
+                      <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="G"
+                        on-click='setState'
+                        title='Unset'>[[_button_G]]
+                      </button>
+                      <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="H"
+                        on-click='setState'
+                        title='Unset'>[[_button_H]]
+                      </button>
+          
                     </div>
                 </template>
 
                 <audio id="exitsound1" loop>
-                  <source src="/local/beep.mp3" type="audio/mpeg">
+                  <source src="/local/1_beep.mp3" type="audio/mpeg">
                 </audio>
                 <audio id="exitsound2" loop>
-                  <source src="/local/beep_fast.mp3" type="audio/mpeg">
+                  <source src="/local/2_beeps.mp3" type="audio/mpeg">
                 </audio>
                 <audio id="chime">
-                  <source src="/local/ding_dong.mp3" type="audio/mpeg">
+                  <source src="/local/3_beeps.mp3" type="audio/mpeg">
                 </audio>
               </div>
           </div>
@@ -254,11 +309,6 @@ class AlarmKeypadCard extends Polymer.Element {
     return {
         _config: Object,
         _title: String,
-     
-        _kpdline0: {
-          type: Object,
-          observer: 'displayChanged'
-        },
         _kpdline1: {
           type: Object,
           observer: 'displayChanged'
@@ -267,94 +317,190 @@ class AlarmKeypadCard extends Polymer.Element {
           type: Object,
           observer: 'displayChanged'
         },
-        _kpdline3: {
-          type: Object,
-          observer: 'displayChanged'
-        },
         _kpdbeep: {
           type: Object,
           observer: 'beepChanged'
         },
+        _kpda: {
+          type: Object,
+        },
+        _kpdb: {
+          type: Object,
+        },
+        _kpdc: {
+          type: Object,
+        },
+        _kpdd: {
+          type: Object,
+        },  
+        _kpde: {
+          type: Object,
+        },
+        _kpdf: {
+          type: Object,
+        },
+        _kpdg: {
+          type: Object,
+        },
+        _kpdh: {
+          type: Object,
+        },         
         _kpdsetting: {
           type: Object,
           observer: 'settingChanged'
         },
-     
+        _kpdservicetype: String,
         _kpdservice: String,
-        _kpdservicekey: String,
         _button_A: String,
         _button_B: String,
         _button_C: String,
-        _button_D: String, 
+        _button_D: String,
+        _button_E: String,
+        _button_F: String,
+        _button_G: String,
+        _button_H: String,        
+        _status_A: String,
+        _status_B: String,
+        _status_C: String,
+        _status_D: String,
+        _status_E: String,
+        _status_F: String,
+        _status_G: String,
+        _status_H: String,          
         _cmd_A: String,
         _cmd_B: String,
         _cmd_C: String,
-        _cmd_D: String,  
-        _line0: String,        
+        _cmd_D: String, 
+        _cmd_E: String,
+        _cmd_F: String,
+        _cmd_G: String,
+        _cmd_H: String,        
+        _key_0: String, 
+        _key_1: String, 
+        _key_2: String, 
+        _key_3: String, 
+        _key_4: String, 
+        _key_5: String, 
+        _key_6: String, 
+        _key_7: String, 
+        _key_8: String, 
+        _key_9: String,
+        _key_star: String,
+        _key_pound: String,
+       // _key_right: String,
+       // _key_left: String,        
         _line1: String,
         _line2: String,
-        _line3: String,
+        _iconA: String,
+        _iconB: String,
+        _iconC: String,
+        _iconD: String,        
         _view_display: Boolean,
         _view_pad: Boolean,
-        _view_quickset: Boolean,
+        _view_bottom: Boolean,
+        _view_status: Boolean,
+        _view_status2: Boolean,
         _scale: String,
     }
   }
 
   setConfig(config) {
       if (!config.unique_id) throw new Error('You need to define a unique_id');
-      if (!config.kpd_line1) throw new Error('You need to define a kpd_line1');
-      if (!config.kpd_line2) throw new Error('You need to define a kpd_line2');
-      if (!config.kpd_service) throw new Error('You need to define a keypad service');
+      if (!config.disp_line1) throw new Error('You need to define a disp_line1');
+      if (!config.disp_line2) throw new Error('You need to define a disp_line2');
+      if (!config.service_type) throw new Error('You need to define a service type');
+      if (!config.service) throw new Error('You need to define a keypad service');
      
-      
       this.setProperties({
         _config: config,
         _title: config.title,
-        _kpdservice: config.kpd_service,
-        _kpdservicekey: (config.kpd_servicekey !=null)?config.kpd_servicekey:"keys",
+        _kpdservice: config.service,
+        _kpdservicetype: config.service_type,
         _view_display: (config.view_display != null) ? config.view_display : true,
         _view_pad: (config.view_pad != null) ? config.view_pad : true,
-        _view_quickset: (config.view_quickset != null) ? config.view_quickset : false,
+        _view_bottom: (config.view_bottom != null) ? config.view_bottom : false,
+        _view_status: (config.view_status != null) ? config.view_status : true,
+        _view_status2: (config.view_status_2 != null) ? config.view_status_2 : false,
         _scale: (config.scale != null) ? "transform-origin: 0 0; zoom: "+config.scale+"; -moz-transform: scale("+config.scale+");" : "1",
         _button_A: (config.button_A != null)?config.button_A:"A",
         _button_B: (config.button_B != null)?config.button_B:"B",
         _button_C: (config.button_C != null)?config.button_C:"C",
         _button_D: (config.button_D != null)?config.button_D:"D",
+        _button_E: (config.button_E != null)?config.button_E:"E",
+        _button_F: (config.button_F != null)?config.button_F:"F",
+        _button_G: (config.button_G != null)?config.button_G:"G",
+        _button_H: (config.button_H != null)?config.button_H:"H",        
+        _status_A: (config.status_A != null)?config.status_A:"A",
+        _status_B: (config.status_B != null)?config.status_B:"B",
+        _status_C: (config.status_C != null)?config.status_C:"C",
+        _status_D: (config.status_D != null)?config.status_D:"D",
+        _status_E: (config.status_E != null)?config.status_E:"E",
+        _status_F: (config.status_F != null)?config.status_F:"F",
+        _status_G: (config.status_G != null)?config.status_G:"G",
+        _status_H: (config.status_H != null)?config.status_H:"H",        
         _cmd_A: (config.cmd_A != null)?config.cmd_A:"",
         _cmd_B: (config.cmd_B != null)?config.cmd_B:"",
         _cmd_C: (config.cmd_C != null)?config.cmd_C:"",
-        _cmd_D: (config.cmd_D != null)?config.cmd_D:""        
-        
+        _cmd_D: (config.cmd_D != null)?config.cmd_D:"",
+        _cmd_E: (config.cmd_E != null)?config.cmd_E:"",
+        _cmd_F: (config.cmd_F != null)?config.cmd_F:"",
+        _cmd_G: (config.cmd_G != null)?config.cmd_G:"",
+        _cmd_H: (config.cmd_H != null)?config.cmd_H:"",        
+        _key_0: (config.key_0 != null)?config.key_0:"",
+        _key_1: (config.key_1 != null)?config.key_1:"",
+        _key_2: (config.key_2 != null)?config.key_2:"",
+        _key_3: (config.key_3 != null)?config.key_3:"",
+        _key_4: (config.key_4 != null)?config.key_4:"",
+        _key_5: (config.key_5 != null)?config.key_5:"",
+        _key_6: (config.key_6 != null)?config.key_6:"",
+        _key_7: (config.key_7 != null)?config.key_7:"",
+        _key_8: (config.key_8 != null)?config.key_8:"",
+        _key_9: (config.key_9 != null)?config.key_9:"", 
+        _key_star: (config.key_star != null)?config.key_star:"",
+        _key_pound: (config.key_pound != null)?config.key_pound:"",
+//        _key_right: (config.key_right != null)?config.key_right:"",
+ //       _key_left: (config.key_left != null)?config.key_left:""         
       });
   }
 
+
   set hass(hass) {
     this._hass = hass;
-    
-    this._kpdline0 =  this._hass.states[this._config.kpd_line0];
-    this._kpdline1 = this._hass.states[this._config.kpd_line1];
-    this._kpdline2 = this._hass.states[this._config.kpd_line2];
-    this._kpdline3 =  this._hass.states[this._config.kpd_line3];
+    this._kpdline1 = this._hass.states[this._config.disp_line1];
+    this._kpdline2 = this._hass.states[this._config.disp_line2];
     this._kpdbeep = this._hass.states[this._config.beep];
     this._kpdsetting = this._hass.states[this._config.setting];
+    this._kpda = this._hass.states[this._config.sensor_A]; 
+    this._kpdb = this._hass.states[this._config.sensor_B];    
+    this._kpdc = this._hass.states[this._config.sensor_C]; 
+    this._kpdd = this._hass.states[this._config.sensor_D]; 
+    this._kpde = this._hass.states[this._config.sensor_E]; 
+    this._kpdf = this._hass.states[this._config.sensor_F];    
+    this._kpdg = this._hass.states[this._config.sensor_G]; 
+    this._kpdh = this._hass.states[this._config.sensor_H]; 
+
+      this.setProperties({
+      _iconA:  this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
+      _iconB:  this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
+      _iconC:  this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
+      _iconD:  this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
+      _iconE:  this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
+      _iconF: this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
+      _iconG:  this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
+      _iconH:  this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",      
+      });
 
   }
-
+ 
   displayChanged() {
-    //let state1 = "";
-    //let state2 = "";
-
-   // for (let i = 0; i < this._kpdline1.state.length; i++) state1 += this._translateChar(this._kpdline1.state[i]);
-    //for (let i = 0; i < this._kpdline2.state.length; i++) state2 += this._translateChar(this._kpdline2.state[i]);
-
+    let state1 = "";
+    let state2 = "";
+      
+    for (let i = 0; i < this._kpdline1.state.length; i++) state1 += this._translateChar(this._kpdline1.state[i]);
+    for (let i = 0; i < this._kpdline2.state.length; i++) state2 += this._translateChar(this._kpdline2.state[i]);
     this.setProperties({
-      //_line1: state1,
-     // _line2: state2,
-      _line1:( this._kpdline1 == null ?"": this._kpdline1.state),
-      _line2:( this._kpdline2 == null ?"": this._kpdline2.state),
-      _line3:( this._kpdline3 == null ?"": this._kpdline3.state),
-      _line0:( this._kpdline0 == null ?"": this._kpdline0.state)
+      _line1: state1,
+      _line2: state2      
     });
   }
 
@@ -367,7 +513,7 @@ class AlarmKeypadCard extends Polymer.Element {
       var promise = this.shadowRoot.getElementById("exitsound1").play();
     } else if (this._kpdbeep.state == "2") {
       var promise = this.shadowRoot.getElementById("exitsound2").play();
-    } else if (this._kpdbeep.state == "3") {
+    } else if (this._kpdbeep.state > 2) {
       var promise = this.shadowRoot.getElementById("chime").play();
     }
 
@@ -387,8 +533,8 @@ class AlarmKeypadCard extends Polymer.Element {
   _translateChar(c) {
     // if (c.match('à') !== null ) return '<span class="blink">' + c + '</span>';
     // if (c.match('á') !== null ) return '<span class="under">' + c + '</span>';
-  //  if (c.match('è') !== null ) return '░';
-   // if (c.match('é') !== null ) return '▓';
+    if (c.match('è') !== null ) return '░';
+    if (c.match('é') !== null ) return '▓';
 
     return c;
   }
@@ -398,20 +544,34 @@ class AlarmKeypadCard extends Polymer.Element {
   }
 
   setState(e) {
-      var newState = {};
-      var key=e.currentTarget.getAttribute('state');
+     var key=e.currentTarget.getAttribute('state');
       
      switch (key) {
          case 'A': key=this._cmd_A; break;
          case 'B': key=this._cmd_B; break;
          case 'C': key=this._cmd_C; break;
          case 'D': key=this._cmd_D; break;
- 
+         case 'E': key=this._cmd_E; break;
+         case 'F': key=this._cmd_F; break;
+         case 'G': key=this._cmd_G; break;
+         case 'H': key=this._cmd_H; break;         
+         case '0': key=this._key_0; break;
+         case '1': key=this._key_1; break;
+         case '2': key=this._key_2; break;
+         case '3': key=this._key_3; break;
+         case '4': key=this._key_4; break;
+         case '5': key=this._key_5; break;
+         case '6': key=this._key_6; break;
+         case '7': key=this._key_7; break;
+         case '8': key=this._key_8; break;
+         case '9': key=this._key_9; break;
+         case '*': key=this._key_star; break;
+         case '#': key=this._key_pound; break;
+     //    case '>': key=this._key_right; break;
+     //    case '<': key=this._key_left; break;         
      }
-     
-     newState[this._kpdservicekey]=key ;
-     this._hass.callService('ESPHome', this._kpdservice,newState);
-     // this._hass.callService('ESPHome', 'vistaalarmtest_alarm_keypress', { "keys":newState      });
+     this._hass.callService(this._kpdservicetype, this._kpdservice,key);
+   
   }
 
   getCardSize() {
