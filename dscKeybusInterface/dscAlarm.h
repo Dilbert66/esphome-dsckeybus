@@ -129,7 +129,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     register_service(&DSCkeybushome::default_partition,"default_partition",{"partition"});
     
     firstrun=true;
-    currentSelection=MAXZONES;
+    currentSelection=0xFF;
 	systemStatusChangeCallback(STATUS_OFFLINE);
 	forceDisconnect = false;
     dsc.enableModuleSupervision=MODULESUPERVISION;
@@ -198,35 +198,49 @@ void processMenu(byte key) {
     ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
     
     
-    if (key=='#') currentSelection=MAXZONES;
+    if (key=='#') {
+        currentSelection=0xFF;
+        setStatus(defaultPartition-1,true,true); //update display but do not process selections
+        return;
+      }
 
     if (dsc.status[defaultPartition-1] < 0x04) { 
-       if (currentSelection > MAXZONES) currentSelection=MAXZONES;
+      // if (currentSelection > MAXZONES) currentSelection=MAXZONES;
         if (key=='<') {
             currentSelection=getPreviousOpenZone(currentSelection);
         }
-        if (key=='>' && currentSelection < MAXZONES) {
-           
-            currentSelection=getNextOpenZone(currentSelection);
+        if (key=='>') {
+           currentSelection=getNextOpenZone(currentSelection);
         }
+           ESP_LOGD("info","key2 %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
         setStatus(defaultPartition-1,true);
+    }
+    if (dsc.status[defaultPartition-1]==0x9E) { // * menu
+        if (key=='<') {
+            //select menu options
+        }
+        if (key=='>' ) { // we can use to go to bypass 
+             //select menu options
+        }
+        
+        if (key=='*' ) { // we can use to go to bypass 
+             //accept menu options
+        }
+       //setStatus(defaultPartition-1,true);
     }
     
     if (dsc.status[defaultPartition-1]==0xA0) { //bypass
-        if (currentSelection==MAXZONES) currentSelection=0xFF;
+      
         if (key=='*') {
             char s[2];
             sprintf(s,"%02d",currentSelection+1);
             const char* out =  strcpy(new char[3],s);
             dsc.write(out);
         }
-        byte t;
-        t=0-1;
-
               
         if (key=='>') currentSelection=getNextEnabledZone(currentSelection);
         if (key=='<') currentSelection=getPreviousEnabledZone(currentSelection);
-        lastStatus[defaultPartition-1]=0;
+    ESP_LOGD("info","key3 %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
         setStatus(defaultPartition-1,true);
     }
     
@@ -370,8 +384,11 @@ std::string getOptions() {
 
 
 byte getPreviousOpenZone(byte start) {
-    byte zone;
-    for (zone=start-1;zone >=0 && zone <MAXZONES;zone--) {
+    byte zone,s;
+    
+    s=start==0xFF?MAXZONES:start;
+    
+    for (zone=s-1;zone >=0 && zone <MAXZONES;zone--) {
        // ESP_LOGD("info","openzone check %d",zone);
         if (zoneStatus[zone].open ) break;
     }
@@ -406,8 +423,9 @@ byte getNextEnabledZone(byte start) {
 
 
 byte getPreviousEnabledZone(byte start) {
-    byte zone;
-    for (zone=start-1;zone >=0 && zone <MAXZONES;zone--) {
+    byte zone,s;
+    s=start==0xFF?MAXZONES:start;
+    for (zone=s-1;zone >=0 && zone <MAXZONES;zone--) {
         if (zoneStatus[zone].enabled ) break;
     }
     if (zone >= MAXZONES) {
@@ -897,7 +915,7 @@ void setLights(byte partition) {
 }
 
 
-void setStatus(byte partition,bool force=false) {
+void setStatus(byte partition,bool force=false,bool skip=false) {
   static byte lastStatus[8];
   if ( dsc.status[partition] == lastStatus[partition]  && line2Status !=dsc.status[partition] && beeps==0 && !force) return;
   
@@ -1106,16 +1124,16 @@ void setStatus(byte partition,bool force=false) {
       default: lcdLine2 = dsc.status[partition];
     }
 
-    if (dsc.status[defaultPartition-1] < 0x04 && currentSelection < MAXZONES) { 
+    if (dsc.status[defaultPartition-1] < 0x04 && currentSelection!=0xFF && !skip) { 
           char s[16];
           lcdLine2="";
-          sprintf(s,"%02d     <>",currentSelection+1);
+          sprintf(s,"%02d    <>",currentSelection+1);
           lcdLine2.append(s);
     }
     
-  if (dsc.status[partition]==0xA0) {
-          if (currentSelection==MAXZONES)
-            currentSelection=getNextEnabledZone(0xFF);
+  if (dsc.status[partition]==0xA0 && !skip) {
+          if (currentSelection == 0xFF) 
+                currentSelection=getNextEnabledZone(0xFF);
           if (currentSelection != 0xFF) {
             char s[16];
             lcdLine2="";
