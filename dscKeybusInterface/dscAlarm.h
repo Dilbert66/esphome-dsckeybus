@@ -907,9 +907,11 @@ void setLights(byte partition) {
   static byte previousLights = 0;
 
   if ((dsc.lights[partition] != previousLights )) {
-
+    char s1[12];
+    sprintf(s1,"lights: %02X",dsc.lights[partition]);
+    group1msg.append(s1);
     //root["status_lights"] = dsc.lights[partition];
-
+    lightsCallback(group1msg);
     previousLights = dsc.lights[partition];
   }
 }
