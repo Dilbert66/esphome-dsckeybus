@@ -9,6 +9,9 @@ substitutions:
   
    # milliseconds.  set how long to delay before accepting a new 05 cmd as valid to filter out intermittent short duration bogus commands that some panels send. default = 0
   cmdWaitTime: "0"
+  
+  #used to select the default partition associated with the alarm panel messages
+  defaultPartition: "1" 
 
   #zone expander addresses:
   # 9  - zones 9-16
@@ -18,7 +21,7 @@ substitutions:
   # 13 - zones 41-48 (for systems with 64 zone support)
   # 14 - zones 49-56 (for systems with 64 zone support)
   # 16 - zones 57-64 (for systems with 64 zone support)  
-  expanderAddr1: "10" # 1st zone expander emulator address to use . Set to 0 to disable. 
+  expanderAddr1: "0" # 1st zone expander emulator address to use . Set to 0 to disable. 
   expanderAddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
   
 esphome:
@@ -33,7 +36,6 @@ esphome:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  #use_address: 192.168.2.148
 
   ap:
     ssid: "$systemName"
@@ -41,7 +43,7 @@ wifi:
 
 logger:
   baud_rate: 0
-  level: info
+  level: debug
 
 api:
    password: !secret api_password  
@@ -55,6 +57,8 @@ status_led:
   pin:
     number: D4
     inverted: yes
+    
+ 
 
 custom_component:
 - lambda: |-
@@ -62,7 +66,8 @@ custom_component:
     
     DSCkeybus->accessCode="$accessCode";
     DSCkeybus->cmdWaitTime=$cmdWaitTime;
-    DSCkeybus->debug=1; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
+    DSCkeybus->defaultPartition=$defaultPartition;
+    DSCkeybus->debug=3; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
     DSCkeybus->expanderAddr1=$expanderAddr1; //zone expander
     DSCkeybus->expanderAddr2=$expanderAddr2;
     
@@ -77,15 +82,11 @@ custom_component:
       } // if you only have one partition, remove the case 2 and corresponding p2 sensor. You can also add more partitions if needed
     });
     
-    DSCkeybus->onPartitionMsgChange([&](uint8_t partition,std::string msg) {
-       switch(partition) {
-         case 1: id(m1).publish_state(msg); break;
-         case 2: id(m2).publish_state(msg); break;
-      } // if you only have one partition, remove the case 2 statement  and corresponding p2 sensor. You can also add more partitions if needed
-    });
-    
+   
     DSCkeybus->onTroubleStatusChange([&](troubleStatus ts,bool open) {
         switch(ts) {
+            case rdyStatus: id(rdy).publish_state(open);break;
+            case armStatus: id(arm1).publish_state(open);break;                    
             case trStatus: id(tr).publish_state(open);break;
             case batStatus: id(bat).publish_state(open);break;
             case acStatus: id(ac).publish_state(open);break;
@@ -96,11 +97,23 @@ custom_component:
     DSCkeybus->onZoneMsgStatus([&](std::string msg) {
             id(zone_status).publish_state(msg);
     });
+    DSCkeybus->onLine1Display([&](std::string msg) {
+            id(line1).publish_state(msg);
+    });
+    DSCkeybus->onLine2Display([&](std::string msg) {
+            id(line2).publish_state(msg);
+    });
+    DSCkeybus->onEventInfo([&](std::string msg) {
+            id(event1).publish_state(msg);
+    });  
+    DSCkeybus->onLights([&](std::string msg) {
+            id(lights1).publish_state(msg);
+    });     
     DSCkeybus->onFireStatusChange([&](uint8_t partition, bool open) {
       switch (partition) {
           case 1: id(f1).publish_state(open); break;
       }
-    });
+    }); 
     DSCkeybus->onTroubleMsgStatus([&](std::string msg) {
             id(tr_msg).publish_state(msg);
     });
@@ -187,7 +200,7 @@ binary_sensor:
     device_class: motion
   - platform: template
     id: z17
-    name: "$systemName Test zone"
+    name: "$systemName Test sensor"
     device_class: motion    
     
     #panel trouble status on/off
@@ -195,11 +208,22 @@ binary_sensor:
     id: tr
     name: "$systemName Trouble Status"
     device_class: problem
+    #panel trouble status on/off
+    
+  - platform: template
+    id: rdy
+    name: "$systemName Partition $defaultPartition Ready"
+
+  - platform: template
+    id: arm1
+    name: "$systemName Partition $defaultPartition Armed"
+
+    
     #battery status ok/low
   - platform: template
     id: bat
     #name: "$systemName Battery Status"
-    #device_class: problem
+    device_class: problem
 
     #AC power status ok/no power
   - platform: template
@@ -227,10 +251,10 @@ binary_sensor:
     name: "$systemName PGM 2"
   - platform: template
     id: r3
-    #name: "$systemName PGM 3"
+    name: "$systemName PGM 3"
   - platform: template
     id: r4
-    #name: "$systemName PGM 4"
+    name: "$systemName PGM 4"
   - platform: template
     id: r5
     #name: "$systemName PGM 5"
@@ -277,23 +301,31 @@ text_sensor:
     icon: "mdi:shield"
   - platform: template
     id: p2
-    #name: "$systemName Partition 2 Status " # uncomment to show in home assistent.  
+    #name: "$systemName Partition 2 Status " # uncomment to show in home assistant.  
     icon: "mdi:shield"  
     # more verbose message regarding the partition status. ie zones open, bypassed, etc
   - platform: template
-    id: m1
-    name: "$systemName Partition 1 Msg "
+    id: line1
+    name: "$systemName line1"
     icon: "mdi:alert-box"
   - platform: template
-    id: m2
-    #name: "$systemName Partition 2 Msg " # uncomment to show in home assistant
-    icon: "mdi:alert-box"
-    
+    id: line2
+    name: "$systemName line2"
+    icon: "mdi:alert-box"  
+  - platform: template
+    id: event1
+    name: "$systemName event1"
+    icon: "mdi:alert-box"  
+  - platform: template
+    id: lights1
+    name: "$systemName lights1"
+    icon: "mdi:alert-box"      
+   
   - platform: template
     id: tr_msg
     name: "$systemName Trouble Msg " # uncomment to show in home assistant
-    icon: "mdi:alert-box"   
-     
+    icon: "mdi:alert-box"
+        
 switch:
     #shows status of connection status to panel.  You can disconnect before upload using the switch.
   - platform: template
