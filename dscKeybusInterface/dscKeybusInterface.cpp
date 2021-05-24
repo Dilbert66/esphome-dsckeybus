@@ -238,7 +238,7 @@ bool dscKeybusInterface::loop() {
 
     case 0xE6:
       if (panelData[2] == 0x20 && redundantPanelData(previousCmdE6_20, panelData) && !forceRedundant) return false;  // Partition 1 status in programming, zone lights 33-64
-      if (panelData[2] == 0x21 && redundantPanelData(previousCmdE6_21, panelData)) return false;  // Partition 2 status in programming
+      if (panelData[2] == 0x21 && redundantPanelData(previousCmdE6_21, panelData)  && !forceRedundant) return false;  // Partition 2 status in programming
       break;
   }
   if (dscPartitions > 4) {

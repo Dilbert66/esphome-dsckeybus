@@ -43,7 +43,13 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   std::function<void (std::string)> line2DisplayCallback;   
   std::function<void (std::string)> eventInfoCallback; 
   std::function<void (std::string)> lightsCallback;  
-   
+ 
+  const std::string mainMenu[11]={"","Zone Bypass","System Troubles","Alarm Memory","Door Chime","Access Codes","User Functions","Output Contact","","No-Entry Arm","Quick Arming"};
+
+  const std::string troubleMenu[9]={"","Service Required","AC Failure","Tel Line Trouble","Comm Failure","Zone Fault","Zone Tamper","Low Battery","System Time"};
+  
+  const std::string serviceMenu[9]={"","Low Battery","Bell Circuit","System Trouble","System Tamper","Mod Supervision","RF Jam detected","PC5204 Low Battery","PC5204 AC Fail"};
+  
   const std::string STATUS_PENDING = "pending";
   const std::string STATUS_ARM = "armed_away";
   const std::string STATUS_STAY = "armed_home";
@@ -110,7 +116,8 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     byte system0,system1,previousSystem0,previousSystem1,keySent;
     byte programZones[dscZones];
     bool pausedZones,decimalInput;
-    byte line2Digit,line2Status,beeps,currentSelection; 
+    byte line2Digit,line2Status,beeps,currentSelection,currentMenu,currentSubMenu; 
+
     
   void setup() override {
       if (debug > 2) 
@@ -200,12 +207,12 @@ void processMenu(byte key) {
     
     if (key=='#') {
         currentSelection=0xFF;
-        setStatus(defaultPartition-1,true,true); //update display but do not process selections
+        setStatus(defaultPartition-1,true); 
         return;
       }
 
     if (dsc.status[defaultPartition-1] < 0x04) { 
-      // if (currentSelection > MAXZONES) currentSelection=MAXZONES;
+      
         if (key=='<') {
             currentSelection=getPreviousOpenZone(currentSelection);
         }
@@ -215,18 +222,72 @@ void processMenu(byte key) {
            ESP_LOGD("info","key2 %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
         setStatus(defaultPartition-1,true);
     }
-    if (dsc.status[defaultPartition-1]==0x9E) { // * menu
+    if (dsc.status[defaultPartition-1]==0x9E) { // * mainmenu
         if (key=='<') {
-            //select menu options
+            currentSelection=currentSelection>=11?10:(currentSelection>0?currentSelection-1:1);
+            currentSelection=mainMenu[currentSelection]!=""?currentSelection:currentSelection-1;
+            line2DisplayCallback(mainMenu[currentSelection]);  
+          
         }
-        if (key=='>' ) { // we can use to go to bypass 
-             //select menu options
+        if (key=='>' ) { 
+            currentSelection=currentSelection>=10?1:currentSelection+1;
+            currentSelection=mainMenu[currentSelection]!=""?currentSelection:currentSelection+1;
+            line2DisplayCallback(mainMenu[currentSelection]);  
         }
         
-        if (key=='*' ) { // we can use to go to bypass 
-             //accept menu options
+        if (key=='*' ) { 
+            char s[2];
+            sprintf(s,"%d",currentSelection%10);
+            const char* out =  strcpy(new char[3],s);
+            currentSelection=0xFF;
+            dsc.write(s);
+            
         }
-       //setStatus(defaultPartition-1,true);
+       
+    }
+    
+    if (dsc.status[defaultPartition-1]==0xA1) { //trouble
+      
+        if (key=='*') {
+            char s[2];
+            sprintf(s,"%d",currentSelection);
+            const char* out =  strcpy(new char[3],s);
+            currentSelection=0xFF;
+            dsc.write(out);
+        }
+              
+        if (key=='>') {
+            currentSelection=getNextOption(currentSelection);
+            line2DisplayCallback(troubleMenu[currentSelection]); 
+        }
+        if (key=='<') {
+            currentSelection=getPreviousOption(currentSelection);
+            if (currentSelection < 11) line2DisplayCallback(troubleMenu[currentSelection]); 
+        }
+  
+    }
+    
+    if (dsc.status[defaultPartition-1]==0xC8) { //trouble
+      
+        if (key=='*') {
+            char s[2];
+            sprintf(s,"%d",currentSelection);
+            const char* out =  strcpy(new char[3],s);
+            currentSelection=0xFF;
+            dsc.write(out);
+        }
+              
+        if (key=='>') {
+            currentSelection=getNextOption(currentSelection);
+             if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection]); 
+        }
+        if (key=='<') {
+            currentSelection=getPreviousOption(currentSelection);
+            if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection]); 
+        }
+
+            
+   
     }
     
     if (dsc.status[defaultPartition-1]==0xA0) { //bypass
@@ -240,6 +301,7 @@ void processMenu(byte key) {
               
         if (key=='>') currentSelection=getNextEnabledZone(currentSelection);
         if (key=='<') currentSelection=getPreviousEnabledZone(currentSelection);
+                      
     ESP_LOGD("info","key3 %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
         setStatus(defaultPartition-1,true);
     }
@@ -365,7 +427,7 @@ bool getEnabledZones(byte inputByte, byte startZone,byte partition) {
 }
 
 
-std::string getOptions() {
+std::string getOptionsString() {
 
             char s1[4];
             std::string options;
@@ -382,13 +444,49 @@ std::string getOptions() {
             return options;
 }
 
+byte getNextOption(byte start) {
+           byte option,optionGroup,s;
+            s=start>=MAXZONES?0:start;
+   			for (optionGroup = 0; optionGroup < dscZones; optionGroup++) {
+				for (byte optionBit = 0; optionBit < 8; optionBit++) {
+						option=optionBit + 1+ (optionGroup * 8);
+                        if (bitRead(programZones[optionGroup], optionBit)) {
+                            //  ESP_LOGD("info","found bit %d",option);
+                           if (option > s) return option;
+						}
+
+				}
+			}
+            return start;
+}
+
+byte getPreviousOption(byte start) {
+            byte s;
+            s=start>=MAXZONES?MAXZONES:start;
+   			for (byte optionGroup = dscZones-1; optionGroup >=0 && optionGroup < dscZones ; optionGroup--) {
+				for (byte optionBit = 7 ;optionBit >=0 && optionBit <8 ; optionBit--) {
+						byte option=optionBit + 1+ (optionGroup * 8);
+                       //  ESP_LOGD("info","checking option %d,%d",option,s);
+                        if (bitRead(programZones[optionGroup], optionBit)) {
+                         //   ESP_LOGD("info","found bit %d",option);
+                            if (option < s) return option;
+						}
+   
+				}
+			}
+            return start;
+}
+
+
+
+
 
 byte getPreviousOpenZone(byte start) {
     byte zone,s;
     
     s=start==0xFF?MAXZONES:start;
     
-    for (zone=s-1;zone >=0 && zone <MAXZONES;zone--) {
+    for (zone=s-1;zone >=0  && zone <MAXZONES;zone--) {
        // ESP_LOGD("info","openzone check %d",zone);
         if (zoneStatus[zone].open ) break;
     }
@@ -401,23 +499,17 @@ byte getPreviousOpenZone(byte start) {
 byte getNextOpenZone(byte start) {
     byte zone;
     for (zone=start+1;zone < MAXZONES;zone++) {
-        if (zoneStatus[zone].open ) break;
+        if (zoneStatus[zone].open ) return zone;
     }
-    if (zone>=MAXZONES) {
-        return start;
-    } else 
-        return zone;
+    return start;
 }
 
 byte getNextEnabledZone(byte start) {
     byte zone;
     for (zone=start+1;zone < MAXZONES;zone++) {
-        if (zoneStatus[zone].enabled ) break;
+        if (zoneStatus[zone].enabled ) return zone;
     }
-    if (zone>=MAXZONES) {
-        return start;
-    } else 
-        return zone;
+    return start;
 }
 
 
@@ -426,12 +518,9 @@ byte getPreviousEnabledZone(byte start) {
     byte zone,s;
     s=start==0xFF?MAXZONES:start;
     for (zone=s-1;zone >=0 && zone <MAXZONES;zone--) {
-        if (zoneStatus[zone].enabled ) break;
+        if (zoneStatus[zone].enabled ) return zone;
     }
-    if (zone >= MAXZONES) {
-      return start;
-    } else
-        return zone;
+    return start;
 }
 
 void getBypassZones(byte partition) {
@@ -452,6 +541,8 @@ void getBypassZones(byte partition) {
 			} 
     }
 }
+
+
 
   void update() override {
     	 
@@ -911,13 +1002,12 @@ void setLights(byte partition) {
     sprintf(s1,"lights: %02X",dsc.lights[partition]);
     group1msg.append(s1);
     //root["status_lights"] = dsc.lights[partition];
-    lightsCallback(group1msg);
+   // lightsCallback(group1msg);
     previousLights = dsc.lights[partition];
   }
 }
 
-
-void setStatus(byte partition,bool force=false,bool skip=false) {
+void setStatus(byte partition,bool force=false) {
   static byte lastStatus[8];
   if ( dsc.status[partition] == lastStatus[partition]  && line2Status !=dsc.status[partition] && beeps==0 && !force) return;
   
@@ -1000,16 +1090,16 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
                  lcdLine2 = "option          "; break;
       case 0x8F: lcdLine1 = "Invalid      ";
                  lcdLine2 = "access code     "; break;
-      case 0x9E: lcdLine1 = "Enter *      ";
-                 lcdLine2 = "function code   "; break;
+      case 0x9E: lcdLine1 = "Scroll for Menu <>";
+                 lcdLine2 = " "; break;
       case 0x9F: lcdLine1 = "Enter        ";
                  lcdLine2 = "access code     "; break;
       case 0xA0: lcdLine1 = "*1: Zone bypass        ";
-                 lcdLine2 = "ENTER ZONE#"; break;
+                 lcdLine2 = "Scroll using <>"; break;
       case 0xA1: lcdLine1 = "*2: Trouble menu         ";
-                 lcdLine2 = "    "; break;
+                 lcdLine2 = " Scroll to view <>"; break;
       case 0xA2: lcdLine1 = "*3: Alarm memory         ";
-                 lcdLine2 = "    "; break;
+                 lcdLine2 = " Scroll to view <>   "; break;
       case 0xA3: lcdLine1 = "Door         ";
                  lcdLine2 = "chime enabled   "; break;
       case 0xA4: lcdLine1 = "Door         ";
@@ -1053,8 +1143,8 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
                  lcdLine2 = "Zone fault menu "; break;
       case 0xC7: lcdLine1 = "Partition    ";
                  lcdLine2 = "disabled        "; break;
-      case 0xC8: lcdLine1 = "*2:          ";
-                 lcdLine2 = "Service required"; break;
+      case 0xC8: lcdLine1 = "*2: Service required";
+                 lcdLine2 = "Scroll to view<<>"; break;
       case 0xCE: lcdLine1 = "Active camera";
                  lcdLine2 = "monitor select. "; break;
       case 0xD0: lcdLine1 = "*2: Keypads  ";
@@ -1126,17 +1216,17 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
       default: lcdLine2 = dsc.status[partition];
     }
 
-    if (dsc.status[defaultPartition-1] < 0x04 && currentSelection!=0xFF && !skip) { 
+    if (dsc.status[defaultPartition-1] < 0x04 && currentSelection < 0xFF ) { 
           char s[16];
           lcdLine2="";
           sprintf(s,"%02d    <>",currentSelection+1);
           lcdLine2.append(s);
     }
     
-  if (dsc.status[partition]==0xA0 && !skip) {
-          if (currentSelection == 0xFF) 
-                currentSelection=getNextEnabledZone(0xFF);
-          if (currentSelection != 0xFF) {
+  if (dsc.status[partition]==0xA0 && currentSelection < 0xFF) {
+         // if (currentSelection == 0xFF) 
+              //  currentSelection=getNextEnabledZone(0xFF);
+        //  if (currentSelection != 0xFF) {
             char s[16];
             lcdLine2="";
             char bypassStatus=' ';
@@ -1148,7 +1238,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
 
             sprintf(s,"%02d   %c  <>",currentSelection+1,bypassStatus);
             lcdLine2.append(s);
-          }
+         // }
  }      
     
     
@@ -1156,7 +1246,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
   
   if (options) {
       
-     lcdLine2=getOptions(); 
+     lcdLine2=getOptionsString(); 
   } else if (line2Status == dsc.status[partition] && digits > 0 ) {
           char s[16];
           lcdLine2="";
