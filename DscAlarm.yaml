@@ -82,6 +82,13 @@ custom_component:
       } // if you only have one partition, remove the case 2 and corresponding p2 sensor. You can also add more partitions if needed
     });
     
+    DSCkeybus->onPartitionMsgChange([&](uint8_t partition,std::string msg) {
+       switch(partition) {
+         case 1: id(m1).publish_state(msg); break;
+         case 2: id(m2).publish_state(msg); break;
+      } // if you only have one partition, remove the case 2 statement  and corresponding p2 sensor. You can also add more partitions if needed
+    });
+   
    
     DSCkeybus->onTroubleStatusChange([&](troubleStatus ts,bool open) {
         switch(ts) {
@@ -304,6 +311,14 @@ text_sensor:
     #name: "$systemName Partition 2 Status " # uncomment to show in home assistant.  
     icon: "mdi:shield"  
     # more verbose message regarding the partition status. ie zones open, bypassed, etc
+  - platform: template
+    id: m1
+    name: "$systemName Partition 1 Msg "
+    icon: "mdi:alert-box"
+  - platform: template
+    id: m2
+    #name: "$systemName Partition 2 Msg " # uncomment to show in home assistant
+    icon: "mdi:alert-box"    
   - platform: template
     id: line1
     name: "$systemName line1"

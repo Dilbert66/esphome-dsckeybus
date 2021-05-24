@@ -43,7 +43,8 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   std::function<void (std::string)> line2DisplayCallback;   
   std::function<void (std::string)> eventInfoCallback; 
   std::function<void (std::string)> lightsCallback;  
- 
+  std::function<void (std::string)> beepsCallback; 
+
   const std::string mainMenu[11]={"Press # to exit","Zone Bypass","System Troubles","Alarm Memory","Door Chime","Access Codes","User Functions","Output Contact","","No-Entry Arm","Quick Arming"};
 
   const std::string troubleMenu[9]={"Press # to exit","Service Required *","AC Failure","Tel Line Trouble","Comm Failure","Zone Fault *","Zone Tamper *","Low Battery *","System Time"};
@@ -79,7 +80,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
    void onLine2Display(std::function<void (std::string msg)> callback) { line2DisplayCallback = callback; }
    void onEventInfo(std::function<void (std::string msg)> callback) { eventInfoCallback = callback; }
    void onLights(std::function<void (std::string msg)> callback) { lightsCallback = callback; }
-  
+   void onBeeps(std::function<void (std::string beep)> callback) { beepsCallback = callback; }
   /*
     std::function<void (std::string)> line1DisplayCallback; 
   std::function<void (std::string)> line2DisplayCallback;   
@@ -116,7 +117,9 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     byte system0,system1,previousSystem0,previousSystem1,keySent;
     byte programZones[dscZones];
     bool pausedZones,decimalInput,haveOptions;
-    byte line2Digit,line2Status,beeps,currentSelection,lastCurrentSelection,currentMenu,currentSubMenu; 
+    byte line2Digit,line2Status,currentSelection,lastCurrentSelection,currentMenu,currentSubMenu; 
+    byte beeps,previousBeeps;
+    
 
 
     
@@ -203,7 +206,7 @@ void alarm_trigger_panic () {
 
 void processMenu(byte key) {
    
-    ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
+   // ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
     
     lastCurrentSelection=currentSelection;
     if (key=='#') {
@@ -220,7 +223,7 @@ void processMenu(byte key) {
         if (key=='>') {
            currentSelection=getNextOpenZone(currentSelection);
         }
-           ESP_LOGD("info","key2 %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
+
         setStatus(defaultPartition-1,true);
     }
     if (dsc.status[defaultPartition-1]==0x9E) { // * mainmenu
@@ -303,7 +306,7 @@ void processMenu(byte key) {
         if (key=='>') currentSelection=getNextEnabledZone(currentSelection);
         if (key=='<') currentSelection=getPreviousEnabledZone(currentSelection);
                       
-    ESP_LOGD("info","key3 %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
+
         setStatus(defaultPartition-1,true);
     }
     
@@ -666,7 +669,10 @@ void getBypassZones(byte partition) {
         */
         
         firstrun=false;
-
+    if (previousBeeps != beeps)
+        beepsCallback("0");
+    beeps=0;
+    previousBeeps=beeps;
 
     } 
 
@@ -755,7 +761,8 @@ void getBypassZones(byte partition) {
                     if (partition == defaultPartition-1) 
                         troubleStatusChangeCallback(armStatus,true );
 					if ((dsc.armedAway[partition] || dsc.armedStay[partition] )&& dsc.noEntryDelay[partition]) 	partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
-					else if (dsc.armedStay[partition]) partitionStatusChangeCallback(partition+1,STATUS_STAY );
+					else if (dsc.armedStay[partition]) 
+                            partitionStatusChangeCallback(partition+1,STATUS_STAY );
 					else partitionStatusChangeCallback(partition+1,STATUS_ARM);
 				} else {
                     partitionStatusChangeCallback(partition+1,STATUS_OFF ); 
@@ -775,13 +782,13 @@ void getBypassZones(byte partition) {
            
 			if (dsc.readyChanged[partition] ) {
 				dsc.readyChanged[partition] = false;  // Resets the partition alarm status flag
-				if (dsc.ready[partition]&&  !dsc.armed[partition]) 	{
+				if (dsc.ready[partition] &&  !dsc.armed[partition]) 	{
                     partitionStatusChangeCallback(partition+1,STATUS_OFF );
                     if (partition == defaultPartition-1)                     
                        troubleStatusChangeCallback(rdyStatus,true);                    
                 }
 				else  {
-                    partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
+                   if (!dsc.armed[partition] ) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
                     if (partition == defaultPartition-1)                     
                         troubleStatusChangeCallback(rdyStatus,false);
                 }
@@ -987,7 +994,8 @@ void getBypassZones(byte partition) {
     if (zoneStatusMsg != previousZoneStatusMsg)
         zoneMsgStatusCallback(zoneStatusMsg); 
     previousZoneStatusMsg=zoneStatusMsg;
-    beeps=0;
+ 
+
 
   }
 
@@ -1133,18 +1141,18 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
                  lcdLine2 = "installer code  "; break;
       case 0xB8: lcdLine1 = "Enter *      ";
                  lcdLine2 = "function code   "; break;
-      case 0xB9: lcdLine1 = "*2:          ";
-                 lcdLine2 = "Zone tamper menu"; break;
-      case 0xBA: lcdLine1 = "*2: Zones low Battery    ";
+      case 0xB9: lcdLine1 = "Zone Tamper <>";
+                 lcdLine2 = ""; break;
+      case 0xBA: lcdLine1 = "Zones low battery <>";
                  lcdLine2 = ""; break;
       case 0xBC: lcdLine1 = "*5 Enter new ";
                  digits=6;
                  lcdLine2 = "6-digit code    "; break;
-      case 0xC6: lcdLine1 = " Zone fault menu <>  ";
+      case 0xC6: lcdLine1 = " Zone faults  <>";
                  lcdLine2 = ""; break;
       case 0xC7: lcdLine1 = "Partition    ";
                  lcdLine2 = "disabled        "; break;
-      case 0xC8: lcdLine1 = "Service required <>";
+      case 0xC8: lcdLine1 = "Service req.  <>";
                  lcdLine2 = ""; break;
       case 0xCE: lcdLine1 = "Active camera";
                  lcdLine2 = "monitor select. "; break;
@@ -1225,10 +1233,10 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
     }
  if (!skip) {   
   if (dsc.status[partition]==0xA0) { //bypass
-                ESP_LOGD("info", "in bypass currentSelection=%d",currentSelection);
+            
           if (currentSelection == 0xFF) 
                 currentSelection=getNextEnabledZone(0xFF);
-            ESP_LOGD("info", "in bypass2 currentSelection=%d",currentSelection);
+
           if (currentSelection < MAXZONES) {
             char s[16];
             lcdLine2="";
@@ -1270,10 +1278,10 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
     }
     
     if (dsc.status[defaultPartition-1]==0xC8) { //service
-         ESP_LOGD("info", "in c8 currentSelection=%d",currentSelection);   
+      
        // if (currentSelection == 0xFF) {
                currentSelection=getNextOption(currentSelection);
-               ESP_LOGD("info", "in c82 currentSelection=%d",currentSelection);
+             
           if (currentSelection < 9) {
                 lcdLine2="";
                 lcdLine2.append(serviceMenu[currentSelection]);  
@@ -1362,7 +1370,7 @@ void processStatus() {
         case 0x06:
         case 0x19: printBeeps(4);break;
         case 0x20:
-        case 0x21:   ESP_LOGD("info","21 case");
+        case 0x21:   //ESP_LOGD("info","21 case");
                     if (pausedZones) processProgramZones(5);   break;         // Programming zone lights 33-64 //bypass?
         case 0x18: //ESP_LOGD("info","18 case");
                     if ( pausedZones &&(dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5);    break;  // Alarm memory zones 33-64
@@ -1376,6 +1384,9 @@ void processStatus() {
 void printBeeps(byte panelByte) {
       dsc.statusChanged=true;
       beeps=dsc.panelData[panelByte] / 2;
+        char s[2];
+        sprintf(s,"%d",beeps);
+      beepsCallback(s);
      // ESP_LOGD("info","Beeps %02d",beeps);
     
 }
@@ -1418,8 +1429,8 @@ void processProgramZones(byte startByte) {
   
   byteCount = 0;
   char s1[4];
-  if (startByte==4 || startByte==3) group1msg="aa ";
-  if (startByte==5) group2msg="bb ";
+  if (startByte==4 || startByte==3) group1msg="";
+  if (startByte==5) group2msg="";
   for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
             zone = (zoneBit + 1) + (zoneGroup *  8);
