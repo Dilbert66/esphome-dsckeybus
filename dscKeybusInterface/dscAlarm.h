@@ -46,7 +46,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
  
   const std::string mainMenu[11]={"Press # to exit","Zone Bypass","System Troubles","Alarm Memory","Door Chime","Access Codes","User Functions","Output Contact","","No-Entry Arm","Quick Arming"};
 
-  const std::string troubleMenu[9]={"Press # to exit","Service Required","AC Failure","Tel Line Trouble","Comm Failure","Zone Fault","Zone Tamper","Low Battery","System Time"};
+  const std::string troubleMenu[9]={"Press # to exit","Service Required *","AC Failure","Tel Line Trouble","Comm Failure","Zone Fault *","Zone Tamper *","Low Battery *","System Time"};
   
   const std::string serviceMenu[9]={"Press # to exit","Low Battery","Bell Circuit","System Trouble","System Tamper","Mod Supervision","RF Jam detected","PC5204 Low Battery","PC5204 AC Fail"};
   
@@ -208,7 +208,7 @@ void processMenu(byte key) {
     lastCurrentSelection=currentSelection;
     if (key=='#') {
         currentSelection=0xFF;
-        setStatus(defaultPartition-1,true); 
+        setStatus(defaultPartition-1,true,true); 
         return;
       }
 
@@ -225,18 +225,18 @@ void processMenu(byte key) {
     }
     if (dsc.status[defaultPartition-1]==0x9E) { // * mainmenu
         if (key=='<') {
-            currentSelection=currentSelection>=11?10:(currentSelection>0?currentSelection-1:1);
+            currentSelection=currentSelection>=11?10:(currentSelection>1?currentSelection-1:0);
             currentSelection=mainMenu[currentSelection]!=""?currentSelection:currentSelection-1;
             if (currentSelection < 11) line2DisplayCallback(mainMenu[currentSelection]);  
           
         }
-        if (key=='>' ) { 
-            currentSelection=currentSelection>=10?1:currentSelection+1;
+        else if (key=='>' ) { 
+            currentSelection=currentSelection>=10?0:currentSelection+1;
             currentSelection=mainMenu[currentSelection]!=""?currentSelection:currentSelection+1;
             if (currentSelection < 11)line2DisplayCallback(mainMenu[currentSelection]);  
         }
         
-        if (key=='*' && currentSelection > 0 ) { 
+        else if (key=='*' && currentSelection > 0 ) { 
             char s[2];
 
             sprintf(s,"%d",currentSelection%10);
@@ -244,7 +244,7 @@ void processMenu(byte key) {
             currentSelection=0xFF;
             dsc.write(s);
             
-        }
+        } else currentSelection=0xFF;
        
     }
     
@@ -254,19 +254,18 @@ void processMenu(byte key) {
             char s[2];
             sprintf(s,"%d",currentSelection);
             const char* out =  strcpy(new char[3],s);
-            currentSelection=0xFF;
+            currentSelection=0xFE;
             dsc.write(out);
         }
               
-        if (key=='>') {
+        else if (key=='>') {
             currentSelection=getNextOption(currentSelection);
             if (currentSelection < 9) line2DisplayCallback(troubleMenu[currentSelection]); 
         }
-        if (key=='<') {
+        else if (key=='<') {
             currentSelection=getPreviousOption(currentSelection);
             if (currentSelection < 9) line2DisplayCallback(troubleMenu[currentSelection]); 
-        }
-  
+        } else currentSelection=0xFF;
     }
     
     if (dsc.status[defaultPartition-1]==0xC8) { //trouble
@@ -279,14 +278,14 @@ void processMenu(byte key) {
             dsc.write(out);
         }
               
-        if (key=='>') {
+       else if (key=='>') {
             currentSelection=getNextOption(currentSelection);
              if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection]); 
         }
-        if (key=='<') {
+        else if (key=='<') {
             currentSelection=getPreviousOption(currentSelection);
             if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection]); 
-        }
+        } else currentSelection=0xFF;
 
             
    
@@ -294,7 +293,7 @@ void processMenu(byte key) {
     
     if (dsc.status[defaultPartition-1]==0xA0) { //bypass
       
-        if (key=='*' && currentSelection > 0) {
+        if (key=='*' && currentSelection >= 0) {
             char s[2];
             sprintf(s,"%02d",currentSelection+1);
             const char* out =  strcpy(new char[3],s);
@@ -493,7 +492,7 @@ byte getPreviousOpenZone(byte start) {
         if (zoneStatus[zone].open ) break;
     }
     if (zone >= MAXZONES) {
-      return MAXZONES;
+      return start;
     } else
         return zone;
 }
@@ -511,7 +510,7 @@ byte getNextEnabledZone(byte start) {
     for (zone=start+1;zone < MAXZONES;zone++) {
         if (zoneStatus[zone].enabled ) return zone;
     }
-    return 0;
+    return start;
 }
 
 
@@ -522,7 +521,7 @@ byte getPreviousEnabledZone(byte start) {
     for (zone=s-1;zone >=0 && zone <MAXZONES;zone--) {
         if (zoneStatus[zone].enabled ) return zone;
     }
-    return MAXZONES;
+    return start;
 }
 
 void getBypassZones(byte partition) {
@@ -1009,7 +1008,7 @@ void setLights(byte partition) {
   }
 }
 
-void setStatus(byte partition,bool force=false) {
+void setStatus(byte partition,bool force=false,bool skip=false) {
   static byte lastStatus[8];
   if ( dsc.status[partition] == lastStatus[partition]  && line2Status !=dsc.status[partition] && beeps==0 && !force) return;
   
@@ -1092,16 +1091,16 @@ void setStatus(byte partition,bool force=false) {
                  lcdLine2 = "option          "; break;
       case 0x8F: lcdLine1 = "Invalid      ";
                  lcdLine2 = "access code     "; break;
-      case 0x9E: lcdLine1 = "Press (*) to select <>";
-                 lcdLine2 = "Scroll to view"; break;
+      case 0x9E: lcdLine1 = "Press (*) for <>";
+                 lcdLine2 = ""; break;
       case 0x9F: lcdLine1 = "Enter        ";
                  lcdLine2 = "access code     "; break;
       case 0xA0: lcdLine1 = "Zone bypass   <>     ";
-                 lcdLine2 = "Scroll to bypass"; break;
+                 lcdLine2 = ""; break;
       case 0xA1: lcdLine1 = "Trouble menu     <>    ";
-                 lcdLine2 = "Scroll to view"; break;
+                 lcdLine2 = ""; break;
       case 0xA2: lcdLine1 = "Alarm memory     <>    ";
-                 lcdLine2 = "Scroll to view"; break;
+                 lcdLine2 = ""; break;
       case 0xA3: lcdLine1 = "Door         ";
                  lcdLine2 = "chime enabled   "; break;
       case 0xA4: lcdLine1 = "Door         ";
@@ -1137,16 +1136,16 @@ void setStatus(byte partition,bool force=false) {
       case 0xB9: lcdLine1 = "*2:          ";
                  lcdLine2 = "Zone tamper menu"; break;
       case 0xBA: lcdLine1 = "*2: Zones low Battery    ";
-                 lcdLine2 = "Scroll to View    "; break;
+                 lcdLine2 = ""; break;
       case 0xBC: lcdLine1 = "*5 Enter new ";
                  digits=6;
                  lcdLine2 = "6-digit code    "; break;
       case 0xC6: lcdLine1 = " Zone fault menu <>  ";
-                 lcdLine2 = "Scroll to view "; break;
+                 lcdLine2 = ""; break;
       case 0xC7: lcdLine1 = "Partition    ";
                  lcdLine2 = "disabled        "; break;
       case 0xC8: lcdLine1 = "Service required <>";
-                 lcdLine2 = "Scroll to view"; break;
+                 lcdLine2 = ""; break;
       case 0xCE: lcdLine1 = "Active camera";
                  lcdLine2 = "monitor select. "; break;
       case 0xD0: lcdLine1 = "*2: Keypads  ";
@@ -1224,11 +1223,13 @@ void setStatus(byte partition,bool force=false) {
           sprintf(s,"%02d",currentSelection+1);
           lcdLine2.append(s);
     }
-    
-  if (dsc.status[partition]==0xA0 && currentSelection < 0xFF) {
-         // if (currentSelection == 0xFF) 
-              //  currentSelection=getNextEnabledZone(0xFF);
-        //  if (currentSelection != 0xFF) {
+ if (!skip) {   
+  if (dsc.status[partition]==0xA0) { //bypass
+                ESP_LOGD("info", "in bypass currentSelection=%d",currentSelection);
+          if (currentSelection == 0xFF) 
+                currentSelection=getNextEnabledZone(0xFF);
+            ESP_LOGD("info", "in bypass2 currentSelection=%d",currentSelection);
+          if (currentSelection < MAXZONES) {
             char s[16];
             lcdLine2="";
             char bypassStatus=' ';
@@ -1240,10 +1241,46 @@ void setStatus(byte partition,bool force=false) {
 
             sprintf(s,"%02d   %c",currentSelection+1,bypassStatus);
             lcdLine2.append(s);
-         // }
- }      
+         }
+ } 
+
+
+      if (dsc.status[partition]==0x9E) { // main menu
+           if (currentSelection == 0xFF) {
+                currentSelection=currentSelection>=10?1:currentSelection+1;
+                currentSelection=mainMenu[currentSelection]!=""?currentSelection:currentSelection+1;
+           
+            if (currentSelection < 11) {
+                lcdLine2="";
+                lcdLine2.append(mainMenu[currentSelection]);  
+            }
+           }
+      }
+      
+      
+       if (dsc.status[defaultPartition-1]==0xA1) { //trouble
+            
+        if (currentSelection == 0xFF) {
+               currentSelection=getNextOption(currentSelection);
+          if (currentSelection < 9) {
+                lcdLine2="";
+                lcdLine2.append(troubleMenu[currentSelection]);  
+            }
+         }
+    }
     
-    
+    if (dsc.status[defaultPartition-1]==0xC8) { //service
+         ESP_LOGD("info", "in c8 currentSelection=%d",currentSelection);   
+       // if (currentSelection == 0xFF) {
+               currentSelection=getNextOption(currentSelection);
+               ESP_LOGD("info", "in c82 currentSelection=%d",currentSelection);
+          if (currentSelection < 9) {
+                lcdLine2="";
+                lcdLine2.append(serviceMenu[currentSelection]);  
+            }
+
+       // }
+    } 
 
   
   if (options) {
@@ -1270,7 +1307,7 @@ void setStatus(byte partition,bool force=false) {
         dsc.forceRedundant=true;
        
    }
-   
+ }
   line1DisplayCallback(lcdLine1);
   line2DisplayCallback(lcdLine2);
   
