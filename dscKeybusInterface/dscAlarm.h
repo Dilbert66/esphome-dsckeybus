@@ -44,11 +44,11 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   std::function<void (std::string)> eventInfoCallback; 
   std::function<void (std::string)> lightsCallback;  
  
-  const std::string mainMenu[11]={"","Zone Bypass","System Troubles","Alarm Memory","Door Chime","Access Codes","User Functions","Output Contact","","No-Entry Arm","Quick Arming"};
+  const std::string mainMenu[12]={"","Zone Bypass","System Troubles","Alarm Memory","Door Chime","Access Codes","User Functions","Output Contact","","No-Entry Arm","Quick Arming","Press # to exit"};
 
-  const std::string troubleMenu[9]={"","Service Required","AC Failure","Tel Line Trouble","Comm Failure","Zone Fault","Zone Tamper","Low Battery","System Time"};
+  const std::string troubleMenu[10]={"","Service Required","AC Failure","Tel Line Trouble","Comm Failure","Zone Fault","Zone Tamper","Low Battery","System Time","Press # to exit"};
   
-  const std::string serviceMenu[9]={"","Low Battery","Bell Circuit","System Trouble","System Tamper","Mod Supervision","RF Jam detected","PC5204 Low Battery","PC5204 AC Fail"};
+  const std::string serviceMenu[10]={"","Low Battery","Bell Circuit","System Trouble","System Tamper","Mod Supervision","RF Jam detected","PC5204 Low Battery","PC5204 AC Fail","Press # to exit"};
   
   const std::string STATUS_PENDING = "pending";
   const std::string STATUS_ARM = "armed_away";
@@ -115,7 +115,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     bool sendCmd;
     byte system0,system1,previousSystem0,previousSystem1,keySent;
     byte programZones[dscZones];
-    bool pausedZones,decimalInput;
+    bool pausedZones,decimalInput,haveOptions;
     byte line2Digit,line2Status,beeps,currentSelection,currentMenu,currentSubMenu; 
 
     
@@ -1090,8 +1090,8 @@ void setStatus(byte partition,bool force=false) {
                  lcdLine2 = "option          "; break;
       case 0x8F: lcdLine1 = "Invalid      ";
                  lcdLine2 = "access code     "; break;
-      case 0x9E: lcdLine1 = "Scroll for Menu <>";
-                 lcdLine2 = " "; break;
+      case 0x9E: lcdLine1 = "Press (*) to select";
+                 lcdLine2 = "Scroll for option <> "; break;
       case 0x9F: lcdLine1 = "Enter        ";
                  lcdLine2 = "access code     "; break;
       case 0xA0: lcdLine1 = "*1: Zone bypass        ";
@@ -1323,8 +1323,8 @@ void processStatus() {
         case 0x06:
         case 0x19: printBeeps(4);break;
         case 0x20:
-        case 0x21:   //ESP_LOGD("info","21 case");
-                    if (pausedZones) processProgramZones(5); dsc.statusChanged=true;  break;         // Programming zone lights 33-64 //bypass?
+        case 0x21:   ESP_LOGD("info","21 case");
+                    if (pausedZones) processProgramZones(5);   break;         // Programming zone lights 33-64 //bypass?
         case 0x18: //ESP_LOGD("info","18 case");
                     if ( pausedZones &&(dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5);    break;  // Alarm memory zones 33-64
       }
@@ -1371,11 +1371,12 @@ void processProgramZones(byte startByte) {
   byte zoneStart = 0;
   byte zone;
   if (startByte == 5) zoneStart = 4;
-  
+  haveOptions=false;
   for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
     programZones[zoneGroup] = dsc.panelData[startByte + byteCount];
     byteCount++;
   }
+  
   byteCount = 0;
   char s1[4];
   if (startByte==4 || startByte==3) group1msg="aa ";
@@ -1384,6 +1385,7 @@ void processProgramZones(byte startByte) {
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
             zone = (zoneBit + 1) + (zoneGroup *  8);
         if (bitRead(dsc.panelData[startByte+byteCount],zoneBit)) {
+            haveOptions=true;
              sprintf(s1,"%02d ",zone);
                  if (startByte==4 || startByte==3)  group1msg.append(s1);
                  if (startByte==5) group2msg.append(s1);
@@ -1393,7 +1395,6 @@ void processProgramZones(byte startByte) {
         byteCount++;
   }
     group1msg.append(group2msg);
-       //ESP_LOGD("info","processprogramzones %02X",startByte);
     lightsCallback(group1msg);
 
 
@@ -2331,7 +2332,7 @@ void pauseZones() {
 void resetZones() {
   pausedZones = false;
   dsc.openZonesStatusChanged = true;
-
+   currentSelection=0xFF;
    eventInfoCallback("");
 }
 
