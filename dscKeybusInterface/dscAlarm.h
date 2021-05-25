@@ -546,7 +546,10 @@ void getBypassZones(byte partition) {
     }
 }
 
-
+void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+}
 
   void update() override {
     	 
@@ -1029,13 +1032,13 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
     bool options=false;
     
     switch (dsc.status[partition]) {
-      case 0x01: lcdLine1 = "Partition    ";
-                 lcdLine2 = "ready           ";
+      case 0x01: lcdLine1 = "Partition ready";
+                 lcdLine2 = "";
                   if (pausedZones) resetZones();; break;
       case 0x02: lcdLine1 = "Stay         ";
                  lcdLine2 = "zones open      ";
                   if (pausedZones) resetZones();; break;
-      case 0x03: lcdLine1 = "Zones open ";
+      case 0x03: lcdLine1 = "Zones open  <>";
                  lcdLine2 = " ";
                   if (pausedZones) resetZones();; break;
       case 0x04: lcdLine1 = "Armed:       ";
@@ -1224,12 +1227,20 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
                  lcdLine2 = "6 digits        "; break;
       default: lcdLine2 = dsc.status[partition];
     }
+    
 
-    if (dsc.status[defaultPartition-1] < 0x04 && currentSelection < 0xFF ) { 
+    if (dsc.status[defaultPartition-1] < 0x04 ) {
+        if (currentSelection < 0xFF) {
           char s[16];
           lcdLine2="";
-          sprintf(s,"%02d",currentSelection+1);
+          sprintf(s,"%02d open",currentSelection+1);
           lcdLine2.append(s);
+        } else if (currentSelection == 0xFF && dsc.trouble) {
+          char s[16];
+          lcdLine2="";
+          sprintf(s,"(*2) for Troubles");
+          lcdLine2.append(s);            
+        }
     }
  if (!skip) {   
   if (dsc.status[partition]==0xA0) { //bypass
@@ -1316,8 +1327,17 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
        
    }
  }
+ 
+ 
+
+    
   line1DisplayCallback(lcdLine1);
   line2DisplayCallback(lcdLine2);
+  
+    rtrim(lcdLine1);
+    rtrim(lcdLine2);
+    lcdLine1=lcdLine1.append(" ").append(lcdLine2);
+    partitionMsgChangeCallback(partition+1,lcdLine1);
   
   
 }
@@ -1384,8 +1404,8 @@ void processStatus() {
 void printBeeps(byte panelByte) {
       dsc.statusChanged=true;
       beeps=dsc.panelData[panelByte] / 2;
-        char s[2];
-        sprintf(s,"%d",beeps);
+      char s[2];
+      sprintf(s,"%d",beeps);
       beepsCallback(s);
      // ESP_LOGD("info","Beeps %02d",beeps);
     
