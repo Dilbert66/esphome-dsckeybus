@@ -161,7 +161,7 @@ void default_partition(int partition) {
 }
 
 void set_zone_fault (int zone, bool fault) {
-	ESP_LOGD("Debug","Setting Fault: %02X,%02X",zone,fault);
+	ESP_LOGD("Debug","Setting Zone Fault: %d,%d",zone,fault);
 	dsc.setZoneFault(zone,fault);
 	
 }
