@@ -2,6 +2,7 @@
 #define dscalarm_h
 #include "esphome.h"
 #include "dscKeybusInterface.h"
+
 //for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
@@ -21,7 +22,6 @@ void disconnectKeybus() {
  
 }
 enum troubleStatus {acStatus,batStatus,trStatus,fireStatus,panicStatus,rdyStatus,armStatus};
-enum menuLevel {startLevel,bypassLevel,SystemLevel}; 
    
 class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
  public:
@@ -91,7 +91,7 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
   byte debug;
   const char *accessCode;
   bool enable05Messages = true;
-  unsigned long cmdWaitTime;
+  unsigned long cmdWaitTime,beepTime;
   bool extendedBuffer,partitionChanged;
   int defaultPartition=0;
   
@@ -109,7 +109,6 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
         bool partition;
         bool bypassed;
     } ;
-	menuLevel currentMenuLevel;
     zoneType zoneStatus[MAXZONES];
     std::string zoneStatusMsg,previousZoneStatusMsg,systemMsg,previousSystemMsg,group1msg,group2msg;  
     bool relayStatus[16],previousRelayStatus[16];
@@ -117,16 +116,16 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     byte system0,system1,previousSystem0,previousSystem1,keySent;
     byte programZones[dscZones];
     bool pausedZones,decimalInput,haveOptions;
-    byte line2Digit,line2Status,currentSelection,lastCurrentSelection,currentMenu,currentSubMenu; 
+    byte line2Digit,line2Status,currentSelection; 
     byte beeps,previousBeeps;
-    
+    uint8_t digits,digitPtr;
 
 
     
   void setup() override {
       if (debug > 2) 
         Serial.begin(115200);
-
+     digitPtr=0;
 	set_update_interval(10); 
     register_service(&DSCkeybushome::set_alarm_state,"set_alarm_state", {"partition","state","code"});
 	register_service(&DSCkeybushome::alarm_disarm,"alarm_disarm",{"code"});
@@ -206,23 +205,27 @@ void alarm_trigger_panic () {
 
 void processMenu(byte key) {
    
-   // ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
-    
-    lastCurrentSelection=currentSelection;
-    if (key=='#') {
+    ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
+            //  byte test[4]={1,2,3,4};
+           //if (key=='7') dsc.setLCDSend(test,4);
+    //dsc.forceRedundant=true;
+     if (key=='#' ) {
         currentSelection=0xFF;
+        line2Status=0;
+        line2Digit=0;
         setStatus(defaultPartition-1,true,true); 
         return;
       }
+
 
     if (dsc.status[defaultPartition-1] < 0x04) { 
             
         if (key=='<') {
             currentSelection=getPreviousOpenZone(currentSelection);
-        }
+        } else 
         if (key=='>') {
            currentSelection=getNextOpenZone(currentSelection);
-        }
+        } else currentSelection=0xFF;
 
         setStatus(defaultPartition-1,true);
     }
@@ -248,7 +251,7 @@ void processMenu(byte key) {
             dsc.write(s);
             
         } else currentSelection=0xFF;
-       
+         return;
     }
     
     if (dsc.status[defaultPartition-1]==0xA1) { //trouble
@@ -269,6 +272,7 @@ void processMenu(byte key) {
             currentSelection=getPreviousOption(currentSelection);
             if (currentSelection < 9) line2DisplayCallback(troubleMenu[currentSelection]); 
         } else currentSelection=0xFF;
+        return;
     }
     
     if (dsc.status[defaultPartition-1]==0xC8) { //trouble
@@ -291,7 +295,7 @@ void processMenu(byte key) {
         } else currentSelection=0xFF;
 
             
-   
+        return;
     }
     
     if (dsc.status[defaultPartition-1]==0xA0) { //bypass
@@ -301,6 +305,7 @@ void processMenu(byte key) {
             sprintf(s,"%02d",currentSelection+1);
             const char* out =  strcpy(new char[3],s);
             dsc.write(out);
+            //ESP_LOGD("info","Wrote key %s",s);
         }
               
         if (key=='>') currentSelection=getNextEnabledZone(currentSelection);
@@ -551,14 +556,21 @@ void rtrim(std::string &s) {
             std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
 }
 
-  void update() override {
+void update() override {
     	 
+         
+    if (millis() - beepTime > 2000 && beeps > 0) {
+        beeps=0;
+        beepsCallback("0");        
+    }
     if (!forceDisconnect && dsc.loop() )  { //Processes data only when a valid Keybus command has been read
         dsc.forceRedundant=false;
         if (firstrun) {
           dsc.clearZoneRanges(); // start with clear expanded zones
           dsc.write("*");
           dsc.write("27##"); //fetch low battery status
+          byte test[4]={1,2,3,4};
+          //dsc.setLCDSend(test,4);
         }
                 //ESP_LOGD("info","cmd=%02X",dsc.panelData[0]);
             if (debug > 2) {
@@ -672,10 +684,7 @@ void rtrim(std::string &s) {
         */
         
         firstrun=false;
-    if (previousBeeps != beeps)
-        beepsCallback("0");
-    beeps=0;
-    previousBeeps=beeps;
+
 
     } 
 
@@ -998,9 +1007,9 @@ void rtrim(std::string &s) {
         zoneMsgStatusCallback(zoneStatusMsg); 
     previousZoneStatusMsg=zoneStatusMsg;
  
+    
 
-
-  }
+}
 
 
 //
@@ -1023,14 +1032,18 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
   static byte lastStatus[8];
   if ( dsc.status[partition] == lastStatus[partition]  && line2Status !=dsc.status[partition] && beeps==0 && !force) return;
   
-  lastStatus[partition] = dsc.status[partition];
+ 
 
     std::string lcdLine1;
     std::string lcdLine2;
-    uint8_t digits=0;
+
     bool hex=false;
     bool options=false;
+    bool newStatus=false;
+    digits=0;
+    //if (dsc.status[partition] != lastStatus[partition]) newStatus=true;
     
+    ESP_LOGD("info","status %02X, last status %02X,line2status %02X,selection %02X",dsc.status[partition],lastStatus[partition],line2Status,currentSelection);
     switch (dsc.status[partition]) {
       case 0x01: lcdLine1 = "Partition ready";
                  lcdLine2 = "";
@@ -1165,9 +1178,9 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
                  lcdLine2 = "low battery     "; break;
       case 0xD4: lcdLine1 = "*2: Sensors  ";
                  lcdLine2 = "RF Delinquency  "; break;
-      case 0xE4: lcdLine1 = "*8: Installer"; decimalInput=false;
+      case 0xE4: lcdLine1 = "*8: Installer menu"; decimalInput=false;
                  digits=3;
-                 lcdLine2 = "menu, 3 digits  "; break;
+                 lcdLine2 = "Section? "; break;
       case 0xE5: lcdLine1 = "Keypad       ";
                  lcdLine2 = "slot assignment "; break;
       case 0xE6: lcdLine1 = "Input (2 digits)";
@@ -1225,7 +1238,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
       case 0xFA: lcdLine1 = "Input:       ";
                  digits=6;
                  lcdLine2 = "6 digits        "; break;
-      default: lcdLine2 = dsc.status[partition];
+      default: lcdLine2 = dsc.status[partition];digits=0;
     }
     
 
@@ -1245,7 +1258,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
  if (!skip) {   
   if (dsc.status[partition]==0xA0) { //bypass
             
-          if (currentSelection == 0xFF) 
+          if (currentSelection == 0xFF ||  lastStatus[partition] != dsc.status[partition]) 
                 currentSelection=getNextEnabledZone(0xFF);
 
           if (currentSelection < MAXZONES) {
@@ -1265,7 +1278,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
 
 
       if (dsc.status[partition]==0x9E) { // main menu
-           if (currentSelection == 0xFF) {
+           if (currentSelection == 0xFF  ) {
                 currentSelection=currentSelection>=10?1:currentSelection+1;
                 currentSelection=mainMenu[currentSelection]!=""?currentSelection:currentSelection+1;
            
@@ -1279,7 +1292,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
       
        if (dsc.status[defaultPartition-1]==0xA1) { //trouble
             
-        if (currentSelection == 0xFF) {
+        if (currentSelection == 0xFF || lastStatus[partition] != dsc.status[partition]) {
                currentSelection=getNextOption(currentSelection);
           if (currentSelection < 9) {
                 lcdLine2="";
@@ -1303,29 +1316,35 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
 
   
   if (options) {
-      
      lcdLine2=getOptionsString(); 
   } else if (line2Status == dsc.status[partition] && digits > 0 ) {
           char s[16];
           lcdLine2="";
           if (hex) {
-            sprintf(s,"[%X] %d digits",line2Digit,digits);
+            sprintf(s,"[%X]  %d digits",line2Digit,digits);
           } else {
             sprintf(s,"[%d] %d digits",line2Digit,digits);
           }
           lcdLine2.append(s);
           line2Status=0;
           line2Digit=0;
+          //digitPtr=digitPtr + 1;
+
   } 
+  
    if (beeps) {
+       /*
         char s[12];
         lcdLine2="";
         sprintf(s,"[%d Beeps]",beeps);
         lcdLine2.append(s);
         beeps=0;
+        */
         dsc.forceRedundant=true;
        
    }
+   
+    lastStatus[partition] = dsc.status[partition];
  }
  
  
@@ -1346,7 +1365,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
 // Processes status data not natively handled within the library
 void processStatus() {
   #ifndef dscClassicSeries
-  
+
   switch (dsc.panelData[0]) {
     case 0x05:
       if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) && !pausedZones ) {
@@ -1407,6 +1426,7 @@ void printBeeps(byte panelByte) {
       char s[2];
       sprintf(s,"%d",beeps);
       beepsCallback(s);
+      beepTime=millis();
      // ESP_LOGD("info","Beeps %02d",beeps);
     
 }

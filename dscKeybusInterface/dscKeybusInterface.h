@@ -208,6 +208,8 @@ volatile unsigned long dscKeybusInterface::keybusTime;
 //start expander
 bool dscKeybusInterface::debounce05;
 byte dscKeybusInterface::moduleSlots[6];
+byte dscKeybusInterface::cmd70[5];
+byte dscKeybusInterface::updateQueue[updateQueueSize];
 volatile byte dscKeybusInterface::writeModuleBuffer[6];
 volatile byte dscKeybusInterface::pendingZoneStatus[6];
 moduleType dscKeybusInterface::modules[maxModules];

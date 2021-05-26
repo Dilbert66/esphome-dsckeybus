@@ -181,6 +181,8 @@ class dscKeybusInterface {
     //start expander
     void setZoneFault(byte zone,bool fault) ;
     void setLCDReceive();
+    void setLCDSend(byte *cmdData,int len);
+    byte calcCRC70(byte *cmdData,int len);
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
     void addModule(byte address); //add zone expanders
@@ -392,7 +394,7 @@ class dscKeybusInterface {
     static void setPendingZoneUpdate();
     static void processModuleResponse(byte cmd);
     static void processModuleResponse_0xE6(byte cmd);
-    void addRequestToQueue(byte slot);
+    void addRequestToQueue(byte cmd);
     void setSupervisorySlot(byte slot,bool set);
     static byte getPendingUpdate();
     static void fillBuffer(byte* src,int len);
@@ -404,7 +406,7 @@ class dscKeybusInterface {
     volatile static byte pendingZoneStatus[6];
     volatile static byte writeModuleBuffer[6];
     static moduleType modules[maxModules];
-    static byte moduleSlots[6];
+    static byte moduleSlots[6],cmd70[5],updateQueue[updateQueueSize];
     //end expander
 };
 

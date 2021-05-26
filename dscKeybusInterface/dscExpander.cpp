@@ -39,9 +39,9 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
     
 }
 
-void dscKeybusInterface::addRequestToQueue(byte address) {
-            if (!address) return;
-           // updateQueue[inIdx]=address;
+void dscKeybusInterface::addRequestToQueue(byte cmd) {
+            if (!cmd) return;
+            updateQueue[inIdx]=cmd;
             inIdx=(inIdx + 1) % updateQueueSize;
 }
 
@@ -79,7 +79,7 @@ for (int x=0;x<moduleIdx;x++) {
         if (!modules[x].zoneStatusByte) continue;
         pendingZoneStatus[2]=0xFF;
         pendingZoneStatus[modules[x].zoneStatusByte]&=modules[x].zoneStatusMask; //set update slot
-        addRequestToQueue(modules[x].address);  //update queue to indicate pending request
+        addRequestToQueue(0x05);  //update queue to indicate pending request, select cmd05 to respond on
       }
 }
 
@@ -142,7 +142,28 @@ void dscKeybusInterface::removeModule(byte address) {
 
 void dscKeybusInterface::setLCDReceive() {
     pendingZoneStatus[0]=0xA5;
-    addRequestToQueue(1);  //update queue to indicate pending request
+    addRequestToQueue(0x05);  //update queue to indicate pending request, respond on 05
+
+}
+
+void dscKeybusInterface::setLCDSend(byte *cmdData,int len) {
+    pendingZoneStatus[0]=0xAA;
+    
+   for (int x=0;x<4;x++) {
+      cmd70[x]=cmdData[x];
+   }
+   cmd70[4]=calcCRC70(cmd70,4);
+   //addRequestToQueue(0x0A);  //update queue to indicate pending request, respond on 0x0A
+
+}
+
+byte dscKeybusInterface::calcCRC70(byte *cmdData,int len) {
+ 
+  int dataSum = 0;
+  for (byte panelByte = 0; panelByte < len; panelByte++) {
+     dataSum += cmdData[panelByte];
+  }
+  return dataSum %256;
 
 }
 
@@ -228,7 +249,7 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
 
     if (modules[idx].zoneStatusByte) { 
         pendingZoneStatus[modules[idx].zoneStatusByte]&=modules[idx].zoneStatusMask; //set update slot
-        addRequestToQueue(address);  //update queue to indicate pending request
+        addRequestToQueue(0x05);  //update queue to indicate pending request, respond on 05 cmd
 
     }
 
@@ -286,10 +307,10 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
      byte address=0;
      
      switch (cmd) {
-       case 0x05:   if (inIdx == outIdx) return;
+       case 0x0A:   
+       case 0x05:   if (inIdx == outIdx || updateQueue[outIdx]!=cmd) return;
                     outIdx = (outIdx + 1) % updateQueueSize; // pop entry from queue 
                     fillBuffer((byte*) pendingZoneStatus,maxFields05);
-                  
                     break;
 //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 device 16 in slot 24  
 //11111111 1 00111111 11111111 11110011 11111111 11111111 11111111 11111111  slot 11   
@@ -300,8 +321,8 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
        case 0x28:   address=9;break;  // the address will depend on the panel request command.
        case 0x33:   address=10;break;
        case 0x39:   address=11;break;
-       case 0x70:   //process send; 
-                    return;
+       //case 0x70:   //fillBuffer((byte*) cmd70,4);pendingZoneStatus[0]=0xFF;
+        //            break;
        case 0x6E:   pendingZoneStatus[0]=0xFF;return; // lcd response from a5 request.  Clear flag;
        default:     return;            
     }
