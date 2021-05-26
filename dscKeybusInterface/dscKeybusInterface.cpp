@@ -889,9 +889,8 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       if (isrPanelBitTotal == 7) {
 
         switch (isrPanelData[0]) {
-          case 0x05: statusCmd = 0x05;
-          //start expander
-          case 0x0A:
+          case 0x05:statusCmd = 0x05;
+          case 0x0A:statusCmd = 0x05; 
           case 0x11: 
           case 0x28: 
           case 0x33:
@@ -900,7 +899,6 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
           case 0x70:
           case 0x39: processModuleResponse(isrPanelData[0]);break;
           //end expander
-          case 0x0A: statusCmd = 0x05; break;
           case 0x1B: statusCmd = 0x1B; break;
           default: statusCmd = 0; break;
         }
