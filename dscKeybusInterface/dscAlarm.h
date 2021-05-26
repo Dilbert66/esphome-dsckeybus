@@ -1352,12 +1352,12 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
     
   line1DisplayCallback(lcdLine1);
   line2DisplayCallback(lcdLine2);
-  
+  /*
     rtrim(lcdLine1);
     rtrim(lcdLine2);
     lcdLine1=lcdLine1.append(" ").append(lcdLine2);
     partitionMsgChangeCallback(partition+1,lcdLine1);
-  
+  */
   
 }
 
