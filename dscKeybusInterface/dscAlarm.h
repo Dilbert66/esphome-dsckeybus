@@ -205,7 +205,7 @@ void alarm_trigger_panic () {
 
 void processMenu(byte key) {
    
-    ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
+    //ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
             //  byte test[4]={1,2,3,4};
            //if (key=='7') dsc.setLCDSend(test,4);
     //dsc.forceRedundant=true;
@@ -1043,7 +1043,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
     digits=0;
     //if (dsc.status[partition] != lastStatus[partition]) newStatus=true;
     
-    ESP_LOGD("info","status %02X, last status %02X,line2status %02X,selection %02X",dsc.status[partition],lastStatus[partition],line2Status,currentSelection);
+   // ESP_LOGD("info","status %02X, last status %02X,line2status %02X,selection %02X",dsc.status[partition],lastStatus[partition],line2Status,currentSelection);
     switch (dsc.status[partition]) {
       case 0x01: lcdLine1 = "Partition ready";
                  lcdLine2 = "";
