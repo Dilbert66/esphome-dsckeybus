@@ -81,14 +81,12 @@ custom_component:
          case 2: id(p2).publish_state(statusCode); break;
       } // if you only have one partition, remove the case 2 and corresponding p2 sensor. You can also add more partitions if needed
     });
-    
-    DSCkeybus->onPartitionMsgChange([&](uint8_t partition,std::string msg) {
+     DSCkeybus->onPartitionMsgChange([&](uint8_t partition,std::string msg) {
        switch(partition) {
          case 1: id(m1).publish_state(msg); break;
          case 2: id(m2).publish_state(msg); break;
       } // if you only have one partition, remove the case 2 statement  and corresponding p2 sensor. You can also add more partitions if needed
     });
-   
    
     DSCkeybus->onTroubleStatusChange([&](troubleStatus ts,bool open) {
         switch(ts) {
@@ -114,8 +112,11 @@ custom_component:
             id(event1).publish_state(msg);
     });  
     DSCkeybus->onLights([&](std::string msg) {
-            id(lights1).publish_state(msg);
-    });     
+            id(lights).publish_state(msg);
+    });   
+    DSCkeybus->onBeeps([&](std::string beep) {
+            id(beeps).publish_state(beep);
+    });    
     DSCkeybus->onFireStatusChange([&](uint8_t partition, bool open) {
       switch (partition) {
           case 1: id(f1).publish_state(open); break;
@@ -311,6 +312,7 @@ text_sensor:
     #name: "$systemName Partition 2 Status " # uncomment to show in home assistant.  
     icon: "mdi:shield"  
     # more verbose message regarding the partition status. ie zones open, bypassed, etc
+
   - platform: template
     id: m1
     name: "$systemName Partition 1 Msg "
@@ -318,7 +320,8 @@ text_sensor:
   - platform: template
     id: m2
     #name: "$systemName Partition 2 Msg " # uncomment to show in home assistant
-    icon: "mdi:alert-box"    
+    icon: "mdi:alert-box"
+   
   - platform: template
     id: line1
     name: "$systemName line1"
@@ -332,9 +335,13 @@ text_sensor:
     name: "$systemName event1"
     icon: "mdi:alert-box"  
   - platform: template
-    id: lights1
-    name: "$systemName lights1"
-    icon: "mdi:alert-box"      
+    id: lights
+    name: "$systemName lights"
+    icon: "mdi:alert-box"
+  - platform: template
+    id: beeps
+    name: "$systemName beeps"
+    icon: "mdi:alert-box"  
    
   - platform: template
     id: tr_msg

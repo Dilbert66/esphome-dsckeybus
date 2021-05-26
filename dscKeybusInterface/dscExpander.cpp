@@ -275,7 +275,7 @@ void  ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(by
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
 #endif
-    if (!address) return; //cmds 05/11 return here
+    if (!address) return; //cmds 05/11/0A return here
     for (int idx=0;idx<moduleIdx;idx++) {  //get the buffer data from the module record that matches the address we need
         if (modules[idx].address==address) {
              pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
@@ -351,6 +351,7 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
        case 0xA:   address=13;break;
        case 0xC:   address=14;break;
        case 0xE:   address=16;break;
+       case 0x20:  return;
        default:     return;            
     }
     moduleCmd=0xE6;

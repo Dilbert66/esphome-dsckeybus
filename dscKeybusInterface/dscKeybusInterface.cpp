@@ -891,6 +891,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         switch (isrPanelData[0]) {
           case 0x05: statusCmd = 0x05;
           //start expander
+          case 0x0A:
           case 0x11: 
           case 0x28: 
           case 0x33:
