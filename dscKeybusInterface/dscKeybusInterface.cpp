@@ -541,7 +541,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case '7': writeKey = 0x1C; break;
         case '8': writeKey = 0x22; break;
         case '9': writeKey = 0x27; break;
-        case '*': writeKey = 0x28; if (status[writePartition - 1] < 0x9E) starKeyCheck = true; break;
+        case '*': writeKey = 0x28; if (status[writePartition - 1] < 0x9E && status[writePartition-1] != 0x22) starKeyCheck = true; break;
         case '#': writeKey = 0x2D; break;
         case 'f': case 'F': writeKey = 0xBB; writeAlarm = true; break;                    // Keypad fire alarm
         case 'b': case 'B': writeKey = 0x82; break;                                       // Enter event buffer

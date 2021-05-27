@@ -208,7 +208,7 @@ void processMenu(byte key) {
     ESP_LOGD("info","key %d pressed, state=%02X,current=%d",key,dsc.status[defaultPartition-1],currentSelection+1);
             //  byte test[4]={1,2,3,4};
            //if (key=='7') dsc.setLCDSend(test,4);
-    //dsc.forceRedundant=true;
+    dsc.forceRedundant=true;
      if (key=='#' ) {
         currentSelection=0xFF;
         line2Status=0;
@@ -297,6 +297,21 @@ void processMenu(byte key) {
             
         return;
     }
+    
+    if (dsc.status[defaultPartition-1]==0xA2) { //alarm memory
+      
+        if (key=='*' && currentSelection > 0) {
+         
+        }
+              
+        else if (key=='>') currentSelection=getNextOption(currentSelection);
+        else if (key=='<') currentSelection=getPreviousOption(currentSelection);
+        else currentSelection=0xFF;
+
+            
+        return;
+    }
+    
     
     if (dsc.status[defaultPartition-1]==0xA0) { //bypass
       
@@ -1046,7 +1061,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
     ESP_LOGD("info","status %02X, last status %02X,line2status %02X,selection %02X",dsc.status[partition],lastStatus[partition],line2Status,currentSelection);
     switch (dsc.status[partition]) {
       case 0x01: lcdLine1 = "Partition ready";
-                 lcdLine2 = "";
+                 lcdLine2 = " ";
                   if (pausedZones) resetZones();; break;
       case 0x02: lcdLine1 = "Stay         ";
                  lcdLine2 = "zones open      ";
@@ -1116,15 +1131,15 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
       case 0x8F: lcdLine1 = "Invalid      ";
                  lcdLine2 = "access code     "; break;
       case 0x9E: lcdLine1 = "Press (*) for <>";
-                 lcdLine2 = ""; break;
-      case 0x9F: lcdLine1 = "Enter        ";
-                 lcdLine2 = "access code     "; break;
-      case 0xA0: lcdLine1 = "Zone bypass   <>     ";
-                 lcdLine2 = ""; break;
+                 lcdLine2 = " "; break;
+      case 0x9F: lcdLine1 = "Enter  ";
+                 lcdLine2 = "access code   "; break;
+      case 0xA0: lcdLine1 = "Zone bypass   <>";
+                 lcdLine2 = " "; break;
       case 0xA1: lcdLine1 = "Trouble menu     <>    ";
-                 lcdLine2 = ""; break;
-      case 0xA2: lcdLine1 = "Alarm memory     <>    ";
-                 lcdLine2 = ""; break;
+                 lcdLine2 = " "; break;
+      case 0xA2: lcdLine1 = "Alarm memory     <> ";
+                 lcdLine2 = " "; break;
       case 0xA3: lcdLine1 = "Door         ";
                  lcdLine2 = "chime enabled   "; break;
       case 0xA4: lcdLine1 = "Door         ";
@@ -1158,18 +1173,18 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
       case 0xB8: lcdLine1 = "Enter *      ";
                  lcdLine2 = "function code   "; break;
       case 0xB9: lcdLine1 = "Zone Tamper <>";
-                 lcdLine2 = ""; break;
+                 lcdLine2 = " "; break;
       case 0xBA: lcdLine1 = "Zones low battery <>";
-                 lcdLine2 = ""; break;
+                 lcdLine2 = " "; break;
       case 0xBC: lcdLine1 = "*5 Enter new ";
                  digits=6;
                  lcdLine2 = "6-digit code    "; break;
       case 0xC6: lcdLine1 = " Zone faults  <>";
-                 lcdLine2 = ""; break;
+                 lcdLine2 = " "; break;
       case 0xC7: lcdLine1 = "Partition    ";
                  lcdLine2 = "disabled        "; break;
       case 0xC8: lcdLine1 = "Service req.  <>";
-                 lcdLine2 = ""; break;
+                 lcdLine2 = " "; break;
       case 0xCE: lcdLine1 = "Active camera";
                  lcdLine2 = "monitor select. "; break;
       case 0xD0: lcdLine1 = "*2: Keypads  ";
@@ -1185,45 +1200,45 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
                  lcdLine2 = "slot assignment "; break;
       case 0xE6: lcdLine1 = "Input (2 digits)";
                  digits=2;
-                 lcdLine2 = "";  break;
+                 lcdLine2 = " ";  break;
       case 0xE7: lcdLine1 = "Input:       ";
                  digits=3;
-                 lcdLine2 = "3 digits        ";decimalInput=true; break;
+                 lcdLine2 = "3 digits    ";decimalInput=true; break;
       case 0xE8: lcdLine1 = "Input:       ";
                   digits=4;
                  lcdLine2 = "4 digits        "; break;
       case 0xE9: lcdLine1 = "Input:       ";
                   digits=5;
-                 lcdLine2 = "5 digits        "; break;
+                 lcdLine2 = "5 digits    "; break;
       case 0xEA: lcdLine1 = "Input HEX:   ";
                  digits=2;
                  hex=true;
-                 lcdLine2 = "2 digits        "; break;
+                 lcdLine2 = "2 digits    "; break;
       case 0xEB: lcdLine1 = "Input hex(4dig)";
                  digits=4;
                  hex=true;
-                 lcdLine2 = ""; break;
+                 lcdLine2 = " "; break;
       case 0xEC: lcdLine1 = "Input hex(6dig)";
                  digits=6;
                  hex=true;
-                 lcdLine2 = ""; break;
+                 lcdLine2 = " "; break;
       case 0xED: lcdLine1 = "Input HEX:   ";
                  digits=32;
                  hex=true;
-                 lcdLine2 = "32 digits       "; break;
+                 lcdLine2 = "32 digits  "; break;
       case 0xEE: lcdLine1 = "Input: options     ";
                  options=true;
                  lcdLine2 = "option per zone "; break;
       case 0xEF: lcdLine1 = "Module       ";
-                 lcdLine2 = "supervision     "; break;
+                 lcdLine2 = "supervision   "; break;
       case 0xF0: lcdLine1 = "Function     ";
-                 lcdLine2 = "key 1           "; break;
+                 lcdLine2 = "key 1      "; break;
       case 0xF1: lcdLine1 = "Function     ";
-                 lcdLine2 = "key 2           "; break;
+                 lcdLine2 = "key 2        "; break;
       case 0xF2: lcdLine1 = "Function     ";
-                 lcdLine2 = "key 3           "; break;
+                 lcdLine2 = "key 3       "; break;
       case 0xF3: lcdLine1 = "Function     ";
-                 lcdLine2 = "key 4           "; break;
+                 lcdLine2 = "key 4      "; break;
       case 0xF4: lcdLine1 = "Function     ";
                  lcdLine2 = "key 5           "; break;
       case 0xF5: lcdLine1 = "Wireless mod.";
@@ -1233,14 +1248,15 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
       case 0xF7: lcdLine1 = "*8: Installer"; decimalInput=false;
                  digits=2;
                  lcdLine2 = "menu, 2 digits  "; break;
-      case 0xF8: lcdLine1 = "Keypad       ";
-                 lcdLine2 = "programming     "; break;
-      case 0xFA: lcdLine1 = "Input:       ";
+      case 0xF8: lcdLine1 = "Keypad    ";
+                 lcdLine2 = "programming"; break;
+      case 0xFA: lcdLine1 = "Input:   ";
                  digits=6;
-                 lcdLine2 = "6 digits        "; break;
+                 lcdLine2 = "6 digits "; break;
       default: lcdLine2 = dsc.status[partition];digits=0;
     }
-    
+
+ if (!skip) {     
 
     if (dsc.status[defaultPartition-1] < 0x04 ) {
         if (currentSelection < 0xFF) {
@@ -1255,7 +1271,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
           lcdLine2.append(s);            
         }
     }
- if (!skip) {   
+
   if (dsc.status[partition]==0xA0) { //bypass
             
           if (currentSelection == 0xFF ||  lastStatus[partition] != dsc.status[partition]) 
@@ -1275,6 +1291,21 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
             lcdLine2.append(s);
          }
  } 
+ 
+   if (dsc.status[partition]==0xA2) { //alarm memory
+            
+          if (currentSelection == 0xFF ||  lastStatus[partition] != dsc.status[partition]) 
+                currentSelection=getNextOption(0xFF);
+
+          if (currentSelection < MAXZONES) {
+            char s[16];
+            lcdLine2="";
+            char bypassStatus=' ';
+ 
+            sprintf(s,"zone %02d",currentSelection);
+            lcdLine2.append(s);
+         }
+ }
 
 
       if (dsc.status[partition]==0x9E) { // main menu
@@ -1314,7 +1345,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
        // }
     } 
 
-  
+ 
   if (options) {
      lcdLine2=getOptionsString(); 
   } else if (line2Status == dsc.status[partition] && digits > 0 ) {
@@ -1332,6 +1363,7 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
 
   } 
   
+ 
    if (beeps) {
        /*
         char s[12];
@@ -1344,21 +1376,18 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
        
    }
    
-    lastStatus[partition] = dsc.status[partition];
+   
  }
- 
- 
 
-    
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 !="") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 !="") line2DisplayCallback(lcdLine2);
   
     rtrim(lcdLine1);
     rtrim(lcdLine2);
     lcdLine1=lcdLine1.append(" ").append(lcdLine2);
     partitionMsgChangeCallback(partition+1,lcdLine1);
   
-  
+   lastStatus[partition] = dsc.status[partition];
 }
 
 
@@ -1452,7 +1481,7 @@ void printPanel_0x6E() {
     }
   }
      //ESP_LOGD("info","printpanel6e");
-      lightsCallback(group1msg);
+      if (group1msg !="" ) lightsCallback(group1msg);
 }
 
 
@@ -1485,7 +1514,7 @@ void processProgramZones(byte startByte) {
         byteCount++;
   }
     group1msg.append(group2msg);
-    lightsCallback(group1msg);
+    if (group1msg !="")  lightsCallback(group1msg);
 
 
 }
@@ -1781,8 +1810,8 @@ void printPanelStatus0(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 !="") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 !="") line2DisplayCallback(lcdLine2);
 }
 
 
@@ -1883,8 +1912,8 @@ void printPanelStatus1(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 }
 
 
@@ -2018,8 +2047,8 @@ void printPanelStatus2(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 }
 
 
@@ -2107,8 +2136,8 @@ void printPanelStatus3(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 }
 
 
@@ -2169,8 +2198,8 @@ void printPanelStatus4(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 }
 
 
@@ -2208,8 +2237,8 @@ void printPanelStatus5(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 }
 
 
@@ -2234,8 +2263,8 @@ void printPanelStatus14(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 }
 
 void printPanelStatus16(byte panelByte) {
@@ -2257,8 +2286,8 @@ void printPanelStatus16(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 }
 
 
@@ -2328,8 +2357,8 @@ void printPanelStatus17(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 
 }
 
@@ -2378,8 +2407,8 @@ void printPanelStatus18(byte panelByte) {
     lcdLine1 = "Unknown data";
     lcdLine2 = " ";
   }
-  line1DisplayCallback(lcdLine1);
-  line2DisplayCallback(lcdLine2);
+  if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
+  if (lcdLine2 != "") line2DisplayCallback(lcdLine2);
 }
 
 
@@ -2415,7 +2444,7 @@ void pauseZones() {
     root["open_zone_7"] = 0;
 */
    //clear open zones
-    lightsCallback(""); //clear program line
+    lightsCallback(" "); //clear program line
 }
 
 
