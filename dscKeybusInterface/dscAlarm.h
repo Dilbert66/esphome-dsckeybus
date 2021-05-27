@@ -216,7 +216,8 @@ void processMenu(byte key) {
         setStatus(defaultPartition-1,true,true); 
         return;
       }
-
+    
+    
 
     if (dsc.status[defaultPartition-1] < 0x04) { 
             
@@ -298,13 +299,9 @@ void processMenu(byte key) {
         return;
     }
     
-    if (dsc.status[defaultPartition-1]==0xA2) { //alarm memory
+    if ( dsc.status[defaultPartition-1]==0xA2) { //alarm memory
       
-        if (key=='*' && currentSelection > 0) {
-         
-        }
-              
-        else if (key=='>') currentSelection=getNextOption(currentSelection);
+        if (key=='>') currentSelection=getNextOption(currentSelection);
         else if (key=='<') currentSelection=getPreviousOption(currentSelection);
         else currentSelection=0xFF;
 
@@ -312,6 +309,11 @@ void processMenu(byte key) {
         return;
     }
     
+    if (dsc.status[defaultPartition-1]==0x11) { //alarms
+        if (key=='>') currentSelection=getNextAlarmedZone(currentSelection);
+        if (key=='<') currentSelection=getPreviousAlarmedZone(currentSelection);
+        setStatus(defaultPartition-1,true);
+    }
     
     if (dsc.status[defaultPartition-1]==0xA0) { //bypass
       
@@ -543,6 +545,25 @@ byte getPreviousEnabledZone(byte start) {
     s=start==0xFF||start==0?MAXZONES:start;
     for (zone=s-1;zone >=0 && zone <MAXZONES;zone--) {
         if (zoneStatus[zone].enabled ) return zone;
+    }
+    return start;
+}
+
+byte getNextAlarmedZone(byte start) {
+    byte zone;
+    for (zone=start+1;zone < MAXZONES;zone++) {
+        if (zoneStatus[zone].alarm ) return zone;
+    }
+    return start;
+}
+
+
+
+byte getPreviousAlarmedZone(byte start) {
+    byte zone,s;
+    s=start==0xFF||start==0?MAXZONES:start;
+    for (zone=s-1;zone >=0 && zone <MAXZONES;zone--) {
+        if (zoneStatus[zone].alarm ) return zone;
     }
     return start;
 }
@@ -1095,8 +1116,8 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
                  lcdLine2 = "available       "; break;
       case 0x10: lcdLine1 = "Keypad       ";
                  lcdLine2 = "lockout         "; break;
-      case 0x11: lcdLine1 = "Partition    ";
-                 lcdLine2 = "in alarm        "; break;
+      case 0x11: lcdLine1 = "Partition in alarm";
+                 lcdLine2 = " "; break;
       case 0x12: lcdLine1 = "Battery check";
                  lcdLine2 = "in progress     "; break;
       case 0x14: lcdLine1 = "Auto-arm     ";
@@ -1110,8 +1131,8 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
                  lcdLine2 = "Keypad blanked  "; break;
       case 0x19: lcdLine1 = "Alarm        ";
                  lcdLine2 = "occurred        "; break;
-      case 0x22: lcdLine1 = "Recent       ";
-                 lcdLine2 = "closing         "; break;
+      case 0x22: lcdLine1 = "Alarms occurred";
+                 lcdLine2 = "Press # to exit"; break;
       case 0x2F: lcdLine1 = "Keypad LCD   ";
                  lcdLine2 = "test            "; break;
       case 0x33: lcdLine1 = "Command      ";
@@ -1292,7 +1313,20 @@ void setStatus(byte partition,bool force=false,bool skip=false) {
          }
  } 
  
-   if (dsc.status[partition]==0xA2) { //alarm memory
+   if ( dsc.status[partition]==0x11) { //alarms
+            
+          if (currentSelection == 0xFF ||  lastStatus[partition] != dsc.status[partition]) 
+                currentSelection=getNextAlarmedZone(0xFF);
+
+          if (currentSelection < MAXZONES) {
+            char s[16];
+            lcdLine2="";
+            sprintf(s,"zone %02d",currentSelection+1);
+            lcdLine2.append(s);
+         }
+ } 
+ 
+   if (dsc.status[partition]==0xA2  ) { //alarm memory
             
           if (currentSelection == 0xFF ||  lastStatus[partition] != dsc.status[partition]) 
                 currentSelection=getNextOption(0xFF);
