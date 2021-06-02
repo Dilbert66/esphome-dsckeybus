@@ -659,7 +659,7 @@ void printPacket(const char* label,char cmd,volatile byte cbuf[], int len) {
       } 
       
       if (debug > 2) {
-        printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
+        printPacket("Moduledata:",dsc.moduleCmd,dsc.moduleData,16);
         printTimestamp();
         Serial.print("[MODULE] ");Serial.print(dsc.currentCmd,HEX);Serial.print(": ");
         dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);

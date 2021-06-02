@@ -48,6 +48,7 @@ volatile bool dscKeybusInterface::wroteAsterisk;
 volatile bool dscKeybusInterface::bufferOverflow;
 volatile byte dscKeybusInterface::panelBufferLength;
 volatile byte dscKeybusInterface::currentModuleIdx;
+volatile byte dscKeybusInterface::moduleResponseCmd;
 volatile byte dscKeybusInterface::moduleBufferLength;
 volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
 volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
@@ -923,7 +924,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
        default:     return;            
     }
     
-    moduleCmd=cmd; //set command to respond on
+    moduleResponseCmd=cmd; //set command to respond on
     moduleSubCmd=0;
     currentModuleIdx=0;
     writeModuleBit=9; //set bit location where we start sending our own data on the command
@@ -949,7 +950,7 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
        case 0xE:   address=16;break;
        default:     return;            
     }
-    moduleCmd=0xE6;
+    moduleResponseCmd=0xE6;
     moduleSubCmd=subcmd;
     currentModuleIdx=0;
     writeModuleBit=17;
@@ -1040,7 +1041,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
           }
         }
       } 
-      else if (isrPanelData[0]==moduleCmd && writeModulePending && !wroteAsterisk ) {
+      else if (isrPanelData[0]==moduleResponseCmd && writeModulePending && !wroteAsterisk ) {
         if (isrPanelBitTotal == writeModuleBit || (writeStart && isrPanelBitTotal > writeModuleBit && isrPanelBitTotal <= writeModuleBit + (moduleBufferLength * 8))) {
            writeStart=true;
           if (!((writeModuleBuffer[currentModuleIdx] >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
@@ -1048,12 +1049,13 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
           if (isrPanelBitTotal == writeModuleBit + (moduleBufferLength * 8)) {
                 writeStart = false;
                 writeModulePending=false;
+                moduleResponseCmd=0;
           }  else if (isrPanelBitCount==7) {
               currentModuleIdx++;
               if (currentModuleIdx==moduleBufferLength) {
                    writeStart = false;
                    writeModulePending=false;
-                   moduleCmd=0;
+                   moduleResponseCmd=0;
               }
           }
         }
