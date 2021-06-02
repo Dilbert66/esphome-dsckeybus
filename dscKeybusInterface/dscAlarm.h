@@ -1076,7 +1076,7 @@ void update() override {
         }
       } 
       if (debug > 1) 
-        printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
+        printPacket("Moduledata:",dsc.moduleCmd,dsc.moduleData,16);
       if (debug > 2) {
         printTimestamp();
         Serial.print("[MODULE] ");Serial.print(dsc.currentCmd,HEX);Serial.print(": ");

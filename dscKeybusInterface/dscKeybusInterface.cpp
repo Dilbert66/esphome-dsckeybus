@@ -830,7 +830,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
         }
       }
         //start expander
-        else if (isrPanelData[0]==moduleCmd && writeModulePending   ) {
+        else if (isrPanelData[0]==moduleResponseCmd && writeModulePending   ) {
         if (isrPanelBitTotal == writeModuleBit || (writeStart && isrPanelBitTotal > writeModuleBit && isrPanelBitTotal <= writeModuleBit + (moduleBufferLength * 8))) {
            writeStart=true;
           if (!((writeModuleBuffer[currentModuleIdx] >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
@@ -838,12 +838,13 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
           if (isrPanelBitTotal == writeModuleBit + (moduleBufferLength * 8)) {
                 writeStart = false;
                 writeModulePending=false;
+                moduleResponseCmd=0;
           }  else if (isrPanelBitCount==7) {
               currentModuleIdx++;
               if (currentModuleIdx==moduleBufferLength) {
                    writeStart = false;
                    writeModulePending=false;
-                   moduleCmd=0;
+                   moduleResponseCmd=0;
               }
           }
         }

@@ -195,7 +195,9 @@ class dscKeybusInterface {
     static volatile byte currentCmd;
     bool forceRedundant;    
     //end expander
-
+    static volatile byte statusCmd, moduleCmd, moduleSubCmd;
+    
+    
   private:
 
     void processPanelStatus();
@@ -379,7 +381,7 @@ class dscKeybusInterface {
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte statusCmd, moduleCmd, moduleSubCmd;
+
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize];
     
@@ -402,7 +404,7 @@ class dscKeybusInterface {
     static byte maxFields05; 
     static byte maxFields11;
     static byte writeModuleBit;
-    static volatile byte moduleBufferLength,currentModuleIdx;
+    static volatile byte moduleBufferLength,currentModuleIdx,moduleResponseCmd;
     volatile static byte pendingZoneStatus[6];
     volatile static byte writeModuleBuffer[6];
     static moduleType modules[maxModules];

@@ -225,6 +225,7 @@ volatile byte dscKeybusInterface::currentModuleIdx;
 volatile byte dscKeybusInterface::moduleBufferLength;
 volatile bool dscKeybusInterface::writeModulePending;
 byte dscKeybusInterface::writeModuleBit;
+volatile byte dscKeybusInterface::moduleResponseCmd;
 //end expander
 
 

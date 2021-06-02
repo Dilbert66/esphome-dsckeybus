@@ -327,7 +327,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
        default:     return;            
     }
     
-    moduleCmd=cmd; //set command to respond on
+    moduleResponseCmd=cmd; //set command to respond on
     moduleSubCmd=0;
     currentModuleIdx=0;
     writeModuleBit=9; //set bit location where we start sending our own data on the command
@@ -354,7 +354,7 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
        case 0x20:  return;
        default:     return;            
     }
-    moduleCmd=0xE6;
+    moduleResponseCmd=0xE6;
     moduleSubCmd=subcmd;
     currentModuleIdx=0;
     writeModuleBit=17;
