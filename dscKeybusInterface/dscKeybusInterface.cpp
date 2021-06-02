@@ -21,10 +21,10 @@
 
 
 #if defined(ESP32)
-portMUX_TYPE dscKeybusInterface::timer0Mux = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE dscKeybusInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
 
 #if ESP_IDF_VERSION_MAJOR < 4
-hw_timer_t * dscKeybusInterface::timer0 = NULL;
+hw_timer_t * dscKeybusInterface::timer1 = NULL;
 
 #else  // ESP-IDF 4+
 esp_timer_handle_t timer0;
@@ -80,14 +80,14 @@ void dscKeybusInterface::begin(Stream &_stream) {
   timer1_attachInterrupt(dscDataInterrupt);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
 
-  // esp32 timer0 calls dscDataInterrupt() from dscClockInterrupt()
+  // esp32 timer1 calls dscDataInterrupt() from dscClockInterrupt()
   #elif defined(ESP32)
   #if ESP_IDF_VERSION_MAJOR < 4
-  timer0 = timerBegin(0, 80, true);
-  timerStop(timer0);
-  timerAttachInterrupt(timer0, &dscDataInterrupt, true);
-  timerAlarmWrite(timer0, 250, true);
-  timerAlarmEnable(timer0);
+  timer1 = timerBegin(0, 80, true);
+  timerStop(timer1);
+  timerAttachInterrupt(timer1, &dscDataInterrupt, true);
+  timerAlarmWrite(timer1, 250, true);
+  timerAlarmEnable(timer1);
   #else  // IDF4+
   esp_timer_create(&timer0Parameters, &timer0);
   #endif  // ESP_IDF_VERSION_MAJOR
@@ -119,8 +119,8 @@ void dscKeybusInterface::stop() {
   // Disables esp32 timer0
   #elif defined(ESP32)
   #if ESP_IDF_VERSION_MAJOR < 4
-  timerAlarmDisable(timer0);
-  timerEnd(timer0);
+  timerAlarmDisable(timer1);
+  timerEnd(timer1);
   #else  // ESP-IDF 4+
   esp_timer_stop(timer0);
   #endif  // ESP_IDF_VERSION_MAJOR
@@ -149,7 +149,7 @@ bool dscKeybusInterface::loop() {
 
   // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
   #if defined(ESP32)
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #else
   noInterrupts();
   #endif
@@ -158,7 +158,7 @@ bool dscKeybusInterface::loop() {
   else keybusConnected = true;
 
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #else
   interrupts();
   #endif
@@ -186,7 +186,7 @@ bool dscKeybusInterface::loop() {
 
   // Resets counters when the buffer is cleared
   #if defined(ESP32)
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #else
   noInterrupts();
   #endif
@@ -197,7 +197,7 @@ bool dscKeybusInterface::loop() {
   }
 
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #else
   interrupts();
   #endif
@@ -270,7 +270,7 @@ bool dscKeybusInterface::handlePanel() {
 
   // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
   #if defined(ESP32)
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #else
   noInterrupts();
   #endif
@@ -279,7 +279,7 @@ bool dscKeybusInterface::handlePanel() {
   else keybusConnected = true;
 
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #else
   interrupts();
   #endif
@@ -307,7 +307,7 @@ bool dscKeybusInterface::handlePanel() {
 
   // Resets counters when the buffer is cleared
   #if defined(ESP32)
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #else
   noInterrupts();
   #endif
@@ -318,7 +318,7 @@ bool dscKeybusInterface::handlePanel() {
   }
 
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #else
   interrupts();
   #endif
@@ -666,14 +666,14 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
   #elif defined(ESP8266)
   timer1_write(1250);
 
-  // esp32 timer0 calls dscDataInterrupt() in 250us
+  // esp32 timer1 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
   #if ESP_IDF_VERSION_MAJOR < 4
-  timerStart(timer0);
+  timerStart(timer1);
   #else  // IDF4+
   esp_timer_start_periodic(timer0, 250);
   #endif
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #endif
 
   static unsigned long previousClockHighTime;
@@ -852,12 +852,12 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
     }
   }
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #endif
 }
 
 
-// Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer0 after 250us to read the data line
+// Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer1 after 250us to read the data line
 #if defined(__AVR__)
 void dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
@@ -865,11 +865,11 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
   #if ESP_IDF_VERSION_MAJOR < 4
-  timerStop(timer0);
+  timerStop(timer1);
   #else // IDF 4+
   esp_timer_stop(timer0);
   #endif
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
 #endif
 
   // Panel sends data while the clock is high
@@ -959,7 +959,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
     }
   }
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #endif
 
 } 
