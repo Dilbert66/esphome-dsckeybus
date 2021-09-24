@@ -176,7 +176,7 @@ alarm_control_panel:
 
 ## Wiring
 ### Isolated version
-![dscinterface-isolated](https://user-images.githubusercontent.com/7193213/134560651-039ffb15-b310-4389-b7a4-f043babf2177.png)
+![dscinterface-isolated](https://user-images.githubusercontent.com/7193213/134600093-333cac58-58d9-4fb7-9aed-aa3de9de0d52.png)
 
 ### Non-isolated simple version	
 ![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
