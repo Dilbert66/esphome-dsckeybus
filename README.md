@@ -152,6 +152,10 @@ alarm_control_panel:
 
 ![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
 
+## Alternative ground isolated version
+
+![dscinterface-isolated](https://user-images.githubusercontent.com/7193213/134977714-47471b6b-a33e-4f94-9369-97843813822f.png)
+
 ## Wiring Notes
 ### See DSC interface project for more info: https://github.com/taligentx/dscKeybusInterface
 
