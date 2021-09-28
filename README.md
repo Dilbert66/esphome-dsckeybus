@@ -150,7 +150,7 @@ alarm_control_panel:
 
 ## Wiring
 
-![dscinterface](https://user-images.githubusercontent.com/7193213/135170248-461eefd2-52db-434d-93ee-199a9dd2dab3.png)
+![dscinterface](https://user-images.githubusercontent.com/7193213/135171111-a1f723cf-43fc-4d4a-bdb9-61645630c7be.png)
 
 
 ## Alternative ground isolated version
