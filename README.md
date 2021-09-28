@@ -178,7 +178,7 @@ alarm_control_panel:
 
 ### Non-isolated simple version	
 	
-![dscinterface](https://user-images.githubusercontent.com/7193213/135170182-b35a9ea8-898a-451d-9cbb-1737cd381394.png)
+![dscinterface](https://user-images.githubusercontent.com/7193213/135171195-5495ced5-1438-4688-9656-ca6fdb65f274.png)
 
 
 ### Alternative ground isolated version
