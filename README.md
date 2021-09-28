@@ -183,10 +183,6 @@ alarm_control_panel:
 
 ![dscinterface-isolated](https://user-images.githubusercontent.com/7193213/135167503-eea2503e-f4fd-4b59-be4c-91a8303c2189.png)
 
-## Wiring Notes
-If using an external power supply (such as the usb connector), ensure you still connect the ground to the DSC panel (ONLY for the non isolated version). 
-For external power I recommend an adjustable LM2596 or MP1584EN buck converter module to convert the 12volts to 5v or 3.3 volt. 
-
 ## OTA updates
 In order to make OTA updates, connection switch in frontend must be switched to OFF since the DSC library is using interrupts.
 
