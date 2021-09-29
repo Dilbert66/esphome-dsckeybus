@@ -183,7 +183,7 @@ alarm_control_panel:
 
 ### Alternative ground isolated version
 
-![dscinterface-isolated](https://user-images.githubusercontent.com/7193213/135167503-eea2503e-f4fd-4b59-be4c-91a8303c2189.png)
+![dscinterface-isolated](https://user-images.githubusercontent.com/7193213/135284153-296735d3-1010-4bdc-89af-c3b74ec8ff05.png)
 
 ## OTA updates
 In order to make OTA updates, connection switch in frontend must be switched to OFF since the DSC library is using interrupts.
