@@ -195,7 +195,6 @@ class dscKeybusInterface {
     static volatile byte currentCmd;
     bool forceRedundant;    
     //end expander
-    
     static volatile byte statusCmd, moduleCmd, moduleSubCmd;
     
     

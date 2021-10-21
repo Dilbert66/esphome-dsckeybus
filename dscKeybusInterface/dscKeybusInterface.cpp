@@ -152,8 +152,7 @@ bool dscKeybusInterface::loop() {
   portENTER_CRITICAL(&timer1Mux);
   #else
   noInterrupts();
-  #endif 
-  
+  #endif
 
   if (millis() - keybusTime > 3000) keybusConnected = false;  // keybusTime is set in dscDataInterrupt() when the clock resets
   else keybusConnected = true;
