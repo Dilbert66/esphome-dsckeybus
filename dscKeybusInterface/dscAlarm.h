@@ -22,6 +22,7 @@ void disconnectKeybus() {
 }
 enum troubleStatus {acStatus,batStatus,trStatus,fireStatus,panicStatus};
 
+namespace esphome {
 class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
  public:
    DSCkeybushome( const char *accessCode="",  unsigned long cmdWaitTime=0)
@@ -751,4 +752,5 @@ const __FlashStringHelper *statusText(uint8_t statusCode)
 
 
 };
+}
 #endif
