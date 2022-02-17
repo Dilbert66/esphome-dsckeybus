@@ -274,6 +274,7 @@ bool dscKeybusInterface::loop() {
 // Deprecated, replaced by loop()
 bool dscKeybusInterface::handlePanel() {
 loop();
+return true;
 }
 
 

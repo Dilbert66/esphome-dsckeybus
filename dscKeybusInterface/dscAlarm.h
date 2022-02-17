@@ -1852,7 +1852,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     void printBeeps(byte panelByte) {
         dsc.statusChanged = true;
         beeps = dsc.panelData[panelByte] / 2;
-        char s[3];
+        char s[4];
         sprintf(s, "%d", beeps);
         beepsCallback(s);
         beepTime = millis();
