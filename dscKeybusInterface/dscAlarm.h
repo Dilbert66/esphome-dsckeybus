@@ -373,7 +373,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
                 currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
                 if (currentSelection < 11) line2DisplayCallback(mainMenu[currentSelection]);
             } else if (key == '*' && currentSelection > 0) {
-                char s[2];
+                char s[5];
 
                 sprintf(s, "%d", currentSelection % 10);
                 const char * out = strcpy(new char[3], s);
@@ -387,7 +387,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (dsc.status[defaultPartition - 1] == 0xA1) { //trouble
 
             if (key == '*' && currentSelection > 0) {
-                char s[2];
+                char s[5];
                 sprintf(s, "%d", currentSelection);
                 const char * out = strcpy(new char[3], s);
                 currentSelection = 0xFE;
@@ -405,7 +405,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (dsc.status[defaultPartition - 1] == 0xC8) { //trouble
 
             if (key == '*' && currentSelection > 0) {
-                char s[2];
+                char s[5];
                 sprintf(s, "%d", currentSelection);
                 const char * out = strcpy(new char[3], s);
                 currentSelection = 0xFF;
@@ -436,7 +436,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (dsc.status[defaultPartition - 1] == 0xA0) { //bypass
 
             if (key == '*' && currentSelection >= 0) {
-                char s[2];
+                char s[5];
                 sprintf(s, "%02d", currentSelection + 1);
                 const char * out = strcpy(new char[3], s);
                 dsc.write(out);
@@ -1208,7 +1208,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     void setStatus(byte partition, bool force = false, bool skip = false) {
-        static byte lastStatus[8];
+        static byte lastStatus[9];
         if (dsc.status[partition] == lastStatus[partition] && line2Status != dsc.status[partition] && beeps == 0 && !force) return;
 
         std::string lcdLine1;
@@ -1702,7 +1702,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
             if (options) {
                 lcdLine2 = getOptionsString();
             } else if (line2Status == dsc.status[partition] && digits > 0) {
-                char s[16];
+                char s[18];
                 lcdLine2 = "";
                 if (hex) {
                     sprintf(s, "[%X]  %d digits", line2Digit, digits);
@@ -1852,7 +1852,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     void printBeeps(byte panelByte) {
         dsc.statusChanged = true;
         beeps = dsc.panelData[panelByte] / 2;
-        char s[2];
+        char s[3];
         sprintf(s, "%d", beeps);
         beepsCallback(s);
         beepTime = millis();
@@ -1861,7 +1861,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     void printPanel_0x6E() {
-        char s1[2];
+        char s1[5];
         group1msg = "";
         if (decimalInput) {
             if (dsc.panelData[2] <= 0x63) group1msg.append("0");
@@ -1894,7 +1894,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         }
 
         byteCount = 0;
-        char s1[4];
+        char s1[5];
         if (startByte == 4 || startByte == 3) group1msg = "";
         if (startByte == 5) group2msg = "";
         for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
