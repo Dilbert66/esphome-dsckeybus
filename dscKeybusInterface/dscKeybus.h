@@ -22,6 +22,9 @@
 
 #include <Arduino.h>
 
+//#define EXPANDER   // enable the use of zone expanders. comment to remove
+
+
 #if defined(__AVR__)
 const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
 const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
@@ -39,6 +42,7 @@ const DRAM_ATTR byte dscBufferSize = 50;
 const DRAM_ATTR byte dscReadSize = 16;
 #endif
 
+#ifdef EXPANDER
 //start expander
 #if defined(__AVR__)
 const byte maxModules = 4;
@@ -62,6 +66,8 @@ const byte updateQueueSize=10; //zone pending update queue
         byte zoneStatusByte;
     };
 //end expander
+#endif
+
 
 // Exit delay target states
 #define DSC_EXIT_STAY 1
@@ -178,6 +184,7 @@ class dscKeybusInterface {
     bool handlePanel();         // Returns true if valid panel data is available.  Relabeled to loop()
     bool processRedundantData;  // Controls if repeated periodic commands are processed and displayed (default: false)
     
+#ifdef EXPANDER    
     //start expander
     void setZoneFault(byte zone,bool fault) ;
     void setLCDReceive();
@@ -192,12 +199,15 @@ class dscKeybusInterface {
     static byte maxZones;
     static bool enableModuleSupervision;    
     static bool debounce05;
-    static volatile byte currentCmd;
-    bool forceRedundant;    
+
+ 
     //end expander
+#endif 
+    static volatile byte currentCmd;
+    bool forceRedundant;     
+    
     static volatile byte statusCmd, moduleCmd, moduleSubCmd;
-    
-    
+
   private:
 
     void processPanelStatus();
@@ -384,7 +394,7 @@ class dscKeybusInterface {
 
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize];
-    
+#ifdef EXPANDER    
     //start expander
     const byte zoneOpen=3; //fault 
     const byte zoneClosed=2;// Normal 
@@ -410,6 +420,7 @@ class dscKeybusInterface {
     static moduleType modules[maxModules];
     static byte moduleSlots[6],cmd70[5],updateQueue[updateQueueSize];
     //end expander
+#endif    
 };
 
 #endif // dscKeybus_h

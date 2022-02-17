@@ -205,6 +205,7 @@ volatile byte dscKeybusInterface::moduleSubCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
 
+#ifdef EXPANDER
 //start expander
 bool dscKeybusInterface::debounce05;
 byte dscKeybusInterface::moduleSlots[6];
@@ -219,7 +220,7 @@ byte dscKeybusInterface::outIdx;
 byte dscKeybusInterface::maxFields05; 
 byte dscKeybusInterface::maxFields11;
 byte dscKeybusInterface::maxZones;
-byte dscKeybusInterface::panelVersion;
+
 bool dscKeybusInterface::enableModuleSupervision;
 volatile byte dscKeybusInterface::currentModuleIdx;
 volatile byte dscKeybusInterface::moduleBufferLength;
@@ -227,8 +228,8 @@ volatile bool dscKeybusInterface::writeModulePending;
 byte dscKeybusInterface::writeModuleBit;
 volatile byte dscKeybusInterface::moduleResponseCmd;
 //end expander
-
-
+#endif
+byte dscKeybusInterface::panelVersion;
 // Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
 // dscDataInterrupt() to read the data line
 #if defined(__AVR__)

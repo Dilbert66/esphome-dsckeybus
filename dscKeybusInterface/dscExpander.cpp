@@ -1,5 +1,5 @@
- #include "dscKeybus.h"
-
+#include "dscKeybus.h"
+#ifdef EXPANDER
 void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
        //set our response data for the 0x11 supervisory request
        if (panelVersion < 3) {
@@ -256,10 +256,11 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
 }
 
 
+
 #if defined(__AVR__)
 void dscKeybusInterface::dscKeybusInterface::fillBuffer(byte *src,int len) {
 #elif defined(ESP8266)
-void  ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::fillBuffer(byte *src,int len) {
+void  IRAM_ATTR dscKeybusInterface::dscKeybusInterface::fillBuffer(byte *src,int len) {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::fillBuffer(byte *src,int len) {
 #endif
@@ -271,7 +272,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::fillBuffer(byte *src,int 
 #if defined(__AVR__)
 void dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
 #elif defined(ESP8266)
-void  ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
+void  IRAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
 #endif
@@ -290,7 +291,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte addr
 #if defined(__AVR__)
 void dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
 #elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
+void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
 #endif
@@ -340,7 +341,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 #if defined(__AVR__)
 void dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
 #elif defined(ESP8266)
-void  ICACHE_RAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
+void  IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
 #endif
@@ -361,3 +362,4 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
     prepareResponse(address);
 
 }
+#endif

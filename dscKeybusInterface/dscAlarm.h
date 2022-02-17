@@ -1,6 +1,7 @@
 #ifndef dscalarm_h
 #define dscalarm_h
 
+
 #include "esphome.h"
 
 #include "dscKeybusInterface.h"
@@ -8,20 +9,24 @@
 //for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 #ifdef ESP32
 
-#define dscClockPin 22 // esp32 
-#define dscReadPin 21 // esp32
-#define dscWritePin 18 // esp32
+#define dscClockPin 22 // esp32: GPIO22
+#define dscReadPin 21 // esp32: GPIO21
+#define dscWritePin 18 // esp32: GPIO18
 
 #else
 
-#define dscClockPin 5 // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin 4 // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin 15 // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin 5 // esp8266: GPIO5 
+#define dscReadPin 4 // esp8266: GPIO4 
+#define dscWritePin 15 // esp8266: GPIO15 
 
 #endif
 
 #define MAXZONES 32 //set to 64 if your system supports it
 #define MODULESUPERVISION 0 //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
+
+//byte globalClockPin=id(dscClockPin);
+//byte globalReadPin=id(dscReadPin);
+//byte globalWritePin=id(dscWritePin);
 
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool forceDisconnect;
@@ -42,7 +47,7 @@ enum troubleStatus {
     rdyStatus,
     armStatus
 };
-namespace esphome {
+
 class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     public: DSCkeybushome(const char * accessCode = "", unsigned long cmdWaitTime = 0): accessCode(accessCode),
     cmdWaitTime(cmdWaitTime) {}
@@ -232,6 +237,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
             Serial.begin(115200);
         digitPtr = 0;
         set_update_interval(10);
+
         register_service( & DSCkeybushome::set_alarm_state, "set_alarm_state", {
             "partition",
             "state",
@@ -262,15 +268,17 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         currentSelection = 0xFF;
         systemStatusChangeCallback(STATUS_OFFLINE);
         forceDisconnect = false;
+#ifdef EXPANDER        
         dsc.enableModuleSupervision = MODULESUPERVISION;
-
         dsc.debounce05 = (cmdWaitTime > 0);
-        dsc.processModuleData = true; // Controls if keypad and module data is processed and displayed (default: false)
-        dsc.resetStatus();
         dsc.maxZones = MAXZONES;
         dsc.addModule(expanderAddr1);
         dsc.addModule(expanderAddr2);
+#endif         
+        dsc.resetStatus();       
+        dsc.processModuleData = true;        
         dsc.begin();
+
     }
 
     void default_partition(int partition) {
@@ -281,7 +289,9 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     void set_zone_fault(int zone, bool fault) {
         ESP_LOGD("Debug", "Setting Zone Fault: %d,%d", zone, fault);
+#ifdef EXPANDER        
         dsc.setZoneFault(zone, fault);
+#endif        
 
     }
 
@@ -742,7 +752,9 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (!forceDisconnect && dsc.loop()) { //Processes data only when a valid Keybus command has been read
             dsc.forceRedundant = false;
             if (firstrun) {
+#ifdef EXPANDER               
                 dsc.clearZoneRanges(); // start with clear expanded zones
+#endif                
                 dsc.write("*");
                 dsc.write("27##"); //fetch low battery status
                 byte test[4] = {
@@ -1139,8 +1151,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
                 systemMsg.append("TIME");
             }
             if (systemMsg == "") systemMsg = "OK";
-            if (previousSystemMsg != systemMsg)
-                troubleMsgStatusCallback(systemMsg);
+            //  if (previousSystemMsg != systemMsg) 
+            //   troubleMsgStatusCallback(systemMsg);
             previousSystemMsg = systemMsg;
 
         }
@@ -1175,8 +1187,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
                 Serial.println();
             }
         }
-        if (zoneStatusMsg != previousZoneStatusMsg)
-            zoneMsgStatusCallback(zoneStatusMsg);
+        // if (zoneStatusMsg != previousZoneStatusMsg)
+        //   zoneMsgStatusCallback(zoneStatusMsg); 
         previousZoneStatusMsg = zoneStatusMsg;
 
     }
@@ -3040,17 +3052,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     void pauseZones() {
         pausedZones = true;
-
-        /*
-            root["open_zone_0"] = 0;
-            root["open_zone_1"] = 0;
-            root["open_zone_2"] = 0;
-            root["open_zone_3"] = 0;
-            root["open_zone_4"] = 0;
-            root["open_zone_5"] = 0;
-            root["open_zone_6"] = 0;
-            root["open_zone_7"] = 0;
-        */
         //clear open zones
         lightsCallback(" "); //clear program line
     }
@@ -3062,5 +3063,5 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
 };
-}
+
 #endif
