@@ -271,10 +271,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 #ifdef EXPANDER        
         dsc.enableModuleSupervision = MODULESUPERVISION;
         dsc.debounce05 = (cmdWaitTime > 0);
-        dsc.maxZones = MAXZONES;
         dsc.addModule(expanderAddr1);
         dsc.addModule(expanderAddr2);
 #endif         
+        dsc.maxZones = MAXZONES;
         dsc.resetStatus();       
         dsc.processModuleData = true;        
         dsc.begin();

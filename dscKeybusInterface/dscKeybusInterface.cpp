@@ -273,8 +273,7 @@ bool dscKeybusInterface::loop() {
 
 // Deprecated, replaced by loop()
 bool dscKeybusInterface::handlePanel() {
-loop();
-return true;
+return loop();
 }
 
 
@@ -470,7 +469,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
 #if defined(__AVR__)
 bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #elif defined(ESP8266)
-bool IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+bool ICACHE_RAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #elif defined(ESP32)
 bool IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #endif
@@ -506,7 +505,7 @@ bool dscKeybusInterface::validCRC() {
 #if defined(__AVR__)
 void dscKeybusInterface::dscClockInterrupt() {
 #elif defined(ESP8266)
-void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
+void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 #endif
@@ -723,7 +722,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 #if defined(__AVR__)
 void dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
-void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
   #if ESP_IDF_VERSION_MAJOR < 4

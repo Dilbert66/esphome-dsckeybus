@@ -22,7 +22,7 @@
 
 #include <Arduino.h>
 
-//#define EXPANDER   // enable the use of zone expanders. comment to remove
+#define EXPANDER   // enable the use of zone expanders. comment to remove
 
 
 #if defined(__AVR__)
