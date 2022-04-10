@@ -94,6 +94,12 @@ class AlarmKeypadCard extends Polymer.Element {
             99% { color:transparent;  }
             100%{ color: #000;        }
         }
+        
+       .keypad_cmd_text {
+        font-size: calc(.3rem + .2vw);
+        font-style: italic; 
+        padding-left: .2rem;
+       }        
 
     </style>
     
@@ -152,26 +158,36 @@ class AlarmKeypadCard extends Polymer.Element {
                         class='mdc-button mdc-button--outlined'
                         toggles state="1"
                         on-click='setState'
-                        title='Unset'>1
+                        title='Unset'>1<span class="keypad_cmd_text">[[_text_1]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="4"
                         on-click='setState'
-                        title='Unset'>4
+                        title='Unset'>4<span class="keypad_cmd_text">[[_text_4]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="7"
                         on-click='setState'
-                        title='Unset'>7
+                        title='Unset'>7<span class="keypad_cmd_text">[[_text_7]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="*"
                         on-click='setState'
-                        title='Unset'>*
+                        title='Unset'>*<span class="keypad_cmd_text">[[_text_star]]</span>
                       </button>
+
+   <template is='dom-if' if='{{_view_bottom}}'>
+                     <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="E"
+                        on-click='setState'
+                        title='Unset'>[[_button_E]]
+                      </button>
+                      </template>
+                      
                     </div>
 
                     <div>
@@ -179,26 +195,35 @@ class AlarmKeypadCard extends Polymer.Element {
                         class='mdc-button mdc-button--outlined'
                         toggles state="2"
                         on-click='setState'
-                        title='Unset'>2
+                        title='Unset'>2<span class="keypad_cmd_text">[[_text_2]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="5"
                         on-click='setState'
-                        title='Unset'>5
+                        title='Unset'>5<span class="keypad_cmd_text">[[_text_5]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="8"
                         on-click='setState'
-                        title='Unset'>8
+                        title='Unset'>8<span class="keypad_cmd_text">[[_text_8]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="0"
                         on-click='setState'
-                        title='Unset'>0
+                        title='Unset'>0<span class="keypad_cmd_text">[[_text_0]]</span>
                       </button>
+                    <template is='dom-if' if='{{_view_bottom}}'>
+                     <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="F"
+                        on-click='setState'
+                        title='Unset'>[[_button_F]]
+                      </button>
+                      </template>                      
+                      
                     </div>
 
                     <div>
@@ -206,26 +231,34 @@ class AlarmKeypadCard extends Polymer.Element {
                         class='mdc-button mdc-button--outlined'
                         toggles state="3"
                         on-click='setState'
-                        title='Unset'>3
+                        title='Unset'>3<span class="keypad_cmd_text">[[_text_3]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="6"
                         on-click='setState'
-                        title='Unset'>6
+                        title='Unset'>6<span class="keypad_cmd_text">[[_text_6]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="9"
                         on-click='setState'
-                        title='Unset'>9
+                        title='Unset'>9<span class="keypad_cmd_text">[[_text_9]]</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="#"
                         on-click='setState'
-                        title='Unset'>#
+                        title='Unset'>#<span class="keypad_cmd_text">[[_text_pound]]</span>
                       </button>
+                    <template is='dom-if' if='{{_view_bottom}}'>
+                     <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="G"
+                        on-click='setState'
+                        title='Unset'>[[_button_G]]
+                      </button>
+                      </template>                      
                     </div>
 
  <div>
@@ -253,40 +286,21 @@ class AlarmKeypadCard extends Polymer.Element {
                         on-click='setState'
                         title='Unset'>[[_button_D]]
                       </button>
-                    </div>
-                    
-                  </div>
-                </template>
-
-                <template is='dom-if' if='{{_view_bottom}}'>
-                    <div class="pad">
+                    <template is='dom-if' if='{{_view_bottom}}'>
                      <button
-                        class='mdc-button mdc-button--outlined'
-                        toggles state="E"
-                        on-click='setState'
-                        title='Unset'>[[_button_E]]
-                      </button>
-                      <button
-                        class='mdc-button mdc-button--outlined'
-                        toggles state="F"
-                        on-click='setState'
-                        title='Unset'>[[_button_F]]
-                      </button>
-                      <button
-                        class='mdc-button mdc-button--outlined'
-                        toggles state="G"
-                        on-click='setState'
-                        title='Unset'>[[_button_G]]
-                      </button>
-                      <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="H"
                         on-click='setState'
                         title='Unset'>[[_button_H]]
                       </button>
-          
+                      </template>                      
                     </div>
+                    
+                  </div>
+                  
                 </template>
+
+               
 
                 <audio id="exitsound1" loop>
                   <source src="/local/1_beep.mp3" type="audio/mpeg">
@@ -387,14 +401,28 @@ class AlarmKeypadCard extends Polymer.Element {
         _key_9: String,
         _key_star: String,
         _key_pound: String,
-       // _key_right: String,
-       // _key_left: String,        
+        _text_0: String, 
+        _text_1: String, 
+        _text_2: String, 
+        _text_3: String, 
+        _text_4: String, 
+        _text_5: String, 
+        _text_6: String, 
+        _text_7: String, 
+        _text_8: String, 
+        _text_9: String,
+        _text_star: String,
+        _text_pound: String,        
         _line1: String,
         _line2: String,
         _iconA: String,
         _iconB: String,
         _iconC: String,
-        _iconD: String,        
+        _iconD: String,
+        _iconE: String, 
+        _iconF: String, 
+        _iconG: String, 
+        _iconH: String, 
         _view_display: Boolean,
         _view_pad: Boolean,
         _view_bottom: Boolean,
@@ -457,9 +485,19 @@ class AlarmKeypadCard extends Polymer.Element {
         _key_8: (config.key_8 != null)?config.key_8:"",
         _key_9: (config.key_9 != null)?config.key_9:"", 
         _key_star: (config.key_star != null)?config.key_star:"",
-        _key_pound: (config.key_pound != null)?config.key_pound:"",
-//        _key_right: (config.key_right != null)?config.key_right:"",
- //       _key_left: (config.key_left != null)?config.key_left:""         
+        _key_pound: (config.key_pound != null)?config.key_pound:"",        
+        _text_0: (config.text_0 != null)?config.text_0:"",
+        _text_1: (config.text_1 != null)?config.text_1:"",
+        _text_2: (config.text_2 != null)?config.text_2:"",
+        _text_3: (config.text_3 != null)?config.text_3:"",
+        _text_4: (config.text_4 != null)?config.text_4:"",
+        _text_5: (config.text_5 != null)?config.text_5:"",
+        _text_6: (config.text_6 != null)?config.text_6:"",
+        _text_7: (config.text_7 != null)?config.text_7:"",
+        _text_8: (config.text_8 != null)?config.text_8:"",
+        _text_9: (config.text_9 != null)?config.text_9:"",         
+        _text_star: (config.text_star != null)?config.text_star:"",
+        _text_pound: (config.text_pound != null)?config.text_pound:"",
       });
   }
 
@@ -567,8 +605,7 @@ class AlarmKeypadCard extends Polymer.Element {
          case '9': key=this._key_9; break;
          case '*': key=this._key_star; break;
          case '#': key=this._key_pound; break;
-     //    case '>': key=this._key_right; break;
-     //    case '<': key=this._key_left; break;         
+         
      }
      this._hass.callService(this._kpdservicetype, this._kpdservice,key);
    
