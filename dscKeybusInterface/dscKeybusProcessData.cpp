@@ -59,13 +59,7 @@ void dscKeybusInterface::resetStatus() {
 bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode, byte timePartition) {
 
   // Loops if a previous write is in progress
-  while(writeKeyPending || writeKeysPending) {
-    loop();
-    #if defined(ESP8266)
-    yield();
-    #endif
-  }
-
+  
   if (!ready[0]) return false;  // Skips if partition 1 is not ready
 
   if (hour > 23 || minute > 59 || month > 12 || day > 31 || year > 2099 || (year > 99 && year < 1900)) return false;  // Skips if input date/time is invalid
@@ -103,12 +97,6 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
     byte previousPartition = writePartition;
     writePartition = timePartition;
     write(timeEntry);
-    while(writeKeyPending || writeKeysPending) {
-      loop();
-      #if defined(ESP8266)
-      yield();
-      #endif
-    }
     writePartition = previousPartition;
   }
   else write(timeEntry);
@@ -236,7 +224,7 @@ void dscKeybusInterface::processPanelStatus() {
           armedAway[partitionIndex] = true;
         }
 
-        writeArm[partitionIndex] = false;
+        writeAccessCode[partitionIndex] = false;
 
         armed[partitionIndex] = true;
         if (armed[partitionIndex] != previousArmed[partitionIndex] || armedStay[partitionIndex] != previousArmedStay[partitionIndex]) {
@@ -255,7 +243,7 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Exit delay in progress
       case 0x08: {
-        writeArm[partitionIndex] = false;
+        writeAccessCode[partitionIndex] = false;
 
         processExitDelayStatus(partitionIndex, true);
 
@@ -348,7 +336,7 @@ void dscKeybusInterface::processPanelStatus() {
         if (starKeyWait[partitionIndex]) {  // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
           starKeyWait[partitionIndex] = false;
           starKeyCheck = false;
-          writeKeyPending = false;
+          writeDataPending = false;
         }
         processReadyStatus(partitionIndex, false);
         break;
@@ -356,8 +344,8 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Enter access code
       case 0x9F: {
-        if (writeArm[partitionIndex]) {  // Ensures access codes are only sent when an arm command is sent through this interface
-          writeArm[partitionIndex] = false;
+        if (writeAccessCode[partitionIndex]) {  // Ensures access codes are only sent when an arm or command output key is sent through this interface
+          writeAccessCode[partitionIndex] = false;
           accessCodePrompt = true;
           if (!pauseStatus) statusChanged = true;
         }
@@ -406,12 +394,6 @@ void dscKeybusInterface::processPanel_0x27() {
       }
 
       armed[partitionIndex] = true;
-      if (armed[partitionIndex] != previousArmed[partitionIndex] || armedStay[partitionIndex] != previousArmedStay[partitionIndex]) {
-        previousArmed[partitionIndex] = armed[partitionIndex];
-        previousArmedStay[partitionIndex] = armedStay[partitionIndex];
-        armedChanged[partitionIndex] = true;
-        if (!pauseStatus) statusChanged = true;
-      }
 
       processExitDelayStatus(partitionIndex, false);
       exitState[partitionIndex] = 0;
@@ -425,12 +407,6 @@ void dscKeybusInterface::processPanel_0x27() {
       if (!armedStay[partitionIndex] && !armedAway[partitionIndex]) armedStay[partitionIndex] = true;
 
       armed[partitionIndex] = true;
-      if (armed[partitionIndex] != previousArmed[partitionIndex]) {
-        previousArmed[partitionIndex] = armed[partitionIndex];
-        previousArmedStay[partitionIndex] = armedStay[partitionIndex];
-        armedChanged[partitionIndex] = true;
-        if (!pauseStatus) statusChanged = true;
-      }
 
       processExitDelayStatus(partitionIndex, false);
       exitState[partitionIndex] = 0;
@@ -467,6 +443,25 @@ void dscKeybusInterface::processPanel_0x3E() {
 }
 
 
+void dscKeybusInterface::processPanel_0x6E() {
+
+      if (!pending6E) return;
+      pending6E=false;       
+      if (pgmBuffer.idx+4>pgmBuffer.len) return;
+      for(byte x=0;x<4;x++) {
+          pgmBuffer.data[pgmBuffer.idx+x]=panelData[2+x];
+      }
+     pgmBuffer.idx+=4;
+     byte key=0;
+     if (pgmBuffer.idx < pgmBuffer.len) {
+        pending6E=true;
+        key=0xA5; //more data available so set up also for next group send request
+        writeCharsToQueue(&key,9);        
+     }  
+}
+
+
+
 /*
  *  PGM outputs 1-14 status is stored in pgmOutputs[]
  *
@@ -475,6 +470,11 @@ void dscKeybusInterface::processPanel_0x3E() {
  */
 void dscKeybusInterface::processPanel_0x87() {
   if (!validCRC()) return;
+
+  // Resets flag to write access code if needed when writing command output keys
+  for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
+    writeAccessCode[partitionIndex] = false;
+  }
 
   pgmOutputs[0] = panelData[3] & 0x03;
   pgmOutputs[0] |= panelData[2] << 2;
@@ -687,6 +687,13 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     processArmed(partitionIndex, false);
     processAlarmStatus(partitionIndex, false);
     processEntryDelayStatus(partitionIndex, false);
+
+    // Disarmed by access codes 1-34, 40-42
+    if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
+      byte dscCode = panelData[panelByte] - 0xBF;
+      processPanelAccessCode(partitionIndex, dscCode);
+    }
+
     return;
   }
 
@@ -720,19 +727,6 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     return;
   }
 
-  // Armed by access codes 1-34, 40-42
-  if (panelData[panelByte] >= 0x99 && panelData[panelByte] <= 0xBD) {
-    byte dscCode = panelData[panelByte] - 0x98;
-    processPanelAccessCode(partitionIndex, dscCode);
-    return;
-  }
-
-  // Disarmed by access codes 1-34, 40-42
-  if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
-    byte dscCode = panelData[panelByte] - 0xBF;
-    processPanelAccessCode(partitionIndex, dscCode);
-    return;
-  }
 }
 
 

@@ -260,8 +260,7 @@ class AlarmKeypadCard extends Polymer.Element {
                       </button>
                       </template>                      
                     </div>
-
- <div>
+                    <div>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="A"

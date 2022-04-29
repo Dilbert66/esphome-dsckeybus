@@ -46,18 +46,17 @@ const DRAM_ATTR byte dscReadSize = 16;
 //start expander
 #if defined(__AVR__)
 const byte maxModules = 4;
-const byte updateQueueSize=5; //zone pending update queue
+const byte writeQueueSize=5; //write pending queue size
 #elif defined(ESP8266) || defined(ESP32)
 const byte maxModules = 4;
-const byte updateQueueSize=10; //zone pending update queue
+const byte writeQueueSize=10; //zone pending update queue
 #endif
 
     struct zoneMaskType {
         byte idx;
         byte mask;
     };
-
-
+    
     struct moduleType {
         byte address;
         byte fields[4];
@@ -65,9 +64,25 @@ const byte updateQueueSize=10; //zone pending update queue
         byte zoneStatusMask;
         byte zoneStatusByte;
     };
+    
+struct pgmBufferType {
+    char data[32];
+    byte len;
+    byte idx;
+} ;
 //end expander
 #endif
 
+
+//start new command handling
+struct writeQueueType {
+    char data[6];
+    byte len;
+    bool alarm;
+    bool star;
+    byte writeBit;
+};
+//end command handling
 
 // Exit delay target states
 #define DSC_EXIT_STAY 1
@@ -181,15 +196,14 @@ class dscKeybusInterface {
     static void dscDataInterrupt();
 
     // Deprecated
-    bool handlePanel();         // Returns true if valid panel data is available.  Relabeled to loop()
     bool processRedundantData;  // Controls if repeated periodic commands are processed and displayed (default: false)
+    static volatile byte moduleCmd, moduleSubCmd;    
     
 #ifdef EXPANDER    
     //start expander
     void setZoneFault(byte zone,bool fault) ;
-    void setLCDReceive();
-    void setLCDSend(byte *cmdData,int len);
-    byte calcCRC70(byte *cmdData,int len);
+    void setLCDReceive(byte len);
+    void setLCDSend(bool sendHash=false);    
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
     void addModule(byte address); //add zone expanders
@@ -199,15 +213,11 @@ class dscKeybusInterface {
     static byte maxZones;
     static bool enableModuleSupervision;    
     static bool debounce05;
-
- 
+    static volatile pgmBufferType pgmBuffer;
     //end expander
 #endif 
-    static volatile byte currentCmd;
-    bool forceRedundant;     
+ 
     
-    static volatile byte statusCmd, moduleCmd, moduleSubCmd;
-
   private:
 
     void processPanelStatus();
@@ -221,6 +231,7 @@ class dscKeybusInterface {
     void processPanel_0x2D();
     void processPanel_0x34();
     void processPanel_0x3E();
+    void processPanel_0x6E();
     void processPanel_0x87();
     void processPanel_0xA5();
     void processPanel_0xE6();
@@ -344,7 +355,6 @@ class dscKeybusInterface {
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
-    void setWriteKey(const char receivedKey);
     static void dscClockInterrupt();
     static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
 
@@ -355,10 +365,10 @@ class dscKeybusInterface {
     static portMUX_TYPE timer1Mux;
     #endif
 
-    Stream* stream;
-    const char* writeKeysArray;
-    bool writeKeysPending;
-    bool writeArm[dscPartitions];
+    static Stream* stream;
+    //const char* writeKeysArray;
+   // bool writeKeysPending;
+    bool writeAccessCode[dscPartitions];
     bool queryResponse;
     bool previousTrouble;
     bool previousKeybus;
@@ -394,33 +404,42 @@ class dscKeybusInterface {
 
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize];
+    
 #ifdef EXPANDER    
     //start expander
     const byte zoneOpen=3; //fault 
     const byte zoneClosed=2;// Normal 
-    static volatile bool writeModulePending,pendingDeviceUpdate;   
-    static byte outIdx,inIdx;
     static byte moduleIdx;    
-    static void prepareResponse(byte); 
+    static void prepareModuleResponse(byte cmd,int bit); 
     void removeModule(byte address);
     static void setPendingZoneUpdate();
-    static void processModuleResponse(byte cmd);
-    static void processModuleResponse_0xE6(byte cmd);
-    void addRequestToQueue(byte cmd);
     void setSupervisorySlot(byte slot,bool set);
-    static byte getPendingUpdate();
-    static void fillBuffer(byte* src,int len);
+    static void processCmd70(),processCmd6E();    
     zoneMaskType getUpdateMask(byte address);    
     static byte maxFields05; 
     static byte maxFields11;
-    static byte writeModuleBit;
-    static volatile byte moduleBufferLength,currentModuleIdx,moduleResponseCmd;
-    volatile static byte pendingZoneStatus[6];
-    volatile static byte writeModuleBuffer[6];
+    //volatile static byte pendingZoneStatus[6];
+    volatile static bool pending70,pending6E;   
     static moduleType modules[maxModules];
-    static byte moduleSlots[6],cmd70[5],updateQueue[updateQueueSize];
-    //end expander
+    static byte moduleSlots[6];
+    static bool sendHash;
+     //end expander
 #endif    
+
+     //start new command handling 
+    volatile static byte writeBuffer[6];     
+    static byte outIdx,inIdx;     
+    static void processPendingResponses(byte cmd);
+    static void processPendingResponses_0xE6(byte cmd);  
+    static void processPendingQueue(byte cmd);    
+    static void updateWriteBuffer(byte* src,int len, int bit=9, bool alarm=false,bool star=false);     
+    static byte writeDataBit;
+    static volatile byte writeBufferLength,writeBufferIdx;
+    static volatile bool writeDataPending;
+    static writeQueueType writeQueue[writeQueueSize];
+    static void writeCharsToQueue(byte* keys,byte bit,byte len=1,bool alarm=false,bool star=false);  
+    //end new command handling    
+ 
 };
 
 #endif // dscKeybus_h

@@ -198,8 +198,6 @@ volatile byte dscKeybusInterface::isrPanelByteCount;
 volatile byte dscKeybusInterface::isrPanelBitCount;
 volatile byte dscKeybusInterface::isrPanelBitTotal;
 volatile byte dscKeybusInterface::isrModuleData[dscReadSize];
-volatile byte dscKeybusInterface::currentCmd;
-volatile byte dscKeybusInterface::statusCmd;
 volatile byte dscKeybusInterface::moduleCmd;
 volatile byte dscKeybusInterface::moduleSubCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
@@ -209,24 +207,25 @@ volatile unsigned long dscKeybusInterface::keybusTime;
 //start expander
 bool dscKeybusInterface::debounce05;
 byte dscKeybusInterface::moduleSlots[6];
-byte dscKeybusInterface::cmd70[5];
-byte dscKeybusInterface::updateQueue[updateQueueSize];
-volatile byte dscKeybusInterface::writeModuleBuffer[6];
-volatile byte dscKeybusInterface::pendingZoneStatus[6];
+writeQueueType dscKeybusInterface::writeQueue[writeQueueSize];
+volatile byte dscKeybusInterface::writeBuffer[6];
+//volatile byte dscKeybusInterface::pendingZoneStatus[6];
+volatile bool dscKeybusInterface::pending70;
+volatile bool dscKeybusInterface::pending6E;
 moduleType dscKeybusInterface::modules[maxModules];
-byte dscKeybusInterface::moduleIdx;
-byte dscKeybusInterface::inIdx;
+byte dscKeybusInterface::moduleIdx;byte dscKeybusInterface::inIdx;
 byte dscKeybusInterface::outIdx;
 byte dscKeybusInterface::maxFields05; 
 byte dscKeybusInterface::maxFields11;
 byte dscKeybusInterface::maxZones;
-
 bool dscKeybusInterface::enableModuleSupervision;
-volatile byte dscKeybusInterface::currentModuleIdx;
-volatile byte dscKeybusInterface::moduleBufferLength;
-volatile bool dscKeybusInterface::writeModulePending;
-byte dscKeybusInterface::writeModuleBit;
-volatile byte dscKeybusInterface::moduleResponseCmd;
+volatile byte dscKeybusInterface::writeBufferIdx;
+volatile byte dscKeybusInterface::writeBufferLength;
+volatile bool dscKeybusInterface::writeDataPending;
+byte dscKeybusInterface::writeDataBit;
+volatile pgmBufferType dscKeybusInterface::pgmBuffer;
+Stream* dscKeybusInterface::stream;
+bool dscKeybusInterface::sendHash;
 //end expander
 #endif
 byte dscKeybusInterface::panelVersion;
