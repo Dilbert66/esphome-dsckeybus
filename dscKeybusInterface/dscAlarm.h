@@ -1630,7 +1630,7 @@ ESP_LOGD("test","writing key %c",key);
 
     if (digits==0) newData=false;
 
-    if (millis() - keyPressTime > 1000) {
+    if (millis() - keyPressTime > 10000) {
       if (dsc.status[partition] >= 0x9E && !inprogram) {
         locked = true;
         lcdLine1 = "System";
@@ -1690,25 +1690,19 @@ ESP_LOGD("test","writing key %c",key);
         }
 
       }
-ESP_LOGD("test","current1 selection is now %d",currentSelection);
       //if (dsc.status[defaultPartition - 1] < 0x04) {
       if (dsc.status[partition] < 0x04) {
       if (currentSelection==0xFF || currentSelection==0)
           currentSelection=getNextOpenZone(0xFF,partition+1);
-      ESP_LOGD("test","current selection 1=%d",currentSelection);
       if (currentSelection == 1) {
           byte c=dsc.ready[partition]?0:1;
           int pos = statusMenuLabels[c].find(":");
           lcdLine1 = statusMenuLabels[c].substr(0, pos);
           lcdLine2 = statusMenuLabels[c].substr(pos + 1);
-  ESP_LOGD("test","current selection 2=%d",currentSelection);          
       }  else  if (currentSelection >1 && currentSelection < 6) {
-  ESP_LOGD("test","current selection 3=%d",currentSelection);          
           int pos = statusMenu[currentSelection].find(":");
           lcdLine1 = statusMenu[currentSelection].substr(0, pos);
           lcdLine2 = statusMenu[currentSelection].substr(pos + 1);
-          //ESP_LOGD("info"," menu line1=%s",statusMenu[0].substr(0,pos).c_str());
-           //ESP_LOGD("info"," menu line2=%s",statusMenu[0].substr(pos+1).c_str());
         } else if (currentSelection >= 0x10 && currentSelection < MAXZONES + 0x10) {
           char s[16];
           lcdLine1 = "Open Zones";
@@ -1847,11 +1841,7 @@ ESP_LOGD("test","current1 selection is now %d",currentSelection);
         pauseZones();
       }
 
-      // ESP_LOGD("info","got digit %02x, status=%02x",dsc.panelData[4],dsc.panelData[3]);
 
-      ESP_LOGD("info", "0a case");
-      // if (pausedZones) {
-      //ESP_LOGD("info","data2=%d",dsc.panelData[2]);
       //capture potential program digit if in programming mode
       line2Digit = dsc.panelData[4];
       line2Status = dsc.panelData[3];
@@ -1862,7 +1852,6 @@ ESP_LOGD("test","current1 selection is now %d",currentSelection);
     case 0x5D:
     case 0x63:
 
-      ESP_LOGD("info", "5d case,paused zones %d", pausedZones);
       if ((dsc.panelData[2] & 0x04) == 0x04) { // Alarm memory zones 1-32
         if (pausedZones)
           processProgramZones(3);
@@ -2001,7 +1990,6 @@ ESP_LOGD("test","current1 selection is now %d",currentSelection);
     byte zoneStart = 0;
     byte zone;
     if (startByte == 5) zoneStart = 4;
-    //ESP_LOGD("info","in program zones startbyte=%d",startByte);
     for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
       programZones[zoneGroup] = dsc.panelData[startByte + byteCount];
       byteCount++;
