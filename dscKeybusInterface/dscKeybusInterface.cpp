@@ -321,7 +321,7 @@ dscKeybusInterface::writeCharsToQueue(byte * keys, byte bit, byte len, bool alar
   for (uint8_t x = 0; x < len; x++) req.data[x] = keys[x];
   req.alarm = alarm;
   req.writeBit = bit;
- // req.star = star;
+  //req.star = star;
  req.star=false;
   writeQueue[inIdx] = req;
   inIdx = (inIdx + 1) % writeQueueSize; //circular buffer - increment index
@@ -603,7 +603,6 @@ dscKeybusInterface::dscClockInterrupt() {
     static bool skipFirst = false;
     // end expander
     #endif
-
     // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
     if (clockHighTime > 1000) {
       keybusTime = millis();

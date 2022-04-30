@@ -411,8 +411,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       setStatus(defaultPartition - 1, true);
       return;
     }
-ESP_LOGD("test","writing key %c",key);
     dsc.write(key);
+    
     if (key == '#') {
       currentSelection = 0xFF;
       line2Status = 0;
@@ -422,23 +422,14 @@ ESP_LOGD("test","writing key %c",key);
     }
 
     if (dsc.status[defaultPartition - 1] < 0x04) {
-
       if (key == '<') {
-    ESP_LOGD("test","request for option2 %d",currentSelection);
         currentSelection = getPreviousOpenZone(currentSelection,defaultPartition);
-    ESP_LOGD("test","request for option2 %d",currentSelection);        
       } else
       if (key == '>') {
-        // int pos=statusMenu[0].find(":");
-        //ESP_LOGD("info"," menu line1=%s",statusMenu[0].substr(0,pos).c_str());
-        // ESP_LOGD("info"," menu line2=%s",statusMenu[0].substr(pos+1).c_str());
-        // if (currentSelection >= 0xF0) currentSelection=getNextStatusMenu(currentSelection);
-        currentSelection = getNextOpenZone(currentSelection,defaultPartition);
+         currentSelection = getNextOpenZone(currentSelection,defaultPartition);
       };
       setStatus(defaultPartition - 1, true);
-    }
-
-    if (dsc.status[defaultPartition - 1] == 0x9E) { // * mainmenu
+    } else if (dsc.status[defaultPartition - 1] == 0x9E) { // * mainmenu
       if (key == '<') {
         currentSelection = currentSelection >= 11 ? 10 : (currentSelection > 0 ? currentSelection - 1 : 10);
         currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
@@ -457,9 +448,7 @@ ESP_LOGD("test","writing key %c",key);
         dsc.write(s);
 
       } else currentSelection = 0xFF;
-    }
-
-    if (dsc.status[defaultPartition - 1] == 0xA1) { //trouble
+    } else if (dsc.status[defaultPartition - 1] == 0xA1) { //trouble
 
       if (key == '*' && currentSelection > 0) {
         char s[5];
@@ -474,9 +463,7 @@ ESP_LOGD("test","writing key %c",key);
         currentSelection = getPreviousOption(currentSelection);
         if (currentSelection < 9) line2DisplayCallback(troubleMenu[currentSelection]);
       } else currentSelection = 0xFF;
-    }
-
-    if (dsc.status[defaultPartition - 1] == 0xC8) { //trouble
+    } else if (dsc.status[defaultPartition - 1] == 0xC8) { //trouble
 
       if (key == '*' && currentSelection > 0) {
         char s[5];
@@ -492,33 +479,25 @@ ESP_LOGD("test","writing key %c",key);
         if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection]);
       } else currentSelection = 0xFF;
 
-    }
-
-    if (dsc.status[defaultPartition - 1] == 0xA2) { //alarm memory
+    } else if (dsc.status[defaultPartition - 1] == 0xA2) { //alarm memory
 
       if (key == '>') currentSelection = getNextOption(currentSelection);
       else if (key == '<') currentSelection = getPreviousOption(currentSelection);
       else currentSelection = 0xFF;
-    }
-
-    if (dsc.status[defaultPartition - 1] == 0x11) { //alarms
+    } else if (dsc.status[defaultPartition - 1] == 0x11) { //alarms
       if (key == '>') currentSelection = getNextAlarmedZone(currentSelection,defaultPartition);
-      if (key == '<') currentSelection = getPreviousAlarmedZone(currentSelection,defaultPartition);
+      else if (key == '<') currentSelection = getPreviousAlarmedZone(currentSelection,defaultPartition);
       setStatus(defaultPartition - 1, true);
-    }
+    } else if (dsc.status[defaultPartition - 1] == 0xA0) { //bypass
 
-    if (dsc.status[defaultPartition - 1] == 0xA0) { //bypass
-
-      if (key == '*' && currentSelection >= 0) {
+      if (key == '*' ) {
         char s[5];
         sprintf(s, "%02d", currentSelection + 1);
         const char * out = strcpy(new char[3], s);
         dsc.write(out);
-        //ESP_LOGD("info","Wrote key %s",s);
-      }
-
-      if (key == '>') currentSelection = getNextEnabledZone(currentSelection,defaultPartition);
-      if (key == '<') currentSelection = getPreviousEnabledZone(currentSelection,defaultPartition);
+         ESP_LOGD("info","Wrote key bypass %s",s);
+      } else if (key == '>') currentSelection = getNextEnabledZone(currentSelection,defaultPartition);
+       else if (key == '<') currentSelection = getPreviousEnabledZone(currentSelection,defaultPartition);
 
       setStatus(defaultPartition - 1, true);
     }
@@ -757,6 +736,7 @@ ESP_LOGD("test","writing key %c",key);
 
   void getBypassZones(byte partition) {
     if (dsc.status[partition] == 0xA0) { //bypass zones
+    ESP_LOGD("info", "Fetch bypass zones for partition %d",partition+1);
       for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           zone = zoneBit + (zoneGroup * 8);
@@ -1629,9 +1609,9 @@ ESP_LOGD("test","writing key %c",key);
     }
 
     if (digits==0) newData=false;
-
-    if (millis() - keyPressTime > 10000) {
-      if (dsc.status[partition] >= 0x9E && !inprogram) {
+ESP_LOGD("test","digits = %d,status=%02X,previoustatus=%02X",digits,dsc.status[partition],lastStatus[partition]);
+    if (millis() - keyPressTime > 1000  && dsc.status[partition] > 0x8B) {
+      if ( !inprogram) {
         locked = true;
         lcdLine1 = "System";
         lcdLine2 = "not available";
@@ -1639,15 +1619,17 @@ ESP_LOGD("test","writing key %c",key);
       } else
         locked = false;
 
-    } else if (dsc.status[partition] >= 0x9E && !locked) {
+    } else if (dsc.status[partition] > 0x8B && !locked) {
       inprogram = true;
-    }
-    if (dsc.status[partition] < 0x9E) {
+    } 
+    if (dsc.status[partition] < 0x8B) {
       locked = false;
       inprogram = false;
     }
 
     if (!skip) {
+        
+       //field display  for decimal or hex entries
       if (lastStatus[partition] != dsc.status[partition] && !locked && digits && !newData) {
         dsc.setLCDReceive(digits);
         editIdx = 0;
@@ -1689,8 +1671,11 @@ ESP_LOGD("test","writing key %c",key);
 
         }
 
+      } else if (digits) {
+          lastStatus[partition] = dsc.status[partition];
+          return;
       }
-      //if (dsc.status[defaultPartition - 1] < 0x04) {
+
       if (dsc.status[partition] < 0x04) {
       if (currentSelection==0xFF || currentSelection==0)
           currentSelection=getNextOpenZone(0xFF,partition+1);
@@ -1706,29 +1691,22 @@ ESP_LOGD("test","writing key %c",key);
         } else if (currentSelection >= 0x10 && currentSelection < MAXZONES + 0x10) {
           char s[16];
           lcdLine1 = "Open Zones";
-          lcdLine2 = "";
           sprintf(s, "Zone %02d  <>", (currentSelection - 0x10) + 1);
-          lcdLine2.append(s);
+          lcdLine2=s;
         }
-      } 
-      
-      if (dsc.status[partition] == 0xA0) { //bypass
+      } else  if (dsc.status[partition] == 0xA0) { //bypass
 
-        if (currentSelection == 0xFF || lastStatus[partition] != dsc.status[partition])
+        if (currentSelection == 0xFF  || lastStatus[partition] != dsc.status[partition])
           currentSelection = getNextEnabledZone(0xFF,partition+1);
-
         if (currentSelection < MAXZONES) {
           char s[16];
-          lcdLine2 = "";
-          char bypassStatus = ' ';
-
+           char bypassStatus = ' ';
           if (zoneStatus[currentSelection].bypassed)
             bypassStatus = 'B';
           else if (zoneStatus[currentSelection].open)
             bypassStatus = 'O';
-
           sprintf(s, "%02d   %c", currentSelection + 1, bypassStatus);
-          lcdLine2.append(s);
+          lcdLine2=s;
         }
       } else if (dsc.status[partition] == 0x11) { //alarms
 
@@ -1736,9 +1714,8 @@ ESP_LOGD("test","writing key %c",key);
           currentSelection = getNextAlarmedZone(0xFF,partition+1);
         if (currentSelection < MAXZONES) {
           char s[16];
-          lcdLine2 = "";
           sprintf(s, "zone %02d", currentSelection + 1);
-          lcdLine2.append(s);
+          lcdLine2=s;
         }
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
 
@@ -1751,65 +1728,45 @@ ESP_LOGD("test","writing key %c",key);
           char bypassStatus = ' ';
 
           sprintf(s, "zone %02d", currentSelection);
-          lcdLine2.append(s);
+          lcdLine2=s;
         }
       } else if (dsc.status[partition] == 0x9E) { // main menu
         if (currentSelection == 0xFF || lastStatus[partition] != dsc.status[partition]) {
           currentSelection = 1;
-          lcdLine2 = "";
-          lcdLine2.append(mainMenu[currentSelection]);
+          lcdLine2=mainMenu[currentSelection];
         }
       } else if (dsc.status[partition] == 0xA1) { //trouble
 
         if (currentSelection == 0xFF || lastStatus[partition] != dsc.status[partition]) {
           currentSelection = getNextOption(currentSelection);
           if (currentSelection < 9) {
-            lcdLine2 = "";
-            lcdLine2.append(troubleMenu[currentSelection]);
+            lcdLine2=troubleMenu[currentSelection];
           }
         }
       } else if (dsc.status[partition] == 0xC8) { //service
 
-        // if (currentSelection == 0xFF) {
         currentSelection = getNextOption(currentSelection);
-
         if (currentSelection < 9) {
-          lcdLine2 = "";
-          lcdLine2.append(serviceMenu[currentSelection]);
+          lcdLine2=serviceMenu[currentSelection];
         }
 
-        // }
+
       }
 
       if (options) {
         lcdLine2 = getOptionsString();
       } else if (line2Status == dsc.status[partition] && digits > 0) {
         char s[18];
-        lcdLine2 = "";
         if (hex) {
           sprintf(s, "[%X]  %d digits", line2Digit, digits);
         } else {
           sprintf(s, "[%d] %d digits", line2Digit, digits);
         }
-        lcdLine2.append(s);
+        lcdLine2=s;
         line2Status = 0;
         line2Digit = 0;
-        //digitPtr=digitPtr + 1;
 
       }
-
-      if (beeps) {
-        /*
-         char s[12];
-         lcdLine2="";
-         sprintf(s,"[%d Beeps]",beeps);
-         lcdLine2.append(s);
-         beeps=0;
-         */
-        // dsc.forceRedundant = true;
-
-      }
-
     }
 
     if (lcdLine1 != "") line1DisplayCallback(lcdLine1);
@@ -1818,8 +1775,7 @@ ESP_LOGD("test","writing key %c",key);
     rtrim(lcdLine1);
     rtrim(lcdLine2);
     lcdLine1 = lcdLine1.append(" ").append(lcdLine2);
-    partitionMsgChangeCallback(partition + 1, lcdLine1);
-
+   // partitionMsgChangeCallback(partition + 1, lcdLine1);
     lastStatus[partition] = dsc.status[partition];
   }
 
