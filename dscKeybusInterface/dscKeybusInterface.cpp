@@ -44,7 +44,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   processRedundantData = true;
   displayTrailingBits = false;
   processModuleData = false;
-  writePartition = 1;
+  currentDefaultPartition=1;
   pauseStatus = false;
   #ifdef EXPANDER
   // start expander
@@ -303,39 +303,22 @@ bool dscKeybusInterface::handleModule() {
 }
 
 // Sets up writes for multiple keys sent as a char array
-void dscKeybusInterface::write(const char * receivedKeys, bool blockingWrite) {
+void dscKeybusInterface::write(const char * receivedKeys, int partition) {
   for (uint8_t x = 0; x < strlen(receivedKeys); x++) {
-    write(receivedKeys[x]);
+    write(receivedKeys[x],partition);
   }
 }
 
-void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
-IRAM_ATTR
-#endif
-dscKeybusInterface::writeCharsToQueue(byte * keys, byte bit, byte len, bool alarm, bool star) {
-  writeQueueType req;
-  req.len = len;
-  for (uint8_t x = 0; x < len; x++) req.data[x] = keys[x];
-  req.alarm = alarm;
-  req.writeBit = bit;
-  //req.star = star;
- req.star=false;
-  writeQueue[inIdx] = req;
-  inIdx = (inIdx + 1) % writeQueueSize; //circular buffer - increment index
-}
-
 // Specifies the key value to be written by dscClockInterrupt() and selects the write partition.  
-void dscKeybusInterface::write(const char receivedKey) {
+void dscKeybusInterface::write(const char receivedKey,int partition) {
 
   static bool setPartition;
   // Sets the write partition if set by virtual keypad key '/'
+  if (partition < 1) partition=currentDefaultPartition;
   if (setPartition) {
     setPartition = false;
     if (receivedKey >= '1' && receivedKey <= '8') {
-      writePartition = receivedKey - 48;
+      currentDefaultPartition = receivedKey - 48;
     }
     return;
   }
@@ -346,7 +329,7 @@ void dscKeybusInterface::write(const char receivedKey) {
   bool isAlarm = false;
   bool isStar = false;
   // Skips writing to disabled partitions or partitions not specified in dscKeybusInterface.h
-  if (disabled[writePartition - 1] || dscPartitions < writePartition) {
+  if (disabled[partition - 1] || dscPartitions < partition) {
     switch (receivedKey) {
     case '/':
       setPartition = true;
@@ -395,7 +378,7 @@ void dscKeybusInterface::write(const char receivedKey) {
       break;
     case '*':
       writeKey = 0x28;
-      if (status[writePartition - 1] < 0x9E) isStar = true;
+      if (status[partition - 1] < 0x9E) isStar = true;
       break;
     case '#':
       writeKey = 0x2D;
@@ -422,17 +405,17 @@ void dscKeybusInterface::write(const char receivedKey) {
     case 's':
     case 'S':
       writeKey = 0xAF;
-      writeAccessCode[writePartition - 1] = true;
+      writeAccessCode[partition - 1] = true;
       break; // Arm stay
     case 'w':
     case 'W':
       writeKey = 0xB1;
-      writeAccessCode[writePartition - 1] = true;
+      writeAccessCode[partition - 1] = true;
       break; // Arm away
     case 'n':
     case 'N':
       writeKey = 0xB6;
-      writeAccessCode[writePartition - 1] = true;
+      writeAccessCode[partition - 1] = true;
       break; // Arm with no entry delay (night arm)
     case 'a':
     case 'A':
@@ -458,19 +441,19 @@ void dscKeybusInterface::write(const char receivedKey) {
       break; // Exit
     case '[':
       writeKey = 0xD5;
-      writeAccessCode[writePartition - 1] = true;
+      writeAccessCode[partition - 1] = true;
       break; // Command output 1
     case ']':
       writeKey = 0xDA;
-      writeAccessCode[writePartition - 1] = true;
+      writeAccessCode[partition - 1] = true;
       break; // Command output 2
     case '{':
       writeKey = 0x70;
-      writeAccessCode[writePartition - 1] = true;
+      writeAccessCode[partition - 1] = true;
       break; // Command output 3
     case '}':
       writeKey = 0xEC;
-      writeAccessCode[writePartition - 1] = true;
+      writeAccessCode[partition - 1] = true;
       break; // Command output 4
     case '$':
       writeKey = 0xF7;
@@ -483,39 +466,11 @@ void dscKeybusInterface::write(const char receivedKey) {
     }
   }
 
-  // Sets the writing position in dscClockInterrupt() for the currently set partition
-  switch (writePartition) {
-  case 1:
-  case 5: {
-    writeBit = 9;
-    break;
-  }
-  case 2:
-  case 6: {
-    writeBit = 17;
-    break;
-  }
-  case 3:
-  case 7: {
-    writeBit = 57;
-    break;
-  }
-  case 4:
-  case 8: {
-    writeBit = 65;
-    break;
-  }
-  default: {
-    writeBit = 9;
-    break;
-  }
-  }
-
-  if (validKey) {
+   if (validKey) {
     if (isAlarm)
-      writeCharsToQueue((byte * ) & writeKey, 0, 1, isAlarm, false);
+      writeCharsToQueue((byte * ) & writeKey, 0,-1, 1, isAlarm, false);
     else
-      writeCharsToQueue((byte * ) & writeKey, writeBit, 1, false, isStar);
+      writeCharsToQueue((byte * ) & writeKey, partitionToBits[partition],partition, 1, false, isStar);
 
   }
 
@@ -686,8 +641,7 @@ dscKeybusInterface::dscClockInterrupt() {
 
           if (writeBufferIdx == writeBufferLength) { //all bits written
             writeStart = false;
-
-            if (starKeyCheck)
+            if (starKeyCheck && writePartition)
               starKeyWait[writePartition - 1] = true; // Handles waiting until the panel is  ready            
             else
               writeDataPending = false;
@@ -803,13 +757,35 @@ ICACHE_RAM_ATTR
 #elif defined(ESP32)
 IRAM_ATTR
 #endif
-dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int len, int bit, bool alarm, bool star) {
+dscKeybusInterface::writeCharsToQueue(byte * keys, byte bit,byte partition, byte len, bool alarm, bool star) {
+  writeQueueType req;
+  req.len = len;
+  for (byte x = 0; x < len; x++) req.data[x] = keys[x];
+  req.alarm = alarm;
+  req.writeBit = bit;
+  req.star = false;
+
+  req.partition=partition;
+  writeQueue[inIdx] = req;
+  inIdx = (inIdx + 1) % writeQueueSize; //circular buffer - increment index
+    stream->printf("writing byte %02X,bits=%d,partition=%d,len=%d",req.data[0],req.writeBit,req.partition,req.len);  
+}
+
+
+void
+#if defined(ESP8266)
+ICACHE_RAM_ATTR
+#elif defined(ESP32)
+IRAM_ATTR
+#endif
+dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int bit,byte partition,int len,  bool alarm, bool star) {
 
   writeBufferLength = len;
   writeDataBit = bit;
   writeBufferIdx = 0;
   writeAlarm = alarm;
   starKeyCheck = star;
+  writePartition=partition;
   for (byte x = 0; x < len; x++) writeBuffer[x] = src[x];
   writeDataPending = true; //set flag to send it  
 }
@@ -833,7 +809,7 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
 #ifdef EXPANDER
   case 0x11:
     if (!enableModuleSupervision) return;
-    updateWriteBuffer((byte * ) moduleSlots, maxFields11, 9);
+    updateWriteBuffer((byte * ) moduleSlots, 9,1,maxFields11 );
     return; //setup supervisory slot response for devices
   case 0x28:
     prepareModuleResponse(9, 9);
@@ -862,8 +838,9 @@ IRAM_ATTR
 dscKeybusInterface::processPendingQueue(byte cmd) {
 
   //process queued 05/0b/1b requests
-  if (inIdx == outIdx || (writePartition > 4 && (cmd == 0x05 || cmd == 0x0A)) || (cmd == 0x1B && writePartition < 5)) return;
-  updateWriteBuffer((byte * ) writeQueue[outIdx].data, writeQueue[outIdx].len, writeQueue[outIdx].writeBit, writeQueue[outIdx].alarm, writeQueue[outIdx].star); //populate write buffer and set ready to send flag
+  //if (inIdx == outIdx || (writeQueue[outIdx].partition > 4 && (cmd == 0x05 || cmd == 0x0A)) || (cmd == 0x1B && writeQueue[outIdx].partition < 5)) return;
+    if (inIdx==outIdx) return;
+  updateWriteBuffer((byte * ) writeQueue[outIdx].data,  writeQueue[outIdx].writeBit,writeQueue[outIdx].partition,writeQueue[outIdx].len, writeQueue[outIdx].alarm, writeQueue[outIdx].star); //populate write buffer and set ready to send flag
   outIdx = (outIdx + 1) % writeQueueSize; // advance index to next record
 }
 

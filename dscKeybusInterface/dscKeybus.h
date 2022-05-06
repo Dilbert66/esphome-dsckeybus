@@ -51,6 +51,8 @@ const byte writeQueueSize=5; //write pending queue size
 const byte maxModules = 4;
 const byte writeQueueSize=10; //zone pending update queue
 #endif
+const byte partitionToBits[9]={9,9,17,57,65,9,17,57,65};
+
 
     struct zoneMaskType {
         byte idx;
@@ -69,6 +71,9 @@ struct pgmBufferType {
     char data[32];
     byte len;
     byte idx;
+    int partition;
+    bool pending6E;
+    bool pending70;
 } ;
 //end expander
 #endif
@@ -81,7 +86,9 @@ struct writeQueueType {
     bool alarm;
     bool star;
     byte writeBit;
+    int partition;
 };
+
 //end command handling
 
 // Exit delay target states
@@ -103,20 +110,15 @@ class dscKeybusInterface {
     void stop();                                      // Disables the clock hardware interrupt and data timer interrupt
     void resetStatus();                               // Resets the state of all status components as changed for sketches to get the current status
 
-    // Writes a single key - nonblocking unless a previous write is in progress
-    void write(const char receivedKey);
+    // Writes a single key to queue
+    void write(const char receivedKey,int partition=-1);
 
-    // Writes multiple keys from a char array
-    //
-    // By default, this is nonblocking unless there is a previous write in progress - in this case, the sketch must keep the char
-    // array defined at least until the write is complete.
-    //
-    // If the char array is ephemeral, check if the write is complete by checking writeReady or set blockingWrite to true to
-    // block until the write is complete.
-    void write(const char * receivedKeys, bool blockingWrite = false);
+    // Writes multiple keys from a char array to the queue
+
+    void write(const char * receivedKeys, int partition=-1);
 
     // Write control
-    static byte writePartition;                       // Set to a partition number for virtual keypad
+    byte currentDefaultPartition;                       // Set to a partition number for virtual keypad
     bool writeReady;                                  // True if the library is ready to write a key
 
     // Prints output to the stream interface set in begin()
@@ -167,6 +169,7 @@ class dscKeybusInterface {
     bool pgmOutputsStatusChanged;
     byte pgmOutputs[2], pgmOutputsChanged[2];
     static byte panelVersion;
+    bool writeAccessCode[dscPartitions];    
 
     /* panelData[] and moduleData[] store panel and keypad/module data in an array: command [0], stop bit by itself [1],
      * followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -202,8 +205,8 @@ class dscKeybusInterface {
 #ifdef EXPANDER    
     //start expander
     void setZoneFault(byte zone,bool fault) ;
-    void setLCDReceive(byte len);
-    void setLCDSend(bool sendHash=false);    
+    void setLCDReceive(byte len,byte partition=-1);
+    void setLCDSend(bool sendHash=false,byte partition=-1);    
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
     void addModule(byte address); //add zone expanders
@@ -368,7 +371,6 @@ class dscKeybusInterface {
     static Stream* stream;
     //const char* writeKeysArray;
    // bool writeKeysPending;
-    bool writeAccessCode[dscPartitions];
     bool queryResponse;
     bool previousTrouble;
     bool previousKeybus;
@@ -394,7 +396,8 @@ class dscKeybusInterface {
     static char writeKey;
     static byte panelBitCount, panelByteCount;
     static volatile bool writeKeyPending;
-    static volatile bool writeAlarm, starKeyCheck, starKeyWait[dscPartitions];
+    static volatile bool writeAlarm;
+    static volatile bool starKeyCheck, starKeyWait[dscPartitions];
     static volatile bool moduleDataDetected, moduleDataCaptured;
     static volatile unsigned long clockHighTime, keybusTime;
     static volatile byte panelBufferLength;
@@ -419,7 +422,6 @@ class dscKeybusInterface {
     static byte maxFields05; 
     static byte maxFields11;
     //volatile static byte pendingZoneStatus[6];
-    volatile static bool pending70,pending6E;   
     static moduleType modules[maxModules];
     static byte moduleSlots[6];
     static bool sendHash;
@@ -427,17 +429,20 @@ class dscKeybusInterface {
 #endif    
 
      //start new command handling 
+
+    volatile static  byte writePartition;    
     volatile static byte writeBuffer[6];     
-    static byte outIdx,inIdx;     
+    volatile static byte outIdx,inIdx;     
     static void processPendingResponses(byte cmd);
     static void processPendingResponses_0xE6(byte cmd);  
     static void processPendingQueue(byte cmd);    
-    static void updateWriteBuffer(byte* src,int len, int bit=9, bool alarm=false,bool star=false);     
+    static void updateWriteBuffer(byte* src, int bit=9, byte partition=-1,int len=1, bool alarm=false,bool star=false);     
     static byte writeDataBit;
-    static volatile byte writeBufferLength,writeBufferIdx;
-    static volatile bool writeDataPending;
+    volatile static byte writeBufferLength,writeBufferIdx;
+    volatile static bool writeDataPending;
     static writeQueueType writeQueue[writeQueueSize];
-    static void writeCharsToQueue(byte* keys,byte bit,byte len=1,bool alarm=false,bool star=false);  
+    static void writeCharsToQueue(byte* keys,byte bit,byte partition=-1,byte len=1,bool alarm=false,bool star=false);
+    byte getWriteBitFromPartition(byte partition);
     //end new command handling    
  
 };

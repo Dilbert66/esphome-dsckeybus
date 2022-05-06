@@ -137,7 +137,7 @@ void dscKeybusInterface::clearZoneRanges() {
     if (!modules[x].zoneStatusByte) continue;
     zoneupdate[modules[x].zoneStatusByte] &= modules[x].zoneStatusMask; //set update slot
   }
-  writeCharsToQueue(zoneupdate, 9, maxFields05);
+  writeCharsToQueue(zoneupdate, 9,-1, maxFields05);
 }
 
 //once we know what panelversion we have, we can then update the modules with the correct info here
@@ -205,9 +205,9 @@ IRAM_ATTR
 dscKeybusInterface::processCmd70() {
 
 
-  if (!pending70) return;
+  if (!pgmBuffer.pending70) return;
   int dataSum = 0;
-  pending70 = false;
+  pgmBuffer.pending70 = false;
   if (pgmBuffer.idx + 4 > pgmBuffer.len) return;
   writeBufferLength = 5;
   writeDataBit = 9;
@@ -225,30 +225,32 @@ dscKeybusInterface::processCmd70() {
   byte key = 0;
   if (sendHash) key = 0x2D; //'#' // setup to send final # cmd to complete write update to panel
   if (pgmBuffer.idx < pgmBuffer.len) {
-    pending70 = true;
+    pgmBuffer.pending70 = true;
     key = 0xAA; //more data available so set up also for next group send request
   }
-  if (key) writeCharsToQueue( & key, 9);
+  if (key) writeCharsToQueue( & key, partitionToBits[pgmBuffer.partition]);
 
 }
 
-void dscKeybusInterface::setLCDReceive(byte digits) {
+void dscKeybusInterface::setLCDReceive(byte digits,byte partition) {
+  if (!partition) partition=currentDefaultPartition;
   pgmBuffer.idx = 0;
   byte b = (digits / 2) + (digits % 2);
   b += b % 4 ? 4 - b % 4 : 0; //round up to next 4 bytes as thats the size of cmds70/6e
   pgmBuffer.len = b;
-  pending6E = true;
+  pgmBuffer.partition=partition;
+  pgmBuffer.pending6E=true;
   byte key = 0xa5;
-  writeCharsToQueue( & key, 9);
+  writeCharsToQueue( & key, partitionToBits[partition]);
 }
 
-void dscKeybusInterface::setLCDSend(bool sendhash) {
-
+void dscKeybusInterface::setLCDSend(bool sendhash,byte partition) {
+  if (!partition) partition=currentDefaultPartition;
   pgmBuffer.idx = 0;
   sendHash = sendhash;
-  pending70 = true;
+  pgmBuffer.pending70 = true;
   byte key = 0xAA;
-  writeCharsToQueue( & key, 9);
+  writeCharsToQueue( & key, partitionToBits[partition]);
 
 }
 
@@ -330,7 +332,7 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
   memset(zoneupdate, 0xFF, maxFields05); //set update slots to 1's. Only zero bits indicate a request
   if (modules[idx].zoneStatusByte) {
     zoneupdate[modules[idx].zoneStatusByte] &= modules[idx].zoneStatusMask; //set update slot
-    writeCharsToQueue(zoneupdate, 9, maxFields05);
+    writeCharsToQueue(zoneupdate, 9,-1, maxFields05);
   }
 
 }
@@ -347,7 +349,7 @@ dscKeybusInterface::dscKeybusInterface::prepareModuleResponse(byte address, int 
   for (int idx = 0; idx < moduleIdx; idx++) { //get the buffer data from the module record that matches the address we need
     if (modules[idx].address == address) {
       //pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
-      updateWriteBuffer((byte * ) modules[idx].faultBuffer, 5, bit, false);
+      updateWriteBuffer((byte * ) modules[idx].faultBuffer, bit, 1,  5,false);
       return;
     }
   }

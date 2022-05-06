@@ -92,7 +92,7 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
   strcat(timeEntry, timeChar);
 
   strcat(timeEntry, "#");
-
+/*
   if (writePartition != timePartition) {
     byte previousPartition = writePartition;
     writePartition = timePartition;
@@ -100,7 +100,8 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
     writePartition = previousPartition;
   }
   else write(timeEntry);
-
+*/
+  write(timeEntry,timePartition);
   return true;
 }
 
@@ -333,11 +334,13 @@ void dscKeybusInterface::processPanelStatus() {
       // Enter * function code
       case 0x9E:
       case 0xB8: {
+          
         if (starKeyWait[partitionIndex]) {  // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
           starKeyWait[partitionIndex] = false;
           starKeyCheck = false;
           writeDataPending = false;
         }
+        
         processReadyStatus(partitionIndex, false);
         break;
       }
@@ -445,8 +448,8 @@ void dscKeybusInterface::processPanel_0x3E() {
 
 void dscKeybusInterface::processPanel_0x6E() {
 
-      if (!pending6E) return;
-      pending6E=false;       
+      if (!pgmBuffer.pending6E) return;
+      pgmBuffer.pending6E=false;       
       if (pgmBuffer.idx+4>pgmBuffer.len) return;
       for(byte x=0;x<4;x++) {
           pgmBuffer.data[pgmBuffer.idx+x]=panelData[2+x];
@@ -454,9 +457,9 @@ void dscKeybusInterface::processPanel_0x6E() {
      pgmBuffer.idx+=4;
      byte key=0;
      if (pgmBuffer.idx < pgmBuffer.len) {
-        pending6E=true;
+        pgmBuffer.pending6E=true;
         key=0xA5; //more data available so set up also for next group send request
-        writeCharsToQueue(&key,9);        
+        writeCharsToQueue(&key,partitionToBits[pgmBuffer.partition]);        
      }  
 }
 
