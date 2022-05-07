@@ -389,7 +389,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       if (key == '#') {
         partitionStatus[partition - 1].newData = false;
         if (key == '#' && partitionStatus[partition - 1].hex){
-          dsc.setLCDSend(partition);
+          dsc.setLCDSend(partition,(partitionStatus[partition - 1].digits > 8));
         } else {
           dsc.write(key, partition);
         }

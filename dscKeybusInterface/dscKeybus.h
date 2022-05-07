@@ -75,6 +75,7 @@ struct pgmBufferType {
     bool pending6E;
     bool pending70;
     bool dataPending;
+    bool sendhash;
 } ;
 //end expander
 #endif
@@ -207,7 +208,7 @@ class dscKeybusInterface {
     //start expander
     void setZoneFault(byte zone,bool fault) ;
     void setLCDReceive(byte len,byte partition=-1);
-    void setLCDSend(byte partition=-1);    
+    void setLCDSend(byte partition=-1,bool sendhash=false);    
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
     void addModule(byte address); //add zone expanders

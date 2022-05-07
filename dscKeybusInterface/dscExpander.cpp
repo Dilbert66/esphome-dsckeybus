@@ -223,8 +223,7 @@ dscKeybusInterface::processCmd70() {
   writeDataPending = true;
 
   byte key = 0;
-  //if (sendHash) key = 0x2D; //'#' // setup to send final # cmd to complete write update to panel
-  if (pgmBuffer.len > 4) key=0x2D;
+  if (pgmBuffer.sendhash) key=0x2D; //'#' // setup to send final # cmd to complete write update to panel
   if (pgmBuffer.idx < pgmBuffer.len) {
     pgmBuffer.pending70 = true;
     key = 0xAA; //more data available so set up also for next group send request
@@ -246,11 +245,12 @@ void dscKeybusInterface::setLCDReceive(byte digits,byte partition) {
   writeCharsToQueue( & key, partitionToBits[partition]);
 }
 
-void dscKeybusInterface::setLCDSend(byte partition) {
+void dscKeybusInterface::setLCDSend(byte partition,bool sendhash) {
   if (!partition) partition=currentDefaultPartition;
   pgmBuffer.idx = 0;
   pgmBuffer.pending70 = true;
   byte key = 0xAA;
+  pgmBuffer.sendhash=sendhash;
   pgmBuffer.dataPending=false;
   writeCharsToQueue( & key, partitionToBits[partition]);
 
