@@ -114,7 +114,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         "Event Buffer"
   };
 
-  const std::string statusMenu[6] = {
+  const std::string statusMenu[5] = {
     "placeholder",
     "placeholder",
     "System Trouble:(*2) to view <>",
@@ -220,6 +220,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     byte editIdx;
     bool decimalInput;
     bool hex;
+    bool eventViewer;
+    
   };
 
   struct zoneType {
@@ -250,7 +252,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   previousSystem0,
   previousSystem1;
   byte programZones[dscZones];
-  bool pausedZones;
   char decimalInputBuffer[6];
   byte line2Digit, line2Status;
   byte currentSelection;
@@ -459,6 +460,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
    //   line2Status = 0;
      // line2Digit = 0;
       dsc.write(key,partition);
+      partitionStatus[partition-1].eventViewer=false;      
       setStatus(partition - 1, true);
       return;
     }
@@ -520,7 +522,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         currentSelection = getPreviousOption(currentSelection);
         if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection],partition);
       } else currentSelection = 0xFF;
-    }else if (dsc.status[partition - 1] == 0xA9) { // * user functions
+    }else if (dsc.status[partition - 1] == 0xA9 && !partitionStatus[partition-1].eventViewer) { // * user functions
       if (key == '<') {
         currentSelection = currentSelection >= 7 ? 6 : (currentSelection > 0 ? currentSelection - 1 : 6);
         currentSelection =userMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
@@ -531,9 +533,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (currentSelection < 7) line2DisplayCallback(userMenu[currentSelection],partition);
       } else if (key == '*' && currentSelection > 0) {
         char s[5];
-        if (currentSelection == 6) 
-            dsc.write('b',partition);
-        else {
+        if (currentSelection == 6)  {
+            partitionStatus[partition-1].eventViewer=true;
+          dsc.write('b',partition);
+        } else {
         dsc.write(key,partition);
         sprintf(s, "%d", currentSelection % 6);
         const char * out = strcpy(new char[3], s);
@@ -796,7 +799,7 @@ byte getNextUserCode(byte start) {
   byte getNextOpenZone(byte start,byte partition) {
     byte zone, option;
     //open zones start at selection 0x10 (16 decimal)
-    //menu options start at 00 -> 06  . We do this so that when scrolling we scroll the menu options first
+    //menu options start at 00 -> 04  . We do this so that when scrolling we scroll the menu options first
     if (start>MAXZONES) start=0;
     for (option = start + 1; option < MAXZONES + 0x10; option++) {
       zone = option >= 0x10 ? option - 0x10 : 0xFF;
@@ -893,9 +896,8 @@ byte getNextUserCode(byte start) {
         if (dsc.disabled[partition-1]) continue;        
         dsc.write("*",partition);
         dsc.write("27##",partition); //fetch low battery status
-        setStatus(partition-1);
       }
-      
+
       }
       //ESP_LOGD("info","cmd=%02X",dsc.panelData[0]);
 
@@ -1352,32 +1354,26 @@ byte getNextUserCode(byte start) {
     case 0x01:
       lcdLine1 = "Partition ready";
       lcdLine2 = " ";
-      if (pausedZones) resetZones();;
       break;
     case 0x02:
       lcdLine1 = "Stay         ";
       lcdLine2 = "zones open      ";
-      if (pausedZones) resetZones();;
       break;
     case 0x03:
       lcdLine1 = "Zones open  <>";
       lcdLine2 = " ";
-      if (pausedZones) resetZones();;
       break;
     case 0x04:
       lcdLine1 = "Armed:       ";
       lcdLine2 = "Stay            ";
-      if (pausedZones) resetZones();;
       break;
     case 0x05:
       lcdLine1 = "Armed:       ";
       lcdLine2 = "Away            ";
-      if (pausedZones) resetZones();;
       break;
     case 0x06:
       lcdLine1 = "Armed: Stay  ";
       lcdLine2 = "No entry delay  ";
-      if (pausedZones) resetZones();;
       break;
     case 0x07:
       lcdLine1 = "Failed       ";
@@ -1386,7 +1382,6 @@ byte getNextUserCode(byte start) {
     case 0x08:
       lcdLine1 = "Exit delay   ";
       lcdLine2 = "in progress     ";
-      if (pausedZones) resetZones();;
       break;
     case 0x09:
       lcdLine1 = "Arming:      ";
@@ -1431,7 +1426,6 @@ byte getNextUserCode(byte start) {
     case 0x16:
       lcdLine1 = "Armed: Away  ";
       lcdLine2 = "No entry delay  ";
-      if (pausedZones) resetZones();;
       break;
     case 0x17:
       lcdLine1 = "Power saving ";
@@ -1722,9 +1716,13 @@ byte getNextUserCode(byte start) {
       lcdLine2 = dsc.status[partition];
       partitionStatus[partition].digits = 0;
     }
+    
+    if (dsc.status[partition]!=0xA9) partitionStatus[partition].eventViewer=false;
 
     if (partitionStatus[partition].digits==0)  partitionStatus[partition].newData=false;
+    
 ESP_LOGD("test","digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d",partitionStatus[partition].digits,dsc.status[partition],partitionStatus[partition].lastStatus, partitionStatus[partition].newData,partitionStatus[partition].locked,partition+1);
+
     if (millis() - partitionStatus[partition].keyPressTime > 1000  && dsc.status[partition] > 0x8B) {
       if ( !partitionStatus[partition].inprogram) {
         partitionStatus[partition].locked = true;
@@ -1803,14 +1801,8 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       }
 
       if (dsc.status[partition] < 0x04) {
-      if (currentSelection==0xFF || currentSelection==0)
-          currentSelection=getNextOpenZone(0xFF,partition+1);
-      if (currentSelection == 1) {
-          byte c=dsc.ready[partition]?0:1;
-          int pos = statusMenuLabels[c].find(":");
-          lcdLine1 = statusMenuLabels[c].substr(0, pos);
-          lcdLine2 = statusMenuLabels[c].substr(pos + 1);
-      }  else  if (currentSelection >1 && currentSelection < 6) {
+              
+        if (currentSelection >1 && currentSelection < 5) {
           int pos = statusMenu[currentSelection].find(":");
           lcdLine1 = statusMenu[currentSelection].substr(0, pos);
           lcdLine2 = statusMenu[currentSelection].substr(pos + 1);
@@ -1819,6 +1811,12 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
           lcdLine1 = "Open Zones";
           sprintf(s, "Zone %02d  <>", (currentSelection - 0x10) + 1);
           lcdLine2=s;
+        } else {
+          byte c=dsc.ready[partition]?0:1;
+          int pos = statusMenuLabels[c].find(":");
+          lcdLine1 = statusMenuLabels[c].substr(0, pos);
+          lcdLine2 = statusMenuLabels[c].substr(pos + 1);
+               
         }
       } else  if (dsc.status[partition] == 0xA0) { //bypass
         if (currentSelection == 0xFF  || partitionStatus[partition].lastStatus != dsc.status[partition])
@@ -1860,7 +1858,7 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
           currentSelection = 1;
           lcdLine2=mainMenu[currentSelection];
         }
-      } else if (dsc.status[partition] == 0xA9) { // user menu
+      } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
         if (currentSelection == 0xFF || partitionStatus[partition].lastStatus != dsc.status[partition]) {
           currentSelection = 1;
           lcdLine2=userMenu[currentSelection];
@@ -1892,7 +1890,7 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
            sprintf(s, "%02d   %c", currentSelection, programmed);
           lcdLine2=s;
         }
-      }
+      } 
 
       if (options) {
         lcdLine2 = getOptionsString();
@@ -1925,20 +1923,9 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
     #ifndef dscClassicSeries
       byte partition=0;
     switch (dsc.panelData[0]) {
-    case 0x05:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8 || dsc.panelData[3] == 0x11) && !pausedZones) {
-        pauseZones();
 
-      }
-      break;
     case 0x0F:
     case 0x0A:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8 || dsc.panelData[3] == 0x11) && !pausedZones) {
-
-        pauseZones();
-      }
-
-
       //capture potential program digit if in programming mode
       //line2Digit = dsc.panelData[4];
       //line2Status = dsc.panelData[3];
@@ -1950,7 +1937,6 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
     case 0x63:
 
       if ((dsc.panelData[2] & 0x04) == 0x04) { // Alarm memory zones 1-32
-        if (pausedZones)
           processProgramZones(3);
       }
       break;
@@ -1995,11 +1981,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       case 0x19: printBeeps(4); break;
       case 0x20:
       case 0x21: 
-             if (pausedZones)  processProgramZones(5);
+                processProgramZones(5);
         break; // Programming zone lights 33-64 //bypass?
       case 0x18:
         //ESP_LOGD("info", "zone lights 33");
-        if (pausedZones && (dsc.panelData[4] & 0x04) == 0x04)
+        if ((dsc.panelData[4] & 0x04) == 0x04)
             processProgramZones(5);
         break; // Alarm memory zones 33-64
       };
@@ -2185,7 +2171,6 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
   }
 
   void processEventBufferEC() {
-      ESP_LOGD("test"," in extended buffer ec ");
     #ifndef dscClassicSeries
     if (!extendedBuffer) extendedBuffer = true;
 
@@ -2196,7 +2181,7 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
     if (eventNumber < 10) strcat(eventInfo, "00");
     else if (eventNumber < 100) strcat(eventInfo, "0");
     strcat(eventInfo, charBuffer);
-    strcat(eventInfo, " | ");
+    strcat(eventInfo, " ");
 
     byte dscYear3 = dsc.panelData[3] >> 4;
     byte dscYear4 = dsc.panelData[3] & 0x0F;
@@ -2241,6 +2226,43 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
           itoa((bitCount + 1), charBuffer, 10);
            line1DisplayCallback(eventInfo,bitCount+1);
            eventInfoCallback(eventInfo,bitCount+1);
+           ESP_LOGD("info","EC partition=%d,switch=%02X,event=%s",bitCount+1,dsc.panelData[7],eventInfo);
+           switch (dsc.panelData[7]) {
+    case 0x00:
+      printPanelStatus0(8,bitCount+1);
+      break;
+    case 0x01:
+      printPanelStatus1(8,bitCount+1);
+      break;
+    case 0x02:
+      printPanelStatus2(8,bitCount+1);
+      break;
+    case 0x03:
+      printPanelStatus3(8,bitCount+1);
+      break;
+    case 0x04:
+      printPanelStatus4(8,bitCount+1);
+      break;
+    case 0x05:
+      printPanelStatus5(8,bitCount+1);
+      break;
+    case 0x14:
+      printPanelStatus14(8,bitCount+1);
+      break;
+    case 0x16:
+      printPanelStatus16(8,bitCount+1);
+      break;
+    case 0x17:
+      printPanelStatus17(8,bitCount+1);
+      break;
+    case 0x18:
+      printPanelStatus18(8,bitCount+1);
+      break;
+    case 0x1B:
+      printPanelStatus1B(8,bitCount+1);
+      break;
+    }
+           
         }
         bitCount++;
       }
@@ -2248,8 +2270,6 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
     } else {
         line1DisplayCallback(eventInfo,defaultPartition); 
         eventInfoCallback(eventInfo,defaultPartition);
-    }
-        
 
     switch (dsc.panelData[7]) {
     case 0x00:
@@ -2285,6 +2305,7 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
     case 0x1B:
       printPanelStatus1B(8,defaultPartition);
       break;
+    }
     }
     #endif
   }
@@ -2514,8 +2535,12 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "") line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+    
+    //partitionStatus[partition].lcdline1=lcdLine1;
+   // partitionStatus[partition].lcdline2=lcdLine2;
+    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);   
+   // if (lcdLine1 != "") line1DisplayCallback(lcdLine1,partition);
+   // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
   void printPanelStatus1(byte panelByte,byte partition) {
@@ -2642,8 +2667,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+   // partitionStatus[partition].lcdline1=lcdLine1;
+   // partitionStatus[partition].lcdline2=lcdLine2;  
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);
+    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+   // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
   void printPanelStatus2(byte panelByte,byte partition) {
@@ -2776,7 +2804,7 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
 
     if (dsc.panelData[panelByte] >= 0xE6 && dsc.panelData[panelByte] <= 0xE8) {
       byte dscCode = dsc.panelData[panelByte] - 0xC3;
-      lcdLine1 = "*6: ";
+      lcdLine1 = "";
       if (dscCode >= 35) dscCode += 5;
       if (dscCode == 40) strcpy(lcdMessage, "Master code ");
       else strcpy(lcdMessage, "Access code ");
@@ -2817,9 +2845,12 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+   // partitionStatus[partition].lcdline1=lcdLine1;
+   // partitionStatus[partition].lcdline2=lcdLine2;
+    //ESP_LOGD("test","lcdline1=%s,lcdline2=%s",partitionStatus[partition].lcdline1.c_str(),partitionStatus[partition].lcdline2.c_str());
+    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+    //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);
   }
 
   void printPanelStatus3(byte panelByte,byte partition) {
@@ -2949,8 +2980,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+   // partitionStatus[partition].lcdline1=lcdLine1;
+   // partitionStatus[partition].lcdline2=lcdLine2; 
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);
+    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+   // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
   void printPanelStatus4(byte panelByte,byte partition) {
@@ -3011,8 +3045,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+    //partitionStatus[partition].lcdline1=lcdLine1;
+   // partitionStatus[partition].lcdline2=lcdLine2;
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);
+   // if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+   // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
   void printPanelStatus5(byte panelByte,byte partition) {
@@ -3049,8 +3086,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+    //partitionStatus[partition].lcdline1=lcdLine1;
+    //partitionStatus[partition].lcdline2=lcdLine2;
+    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);    
+    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+   // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
   void printPanelStatus14(byte panelByte,byte partition) {
@@ -3083,8 +3123,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+  //  partitionStatus[partition].lcdline1=lcdLine1;
+    //partitionStatus[partition].lcdline2=lcdLine2;   
+        line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);
+    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+    //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
   void printPanelStatus16(byte panelByte,byte partition) {
@@ -3113,8 +3156,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+   // partitionStatus[partition].lcdline1=lcdLine1;
+   // partitionStatus[partition].lcdline2=lcdLine2;    
+    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);   
+   // if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+    //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
   void printPanelStatus17(byte panelByte,byte partition) {
@@ -3183,8 +3229,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+    //partitionStatus[partition].lcdline1=lcdLine1;
+    //partitionStatus[partition].lcdline2=lcdLine2;    
+    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);    
+    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+    //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
 
   }
 
@@ -3232,8 +3281,11 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+    //partitionStatus[partition].lcdline1=lcdLine1;
+    //partitionStatus[partition].lcdline2=lcdLine2;    
+    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);    
+   // if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
+   // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
   void printPanelStatus1B(byte panelByte,byte partition) {
@@ -3253,19 +3305,13 @@ ESP_LOGD("test","in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    if (dsc.status[partition] != 0xA9) 
-        line1DisplayCallback(lcdLine1,partition);
-    line2DisplayCallback(lcdLine2,partition);
+    //partitionStatus[partition].lcdline1=lcdLine1;
+   // partitionStatus[partition].lcdline2=lcdLine2;
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2),partition);
+  //  line1DisplayCallback(lcdLine1,partition);
+  //  line2DisplayCallback(lcdLine2,partition);
   }
 
-  void pauseZones() {
-    pausedZones = true;
-  }
-
-  void resetZones() {
-    pausedZones = false;
-    dsc.openZonesStatusChanged = true;
-  }
 
 };
 
