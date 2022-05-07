@@ -396,11 +396,14 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         return;
 
       } else if (key == '>') {
-        if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx + 1 == partitionStatus[partition - 1].digits) {
+          
+        getNextIdx(tpl, partition);          
+          
+        if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx == 0) {
           dsc.setLCDSend(false, partition);
           return;
         }
-        getNextIdx(tpl, partition);
+  
         /*
         partitionStatus[partition-1].editIdx = partitionStatus[partition-1].editIdx + 1 < partitionStatus[partition-1].digits ? partitionStatus[partition-1].editIdx + 1 : partitionStatus[partition-1].editIdx = 0;
         */
@@ -588,7 +591,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   void getPrevIdx(std::string tpl, byte partition) {
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx > 0 ? partitionStatus[partition - 1].editIdx - 1 : partitionStatus[partition - 1].digits - 1;
-    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && partitionStatus[partition - 1].editIdx != partitionStatus[partition - 1].digits - 1);
+    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && partitionStatus[partition - 1].editIdx != partitionStatus[partition - 1].digits);
 
   }
 
