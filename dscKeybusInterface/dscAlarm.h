@@ -2110,13 +2110,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     #ifndef dscClassicSeries
     if (extendedBuffer) return; // Skips 0xAA data when 0xEC extended event buffer data is available
 
-    char eventInfo[45] = "Event: ";
+    char eventInfo[45] = "Evnt:";
     char charBuffer[4];
     itoa(dsc.panelData[7], charBuffer, 10);
     if (dsc.panelData[7] < 10) strcat(eventInfo, "00");
     else if (dsc.panelData[7] < 100) strcat(eventInfo, "0");
     strcat(eventInfo, charBuffer);
-    strcat(eventInfo, " | ");
+    strcat(eventInfo, " ");
 
     byte dscYear3 = dsc.panelData[2] >> 4;
     byte dscYear4 = dsc.panelData[2] & 0x0F;
@@ -2152,7 +2152,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     itoa(dscMinute, charBuffer, 10);
     strcat(eventInfo, charBuffer);
     byte partition = dsc.panelData[3] >> 6;
-     strcat(eventInfo, " Part  ");
+     strcat(eventInfo, " Part:");
      itoa(partition, charBuffer, 10);
     strcat(eventInfo, charBuffer);
 
@@ -2180,7 +2180,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     #ifndef dscClassicSeries
     if (!extendedBuffer) extendedBuffer = true;
 
-    char eventInfo[45] = "Event: ";
+    char eventInfo[45] = "Evnt:";
     char charBuffer[4];
     int eventNumber = dsc.panelData[9] + ((dsc.panelData[4] >> 6) * 256);
     itoa(eventNumber, charBuffer, 10);
@@ -2224,7 +2224,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     strcat(eventInfo, charBuffer);
 
     if (dsc.panelData[2] != 0) {
-       strcat(eventInfo, " Part ");
+       strcat(eventInfo, " Part:");
 
       byte bitCount = 0;
       for (byte bit = 0; bit <= 7; bit++) {
