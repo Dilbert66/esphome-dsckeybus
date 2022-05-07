@@ -2281,19 +2281,19 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       break;
     case 0x4A:
       lcdLine1 = "Disarmed:";
-      lcdLine2 = "Alarm memory";
+      lcdLine2 = "Alarm mem";
       break;
     case 0x4B:
       lcdLine1 = "Recent";
       lcdLine2 = "closing alarm";
       break;
     case 0x4C:
-      lcdLine1 = "Zone expander";
+      lcdLine1 = "Zone exp";
       lcdLine2 = "suprvis. alarm";
       break;
     case 0x4D:
-      lcdLine1 = "Zone expander";
-      lcdLine2 = "suprvis. restore";
+      lcdLine1 = "Zone exp";
+      lcdLine2 = "suprvis. rest";
       break;
     case 0x4E:
       lcdLine1 = "Keypad Fire";
@@ -2308,24 +2308,24 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine2 = "alarm";
       break;
     case 0x51:
-      lcdLine1 = "Auxiliary input";
+      lcdLine1 = "Aux input";
       lcdLine2 = "alarm";
       break;
     case 0x52:
       lcdLine1 = "Keypad Fire";
-      lcdLine2 = "alarm restored";
+      lcdLine2 = "alarm rest";
       break;
     case 0x53:
       lcdLine1 = "Keypad Aux";
-      lcdLine2 = "alarm restored";
+      lcdLine2 = "alarm rest";
       break;
     case 0x54:
       lcdLine1 = "Keypad Panic";
-      lcdLine2 = "alarm restored";
+      lcdLine2 = "alarm rest";
       break;
     case 0x55:
-      lcdLine1 = "Auxiliary input";
-      lcdLine2 = "alarm restored";
+      lcdLine1 = "Aux input";
+      lcdLine2 = "alarm rest";
       break;
     case 0x98:
       lcdLine1 = "Keypad";
@@ -2341,59 +2341,59 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       break;
     case 0xE5:
       lcdLine1 = "Auto-arm";
-      lcdLine2 = "cancelled";
+      lcdLine2 = "canc";
       break;
     case 0xE6:
       lcdLine1 = "Disarmed:";
       lcdLine2 = "Special";
       break;
     case 0xE7:
-      lcdLine1 = "Panel battery";
-      lcdLine2 = "trouble";
+      lcdLine1 = "Panel bat";
+      lcdLine2 = "trble";
       break;
     case 0xE8:
-      lcdLine1 = "Panel AC power";
-      lcdLine2 = "trouble";
+      lcdLine1 = "Panel AC";
+      lcdLine2 = "trble";
       break;
     case 0xE9:
-      lcdLine1 = "Bell trouble";
+      lcdLine1 = "Bell trble";
       lcdLine2 = " ";
       break;
     case 0xEA:
       lcdLine1 = "Fire zone";
-      lcdLine2 = "trouble";
+      lcdLine2 = "trble";
       break;
     case 0xEB:
-      lcdLine1 = "Panel aux supply";
-      lcdLine2 = "trouble";
+      lcdLine1 = "Panel aux sup";
+      lcdLine2 = "trble";
       break;
     case 0xEC:
-      lcdLine1 = "Telephone line";
-      lcdLine2 = "trouble";
+      lcdLine1 = "Tel line";
+      lcdLine2 = "trble";
       break;
     case 0xEF:
-      lcdLine1 = "Panel battery";
-      lcdLine2 = "restored";
+      lcdLine1 = "Panel bat";
+      lcdLine2 = "rest";
       break;
     case 0xF0:
-      lcdLine1 = "Panel AC power";
-      lcdLine2 = "restored";
+      lcdLine1 = "Panel AC";
+      lcdLine2 = "rest";
       break;
     case 0xF1:
-      lcdLine1 = "Bell restored";
+      lcdLine1 = "Bell rest";
       lcdLine2 = " ";
       break;
     case 0xF2:
       lcdLine1 = "Fire zone";
-      lcdLine2 = "trouble restored";
+      lcdLine2 = "trble rest";
       break;
     case 0xF3:
-      lcdLine1 = "Panel aux supply";
-      lcdLine2 = "restored";
+      lcdLine1 = "Panel aux sup";
+      lcdLine2 = "rest";
       break;
     case 0xF4:
-      lcdLine1 = "Telephone line";
-      lcdLine2 = "restored";
+      lcdLine1 = "Tel line";
+      lcdLine2 = "rest";
       break;
     case 0xF7:
       lcdLine1 = "Phone 1 FTC";
@@ -2417,7 +2417,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       break;
     case 0xFE:
       lcdLine1 = "Periodic test";
-      lcdLine2 = "transmission";
+      lcdLine2 = "trans";
       break;
     case 0xFF:
       lcdLine1 = "System test";
@@ -2520,20 +2520,20 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine2 = " ";
       break;
     case 0x29:
-      lcdLine1 = "Downloading";
-      lcdLine2 = "forced answer";
+      lcdLine1 = "Download";
+      lcdLine2 = "forced ans";
       break;
     case 0x2B:
       lcdLine1 = "Armed:";
       lcdLine2 = "Auto-arm";
       break;
     case 0xAC:
-      lcdLine1 = "Exit installer";
-      lcdLine2 = "programming";
+      lcdLine1 = "Exit inst";
+      lcdLine2 = "prog";
       break;
     case 0xAD:
-      lcdLine1 = "Enter installer";
-      lcdLine2 = "programming";
+      lcdLine1 = "Enter inst";
+      lcdLine2 = "prog";
       break;
     case 0xAE:
       lcdLine1 = "Walk test";
@@ -2556,8 +2556,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine2 = "Entry delay";
       break;
     case 0xD3:
-      lcdLine1 = "Downlook remote";
-      lcdLine2 = "trigger";
+      lcdLine1 = "Downlook rem";
+      lcdLine2 = "trig";
       break;
     default:
       decoded = false;
@@ -2578,8 +2578,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     if (dsc.panelData[panelByte] >= 0x2C && dsc.panelData[panelByte] <= 0x4B) {
-      lcdLine1 = "Zone battery";
-      strcpy(lcdMessage, "restored: ");
+      lcdLine1 = "Zone bat";
+      strcpy(lcdMessage, "rest: ");
       itoa(dsc.panelData[panelByte] - 43, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -2587,7 +2587,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     if (dsc.panelData[panelByte] >= 0x4C && dsc.panelData[panelByte] <= 0x6B) {
-      lcdLine1 = "Zone battery";
+      lcdLine1 = "Zone bat";
       strcpy(lcdMessage, "low: ");
       itoa(dsc.panelData[panelByte] - 75, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
@@ -2597,7 +2597,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (dsc.panelData[panelByte] >= 0x6C && dsc.panelData[panelByte] <= 0x8B) {
       lcdLine1 = "Zone fault";
-      strcpy(lcdMessage, "restored: ");
+      strcpy(lcdMessage, "rest: ");
       itoa(dsc.panelData[panelByte] - 107, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -2644,15 +2644,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       break;
     case 0x63:
       lcdLine1 = "Keybus fault";
-      lcdLine2 = "restored";
+      lcdLine2 = "rest";
       break;
     case 0x64:
       lcdLine1 = "Keybus fault";
       lcdLine2 = " ";
       break;
     case 0x66:
-      lcdLine1 = "*1: Zone bypass";
-      lcdLine2 = "programming";
+      lcdLine1 = "Zone bypass";
+      lcdLine2 = "prog";
       break;
     case 0x67:
       lcdLine1 = "Command";
@@ -2712,11 +2712,11 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       break;
     case 0x9C:
       lcdLine1 = "Armed:";
-      lcdLine2 = "No entry delay";
+      lcdLine2 = "No ent del";
       break;
     case 0xFF:
-      lcdLine1 = "Zone expander";
-      lcdLine2 = "trouble: 1";
+      lcdLine1 = "Zone exp";
+      lcdLine2 = "trble: 1";
       break;
     default:
       decoded = false;
@@ -2774,7 +2774,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     if (dsc.panelData[panelByte] >= 0xE9 && dsc.panelData[panelByte] <= 0xF0) {
-      lcdLine1 = "Keypad restored:";
+      lcdLine1 = "Keypad rest:";
       strcpy(lcdMessage, "Slot ");
       itoa(dsc.panelData[panelByte] - 232, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
@@ -2783,7 +2783,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     if (dsc.panelData[panelByte] >= 0xF1 && dsc.panelData[panelByte] <= 0xF8) {
-      lcdLine1 = "Keypad trouble:";
+      lcdLine1 = "Keypad trble:";
       strcpy(lcdMessage, "Slot ");
       itoa(dsc.panelData[panelByte] - 240, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
@@ -2792,11 +2792,11 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     if (dsc.panelData[panelByte] >= 0xF9 && dsc.panelData[panelByte] <= 0xFE) {
-      strcpy(lcdMessage, "Zone expander ");
+      strcpy(lcdMessage, "Zone exp ");
       itoa(dsc.panelData[panelByte] - 248, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = "restored";
+      lcdLine2 = "rest";
       decoded = true;
     }
 
@@ -2819,31 +2819,31 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     switch (dsc.panelData[panelByte]) {
     case 0x05:
       lcdLine1 = "PC/RF5132:";
-      lcdLine2 = "Suprvis. restore";
+      lcdLine2 = "Suprvis. rest";
       break;
     case 0x06:
       lcdLine1 = "PC/RF5132:";
-      lcdLine2 = "Suprvis. trouble";
+      lcdLine2 = "Suprvis. trble";
       break;
     case 0x09:
       lcdLine1 = "PC5204:";
-      lcdLine2 = "Suprvis. restore";
+      lcdLine2 = "Suprvis. rest";
       break;
     case 0x0A:
       lcdLine1 = "PC5204:";
-      lcdLine2 = "Suprvis. trouble";
+      lcdLine2 = "Suprvis. trble";
       break;
     case 0x17:
-      lcdLine1 = "Zone expander 7";
-      lcdLine2 = "restored";
+      lcdLine1 = "Zone exp 7";
+      lcdLine2 = "rest";
       break;
     case 0x18:
-      lcdLine1 = "Zone expander 7";
-      lcdLine2 = "trouble";
+      lcdLine1 = "Zone exp 7";
+      lcdLine2 = "trble";
       break;
     case 0x41:
       lcdLine1 = "PC/RF5132:";
-      lcdLine2 = "Tamper restored";
+      lcdLine2 = "Tamper rest";
       break;
     case 0x42:
       lcdLine1 = "PC/RF5132: Tamper";
@@ -2851,7 +2851,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       break;
     case 0x43:
       lcdLine1 = "PC5208: Tamper";
-      lcdLine2 = "restored";
+      lcdLine2 = "rest";
       break;
     case 0x44:
       lcdLine1 = "PC5208: Tamper";
@@ -2859,46 +2859,46 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       break;
     case 0x45:
       lcdLine1 = "PC5204: Tamper";
-      lcdLine2 = "restored";
+      lcdLine2 = "rest";
       break;
     case 0x46:
       lcdLine1 = "PC5204: Tamper";
       lcdLine2 = " ";
       break;
     case 0x51:
-      lcdLine1 = "Zone expander 7";
-      lcdLine2 = "tamper restored";
+      lcdLine1 = "Zone exp 7";
+      lcdLine2 = "tamper rest";
       break;
     case 0x52:
-      lcdLine1 = "Zone expander 7";
+      lcdLine1 = "Zone exp 7";
       lcdLine2 = "tamper";
       break;
     case 0xB3:
       lcdLine1 = "PC5204:";
-      lcdLine2 = "Battery restored";
+      lcdLine2 = "Bat rest";
       break;
     case 0xB4:
       lcdLine1 = "PC5204:";
-      lcdLine2 = "Battery trouble";
+      lcdLine2 = "Bat trble";
       break;
     case 0xB5:
       lcdLine1 = "PC5204: Aux";
-      lcdLine2 = "supply restored";
+      lcdLine2 = "sup rest";
       break;
     case 0xB6:
       lcdLine1 = "PC5204: Aux";
-      lcdLine2 = "supply trouble";
+      lcdLine2 = "sup trble";
       break;
     case 0xB7:
-      lcdLine1 = "PC5204: Output 1";
-      lcdLine2 = "restored";
+      lcdLine1 = "PC5204: Out 1";
+      lcdLine2 = "rest";
       break;
     case 0xB8:
-      lcdLine1 = "PC5204: Output 1";
-      lcdLine2 = "trouble";
+      lcdLine1 = "PC5204: Out 1";
+      lcdLine2 = "trble";
       break;
     case 0xFF:
-      lcdLine1 = "Extended status";
+      lcdLine1 = "Ext status";
       lcdLine2 = " ";
       break;
     default:
@@ -2909,7 +2909,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     char charBuffer[4];
 
     if (dsc.panelData[panelByte] <= 0x04) {
-      strcpy(lcdMessage, "Zone expander ");
+      strcpy(lcdMessage, "Zone exp. ");
       itoa(dsc.panelData[panelByte] + 2, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -2922,7 +2922,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       itoa(dsc.panelData[panelByte] - 52, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = "tamper restored";
+      lcdLine2 = "tamper rest";
       return;
     }
 
@@ -2952,15 +2952,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     std::string lcdLine2;
     switch (dsc.panelData[panelByte]) {
     case 0x86:
-      lcdLine1 = "Periodic test";
-      lcdLine2 = "with trouble";
+      lcdLine1 = "Period test";
+      lcdLine2 = "trble";
       break;
     case 0x87:
       lcdLine1 = "Exit fault";
       lcdLine2 = " ";
       break;
     case 0x89:
-      lcdLine1 = "Alarm cancelled";
+      lcdLine1 = "Alarm canc";
       lcdLine2 = " ";
       break;
     default:
@@ -2979,7 +2979,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x20 && dsc.panelData[panelByte] <= 0x3F) {
       lcdLine1 = "Zone alarm";
-      strcpy(lcdMessage, "restored: ");
+      strcpy(lcdMessage, "rest: ");
       itoa(dsc.panelData[panelByte] + 1, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -2993,7 +2993,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x60 && dsc.panelData[panelByte] <= 0x7F) {
       lcdLine1 = "Zone tamper";
-      strcpy(lcdMessage, "restored: ");
+      strcpy(lcdMessage, "rest: ");
       itoa(dsc.panelData[panelByte] - 63, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3064,10 +3064,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       break;
     case 0xC2:
       lcdLine1 = "Tlink";
-      lcdLine2 = "network fault";
+      lcdLine2 = "net fault";
       break;
     case 0xC4:
-      lcdLine1 = "TLink receiver";
+      lcdLine1 = "TLink rec";
       lcdLine2 = "trouble";
       break;
     case 0xC5:
@@ -3097,15 +3097,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     switch (dsc.panelData[panelByte]) {
     case 0x80:
       lcdLine1 = "Trouble";
-      lcdLine2 = "acknowledged";
+      lcdLine2 = "ack";
       break;
     case 0x81:
-      lcdLine1 = "RF delinquency";
+      lcdLine1 = "RF delin";
       lcdLine2 = "trouble";
       break;
     case 0x82:
-      lcdLine1 = "RF delinquency";
-      lcdLine2 = "restore";
+      lcdLine1 = "RF delin";
+      lcdLine2 = "rest";
       break;
     default:
       decoded = false;
@@ -3113,13 +3113,12 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (!decoded) {
       lcdLine1 = "Unknown data";
-      lcdLine2 = " ";
+      lcdLine2 = "";
     }
     // partitionStatus[partition].lcdline1=lcdLine1;
     // partitionStatus[partition].lcdline2=lcdLine2;    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    // if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+
   }
 
   void printPanelStatus17(byte panelByte, byte partition) {
@@ -3186,13 +3185,12 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (!decoded) {
       lcdLine1 = "Unknown data";
-      lcdLine2 = " ";
+      lcdLine2 = "";
     }
     //partitionStatus[partition].lcdline1=lcdLine1;
     //partitionStatus[partition].lcdline2=lcdLine2;    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+
 
   }
 
@@ -3238,13 +3236,12 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (!decoded) {
       lcdLine1 = "Unknown data";
-      lcdLine2 = " ";
+      lcdLine2 = "";
     }
     //partitionStatus[partition].lcdline1=lcdLine1;
     //partitionStatus[partition].lcdline2=lcdLine2;    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    // if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+
   }
 
   void printPanelStatus1B(byte panelByte, byte partition) {
@@ -3254,7 +3251,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     switch (dsc.panelData[panelByte]) {
     case 0xF1:
       lcdLine1 = "System reset";
-      lcdLine2 = "transmission";
+      lcdLine2 = "trans";
       break;
     default:
       decoded = false;
@@ -3262,13 +3259,11 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (!decoded) {
       lcdLine1 = "Unknown data";
-      lcdLine2 = " ";
+      lcdLine2 = "";
     }
     //partitionStatus[partition].lcdline1=lcdLine1;
     // partitionStatus[partition].lcdline2=lcdLine2;
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    //  line1DisplayCallback(lcdLine1,partition);
-    //  line2DisplayCallback(lcdLine2,partition);
   }
 
 };
