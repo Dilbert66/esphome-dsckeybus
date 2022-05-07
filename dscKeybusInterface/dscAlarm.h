@@ -202,6 +202,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   bool extendedBuffer,
   partitionChanged;
   int defaultPartition = 1;
+  int activePartition=1;
 
   private: uint8_t zone;
 
@@ -386,6 +387,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
       if (key == '#') {
         partitionStatus[partition - 1].newData = false;
+        dsc.pgmBuffer.dataPending=false;
         if (key == '#' && partitionStatus[partition - 1].hex)
           dsc.setLCDSend(true, partition);
         else {
@@ -459,6 +461,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       // line2Digit = 0;
       dsc.write(key, partition);
       partitionStatus[partition - 1].eventViewer = false;
+      activePartition=1;
       setStatus(partition - 1, true);
       return;
     }
@@ -533,6 +536,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         char s[5];
         if (currentSelection == 6) {
           partitionStatus[partition - 1].eventViewer = true;
+          activePartition=partition;
           dsc.write('b', partition);
         } else {
           dsc.write(key, partition);
@@ -1728,11 +1732,12 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     if (dsc.status[partition] < 0x8B) {
       partitionStatus[partition].locked = false;
       partitionStatus[partition].inprogram = false;
+      activePartition=1;
     }
 
     if (!skip) {
 
-      //field display  for decimal or hex entries
+      //if multi digit field, setup for 6E request to panel
       if (partitionStatus[partition].lastStatus != dsc.status[partition] && !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
         dsc.setLCDReceive(partitionStatus[partition].digits, partition + 1);
         partitionStatus[partition].editIdx = 0;
@@ -1741,8 +1746,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         lcdLine1 = "";
         lcdLine2 = "";
         ESP_LOGD("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked);
-
-      } else if (partitionStatus[partition].digits && partitionStatus[partition].newData) {
+     //ok, we should have the data now so display it
+      } else if (partitionStatus[partition].digits && partitionStatus[partition].newData && dsc.pgmBuffer.dataPending ) {
 
         char s[8];
         if (partitionStatus[partition].digits > 16)
@@ -2139,25 +2144,25 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     itoa(dscMinute, charBuffer, 10);
     strcat(eventInfo, charBuffer);
     byte partition = dsc.panelData[3] >> 6;
-    // strcat(eventInfo, " | Partition ");
-    // itoa(partition, charBuffer, 10);
+     strcat(eventInfo, " Part  ");
+     itoa(partition, charBuffer, 10);
     strcat(eventInfo, charBuffer);
 
-    line1DisplayCallback(eventInfo, partition);
-    eventInfoCallback(eventInfo, partition);
+    line1DisplayCallback(eventInfo, activePartition);
+    eventInfoCallback(eventInfo, activePartition);
 
     switch (dsc.panelData[5] & 0x03) {
     case 0x00:
-      printPanelStatus0(6, partition);
+      printPanelStatus0(6, activePartition);
       break;
     case 0x01:
-      printPanelStatus1(6, partition);
+      printPanelStatus1(6, activePartition);
       break;
     case 0x02:
-      printPanelStatus2(6, partition);
+      printPanelStatus2(6, activePartition);
       break;
     case 0x03:
-      printPanelStatus3(6, partition);
+      printPanelStatus3(6, activePartition);
       break;
     }
     #endif
@@ -2211,95 +2216,56 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     strcat(eventInfo, charBuffer);
 
     if (dsc.panelData[2] != 0) {
-      // strcat(eventInfo, " | Partition ");
+       strcat(eventInfo, " Part ");
 
       byte bitCount = 0;
       for (byte bit = 0; bit <= 7; bit++) {
         if (bitRead(dsc.panelData[2], bit)) {
           itoa((bitCount + 1), charBuffer, 10);
-          line1DisplayCallback(eventInfo, bitCount + 1);
-          eventInfoCallback(eventInfo, bitCount + 1);
-          ESP_LOGD("info", "EC partition=%d,switch=%02X,event=%s", bitCount + 1, dsc.panelData[7], eventInfo);
-          switch (dsc.panelData[7]) {
-          case 0x00:
-            printPanelStatus0(8, bitCount + 1);
-            break;
-          case 0x01:
-            printPanelStatus1(8, bitCount + 1);
-            break;
-          case 0x02:
-            printPanelStatus2(8, bitCount + 1);
-            break;
-          case 0x03:
-            printPanelStatus3(8, bitCount + 1);
-            break;
-          case 0x04:
-            printPanelStatus4(8, bitCount + 1);
-            break;
-          case 0x05:
-            printPanelStatus5(8, bitCount + 1);
-            break;
-          case 0x14:
-            printPanelStatus14(8, bitCount + 1);
-            break;
-          case 0x16:
-            printPanelStatus16(8, bitCount + 1);
-            break;
-          case 0x17:
-            printPanelStatus17(8, bitCount + 1);
-            break;
-          case 0x18:
-            printPanelStatus18(8, bitCount + 1);
-            break;
-          case 0x1B:
-            printPanelStatus1B(8, bitCount + 1);
-            break;
-          }
-
         }
         bitCount++;
       }
-      //strcat(eventInfo, charBuffer);
-    } else {
-      line1DisplayCallback(eventInfo, defaultPartition);
-      eventInfoCallback(eventInfo, defaultPartition);
+      strcat(eventInfo, charBuffer);
+    }
+      line1DisplayCallback(eventInfo, activePartition);
+      eventInfoCallback(eventInfo, activePartition);
 
       switch (dsc.panelData[7]) {
       case 0x00:
-        printPanelStatus0(8, defaultPartition);
+        printPanelStatus0(8,  activePartition);
         break;
       case 0x01:
-        printPanelStatus1(8, defaultPartition);
+        printPanelStatus1(8,  activePartition);
         break;
       case 0x02:
-        printPanelStatus2(8, defaultPartition);
+        printPanelStatus2(8,  activePartition);
         break;
       case 0x03:
-        printPanelStatus3(8, defaultPartition);
+        printPanelStatus3(8,  activePartition);
         break;
       case 0x04:
-        printPanelStatus4(8, defaultPartition);
+        printPanelStatus4(8,  activePartition);
         break;
       case 0x05:
-        printPanelStatus5(8, defaultPartition);
+        printPanelStatus5(8,  activePartition);
         break;
       case 0x14:
-        printPanelStatus14(8, defaultPartition);
+        printPanelStatus14(8,  activePartition);
         break;
       case 0x16:
-        printPanelStatus16(8, defaultPartition);
+        printPanelStatus16(8,  activePartition);
         break;
       case 0x17:
-        printPanelStatus17(8, defaultPartition);
+        printPanelStatus17(8,  activePartition);
         break;
       case 0x18:
-        printPanelStatus18(8, defaultPartition);
+        printPanelStatus18(8,  activePartition);
         break;
       case 0x1B:
-        printPanelStatus1B(8, defaultPartition);
+        printPanelStatus1B(8,  activePartition);
         break;
       }
-    }
+    
     #endif
   }
 
