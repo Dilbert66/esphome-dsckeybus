@@ -604,13 +604,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
   void alarm_keypress_partition(std::string keystring, int partition) {
     if (!partition) partition = defaultPartition;
-    if (dsc.disabled[partition - 1] || partitionStatus[partition-1].locked) return;
+    if (dsc.disabled[partition - 1]) return;
     const char * keys = strcpy(new char[keystring.length() + 1], keystring.c_str());
     if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d", keystring.c_str(), partition);
     partitionStatus[partition - 1].keyPressTime = millis();
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
-    } else  dsc.write(keys, partition);
+    } else  if ( !partitionStatus[partition].locked) dsc.write(keys, partition);
   }
 
   bool isInt(std::string s, int base) {
