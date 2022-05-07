@@ -460,7 +460,7 @@ void dscKeybusInterface::processPanel_0x6E() {
         pgmBuffer.pending6E=true;
         key=0xA5; //more data available so set up also for next group send request
         writeCharsToQueue(&key,partitionToBits[pgmBuffer.partition]);        
-     }  
+     }  else pgmBuffer.dataPending=true;
 }
 
 

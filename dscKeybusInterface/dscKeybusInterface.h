@@ -224,7 +224,6 @@ volatile bool dscKeybusInterface::writeDataPending;
 byte dscKeybusInterface::writeDataBit;
 volatile pgmBufferType dscKeybusInterface::pgmBuffer;
 Stream* dscKeybusInterface::stream;
-bool dscKeybusInterface::sendHash;
 //end expander
 #endif
 byte dscKeybusInterface::panelVersion;

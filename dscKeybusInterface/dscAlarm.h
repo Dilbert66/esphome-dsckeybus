@@ -389,7 +389,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       if (key == '#') {
         partitionStatus[partition - 1].newData = false;
         if (key == '#' && partitionStatus[partition - 1].hex){
-          dsc.setLCDSend(true, partition);
+          dsc.setLCDSend(partition);
         } else {
           dsc.write(key, partition);
         }
@@ -399,9 +399,9 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         getNextIdx(tpl, partition);          
           
         if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx == 0) {
-          dsc.setLCDSend(false, partition);
+          dsc.setLCDSend(partition);
           partitionStatus[partition-1].newData=false;
-          //return;
+          return;
         }
   
       } else if (key == '<') {
@@ -430,7 +430,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
             dsc.pgmBuffer.data[y] = (dsc.pgmBuffer.data[y] & 0x0F) | (k << 4);
         }
         if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx + 1 == partitionStatus[partition - 1].digits) {
-          dsc.setLCDSend(false, partition);
+          dsc.setLCDSend(partition);
           return;
         }
 
@@ -1014,7 +1014,11 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           }
       }
       */
-
+      if (firstrun)
+      for (byte partition = 0; partition < dscPartitions; partition++) {
+        if (dsc.disabled[partition]) continue;
+        setStatus(partition,true);
+      }
       firstrun = false;
 
     }
@@ -1998,13 +2002,14 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     case 0xEB:
       if (dsc.panelData[7] == 1)
         switch (dsc.panelData[8]) {
-        case 0xAD:
-          // ESP_LOGD("test", "EB enter programming mode");
-          break;
-        case 0xAC:
-          //ESP_LOGD("test", "EB leave programming mode");
-          break;
+        case 0xAE:
+            line2DisplayCallback("Walk test end", activePartition);
+            break;
+        case 0xAF:
+            line2DisplayCallback("Walk test beging", activePartition);
+        break;          
         };
+
       break;
     case 0xEC:
       processEventBufferEC();
