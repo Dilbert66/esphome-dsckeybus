@@ -222,6 +222,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     bool decimalInput;
     bool hex;
     bool eventViewer;
+    bool submitted;
 
   };
 
@@ -387,32 +388,25 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
       if (key == '#') {
         partitionStatus[partition - 1].newData = false;
-        dsc.pgmBuffer.dataPending=false;
-        if (key == '#' && partitionStatus[partition - 1].hex)
+        if (key == '#' && partitionStatus[partition - 1].hex){
           dsc.setLCDSend(true, partition);
-        else {
+        } else {
           dsc.write(key, partition);
         }
         return;
 
       } else if (key == '>') {
-          
         getNextIdx(tpl, partition);          
           
         if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx == 0) {
           dsc.setLCDSend(false, partition);
-          return;
+          partitionStatus[partition-1].newData=false;
+          //return;
         }
   
-        /*
-        partitionStatus[partition-1].editIdx = partitionStatus[partition-1].editIdx + 1 < partitionStatus[partition-1].digits ? partitionStatus[partition-1].editIdx + 1 : partitionStatus[partition-1].editIdx = 0;
-        */
-
       } else if (key == '<') {
         getPrevIdx(tpl, partition);
-        /*
-        partitionStatus[partition-1].editIdx = partitionStatus[partition-1].editIdx > 0 ? partitionStatus[partition-1].editIdx - 1 : partitionStatus[partition-1].digits - 1;
-*/
+
       } else if (key != '*') {
         if (partitionStatus[partition - 1].decimalInput) {
           int num;
@@ -589,16 +583,18 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   }
 
   void getPrevIdx(std::string tpl, byte partition) {
+    int count=0;
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx > 0 ? partitionStatus[partition - 1].editIdx - 1 : partitionStatus[partition - 1].digits - 1;
-    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && partitionStatus[partition - 1].editIdx != partitionStatus[partition - 1].digits);
+    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits );
 
   }
 
   void getNextIdx(std::string tpl, byte partition) {
+    int count=0;
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx + 1 < partitionStatus[partition - 1].digits ? partitionStatus[partition - 1].editIdx + 1 : partitionStatus[partition - 1].editIdx = 0;
-    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && partitionStatus[partition - 1].editIdx != 0);
+    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits);
 
   }
 
@@ -1719,7 +1715,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (partitionStatus[partition].digits == 0) partitionStatus[partition].newData = false;
 
-    ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1,currentSelection);
+
 
     if (millis() - partitionStatus[partition].keyPressTime > 1000 && dsc.status[partition] > 0x8B) {
       if (!partitionStatus[partition].inprogram) {
@@ -1739,16 +1735,21 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     if (!skip) {
+        
+    ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1,currentSelection);        
 
       //if multi digit field, setup for 6E request to panel
-      if (partitionStatus[partition].lastStatus != dsc.status[partition] && !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
+      if (dsc.status[partition] != partitionStatus[partition].lastStatus &&  !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
+          
+       ESP_LOGD("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked); 
+       
         dsc.setLCDReceive(partitionStatus[partition].digits, partition + 1);
         partitionStatus[partition].editIdx = 0;
         partitionStatus[partition].hexMode = false;
         partitionStatus[partition].newData = true;
         lcdLine1 = "";
         lcdLine2 = "";
-        ESP_LOGD("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked);
+
      //ok, we should have the data now so display it
       } else if (partitionStatus[partition].digits && partitionStatus[partition].newData && dsc.pgmBuffer.dataPending ) {
 
@@ -2034,18 +2035,22 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
   }
 
-  void printBeeps(byte panelByte, byte partition = -1) {
-    if (partition < 1) partition = defaultPartition;
+  void printBeeps(byte panelByte) {
     dsc.statusChanged = true;
     beeps = dsc.panelData[panelByte] / 2;
     char s[4];
     sprintf(s, "%d", beeps);
-    beepsCallback(s, partition);
+    for (byte partition = 0; partition < dscPartitions; partition++) {
+        if (dsc.disabled[partition]) continue;
+        beepsCallback(s, partition+1);
+        if (beeps == 2 && partitionStatus[partition].digits && !partitionStatus[partition].locked) {
+            dsc.setLCDReceive(partitionStatus[partition].digits, partition);
+            partitionStatus[partition].editIdx = 0;
+            partitionStatus[partition].hexMode = false;
+            partitionStatus[partition].newData = true;        
+        }        
+    }
     beepTime = millis();
-    if (beeps == 2 && partitionStatus[partition - 1].digits)
-      dsc.setLCDReceive(partitionStatus[partition - 1].digits, partition);
-    partitionStatus[partition - 1].editIdx = 0;
-
   }
 
   void printPanel_0x6E() {
