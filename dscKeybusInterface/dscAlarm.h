@@ -2041,9 +2041,9 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     char s[4];
     sprintf(s, "%d", beeps);
     for (byte partition = 0; partition < dscPartitions; partition++) {
-        if (dsc.disabled[partition]) continue;
-        beepsCallback(s, partition+1);
-        if (beeps == 2 && partitionStatus[partition].digits && !partitionStatus[partition].locked) {
+        if (dsc.disabled[partition] || partitionStatus[partition].locked) continue;
+            beepsCallback(s, partition+1);
+        if (beeps == 2 && partitionStatus[partition].digits ) {
             dsc.setLCDReceive(partitionStatus[partition].digits, partition);
             partitionStatus[partition].editIdx = 0;
             partitionStatus[partition].hexMode = false;
