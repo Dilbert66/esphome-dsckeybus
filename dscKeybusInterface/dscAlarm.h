@@ -1712,7 +1712,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (partitionStatus[partition].digits == 0) partitionStatus[partition].newData = false;
 
-    ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1);
+    ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1,currentSelection);
 
     if (millis() - partitionStatus[partition].keyPressTime > 1000 && dsc.status[partition] > 0x8B) {
       if (!partitionStatus[partition].inprogram) {
@@ -1793,7 +1793,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
       if (dsc.status[partition] < 0x04) {
 
-        if (currentSelection > 1 && currentSelection < 5) {
+         if (currentSelection > 1 && currentSelection < 5) {
           int pos = statusMenu[currentSelection].find(":");
           lcdLine1 = statusMenu[currentSelection].substr(0, pos);
           lcdLine2 = statusMenu[currentSelection].substr(pos + 1);
@@ -1807,6 +1807,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           int pos = statusMenuLabels[c].find(":");
           lcdLine1 = statusMenuLabels[c].substr(0, pos);
           lcdLine2 = statusMenuLabels[c].substr(pos + 1);
+          currentSelection=1;
 
         }
       } else if (dsc.status[partition] == 0xA0) { //bypass
