@@ -604,13 +604,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
   void alarm_keypress_partition(std::string keystring, int partition) {
     if (!partition) partition = defaultPartition;
-    if (dsc.disabled[partition - 1]) return;
+    if (dsc.disabled[partition - 1] || partitionStatus[partition-1].locked) return;
     const char * keys = strcpy(new char[keystring.length() + 1], keystring.c_str());
     if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d", keystring.c_str(), partition);
     partitionStatus[partition - 1].keyPressTime = millis();
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
-    } else if (!partitionStatus[partition - 1].locked) dsc.write(keys, partition);
+    } else  dsc.write(keys, partition);
   }
 
   bool isInt(std::string s, int base) {
@@ -626,6 +626,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     const char * alarmCode = strcpy(new char[code.length() + 1], code.c_str());
     if (!partition) partition = defaultPartition;
     // Arm stay
+    if (partitionStatus[partition-1].locked) return;
+    
     if (state.compare("S") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
       dsc.write('s', partition); // Virtual keypad arm stay
     }
@@ -889,7 +891,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         #endif
         //add partition loop
         for (byte partition = 1; partition <= dscPartitions; partition++) {
-          if (dsc.disabled[partition - 1]) continue;
+          if (dsc.disabled[partition - 1] || partitionStatus[partition-1].locked) continue;
           dsc.write("*", partition);
           dsc.write("27##", partition); //fetch low battery status
         }
@@ -1042,7 +1044,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
       //non partition specific problems so we send to all keypads
       for (byte partition = 0; partition < dscPartitions; partition++) {
-        if (dsc.disabled[partition]) continue;
+        if (dsc.disabled[partition] || partitionStatus[partition].locked) continue;
 
         // Sends the access code when needed by the panel for arming
         if (dsc.status[partition] == 0x9F && dsc.writeAccessCode[partition] && isInt(accessCode, 10)) {
