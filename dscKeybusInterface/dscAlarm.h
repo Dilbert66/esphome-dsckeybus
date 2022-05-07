@@ -894,6 +894,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           if (dsc.disabled[partition - 1] || partitionStatus[partition-1].locked) continue;
           dsc.write("*", partition);
           dsc.write("27##", partition); //fetch low battery status
+          setStatus(partition-1,true);
         }
 
       }
@@ -1014,11 +1015,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           }
       }
       */
-      if (firstrun)
-      for (byte partition = 0; partition < dscPartitions; partition++) {
-        if (dsc.disabled[partition]) continue;
-        setStatus(partition,true);
-      }
+
       firstrun = false;
 
     }
