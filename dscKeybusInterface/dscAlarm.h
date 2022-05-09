@@ -560,7 +560,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           activePartition = partition;
           dsc.write('b', partition);
         } else {
-           dsc.write(key,partition);
           sprintf(s, "%d", currentSelection % 6);
           const char * out = strcpy(new char[3], s);
           currentSelection = 0xFF;
