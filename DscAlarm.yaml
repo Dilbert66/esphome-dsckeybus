@@ -138,10 +138,8 @@ custom_component:
           case 1: id(f1).publish_state(open); break;
       }
     }); 
-    DSCkeybus->onTroubleMsgStatus([&](std::string msg,int partition) {
-        switch(partition) {
-            case 1: id(tr_msg).publish_state(msg);break;
-        }
+    DSCkeybus->onTroubleMsgStatus([&](std::string msg) {
+            id(tr_msg).publish_state(msg);
     });
     DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
       switch (zone) {

@@ -22,7 +22,7 @@
 
 #define MAXZONES 32 //set to 64 if your system supports it
 #define MODULESUPERVISION 0 //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
-//#define OLDVERSION
+//#define OLDVERSION  //uncomment if you are using an old panel or version or you see odd behavior with the <> arrows
 //byte globalClockPin=id(dscClockPin);
 //byte globalReadPin=id(dscReadPin);
 //byte globalWritePin=id(dscWritePin);
@@ -58,7 +58,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   std:: function < void(std::string, int) > partitionStatusChangeCallback;
   std:: function < void(std::string, int) > partitionMsgChangeCallback;
   std:: function < void(std::string) > zoneMsgStatusCallback;
-  std:: function < void(std::string, int) > troubleMsgStatusCallback;
+  std:: function < void(std::string) > troubleMsgStatusCallback;
   std:: function < void(uint8_t, bool) > relayChannelChangeCallback;
   std:: function < void(std::string, int) > line1DisplayCallback;
   std:: function < void(std::string, int) > line2DisplayCallback;
@@ -175,7 +175,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   void onZoneMsgStatus(std:: function < void(std::string msg) > callback) {
     zoneMsgStatusCallback = callback;
   }
-  void onTroubleMsgStatus(std:: function < void(std::string msg, int partition) > callback) {
+  void onTroubleMsgStatus(std:: function < void(std::string msg) > callback) {
     troubleMsgStatusCallback = callback;
   }
   void onRelayChannelChange(std:: function < void(uint8_t channel, bool state) > callback) {
@@ -1452,8 +1452,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         systemMsg.append("TIME");
       }
       if (systemMsg == "") systemMsg = "OK";
-      //  if (previousSystemMsg != systemMsg) 
-      //   troubleMsgStatusCallback(systemMsg);
+        if (previousSystemMsg != systemMsg) 
+         troubleMsgStatusCallback(systemMsg);
       previousSystemMsg = systemMsg;
 
     }
@@ -1487,8 +1487,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         Serial.println();
       }
     }
-    // if (zoneStatusMsg != previousZoneStatusMsg)
-    //   zoneMsgStatusCallback(zoneStatusMsg); 
+     if (zoneStatusMsg != previousZoneStatusMsg)
+       zoneMsgStatusCallback(zoneStatusMsg); 
     previousZoneStatusMsg = zoneStatusMsg;
 
   }
