@@ -469,14 +469,17 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     if (dsc.status[partition - 1] < 0x04) {
-#ifndef OLDVERSION
+#ifdef OLDVERSION        
+      if (key == '<' || key == '>') return;
+#else       
+
       if (key == '<') {
         getPreviousMainOption(partition);
-      } else
+     } else
       if (key == '>') {
         getNextMainOption(partition);
       };
-#endif        
+#endif      
       dsc.write(key, partition);      
       setStatus(partition - 1, true);
     
@@ -935,8 +938,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   }
 
   byte getPreviousOpenZone(byte start, byte partition) {
-    if (start == 1) return 0;
-    if (start == 0 || start > MAXZONES) start = MAXZONES;
+    if (start < 2|| start > MAXZONES) start = MAXZONES;
     for (int zone = start - 2; zone >= 0; zone--) {
       if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return zone + 1;
     }
@@ -989,8 +991,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   }
 
   byte getPreviousEnabledZone(byte start, byte partition) {
-    if (start == 1) return 0;
-    if (start == 0 || start > MAXZONES) start = MAXZONES;
+
+    if (start < 2 || start > MAXZONES) start = MAXZONES;
     for (int zone = start - 2; zone >= 0 && zone < MAXZONES; zone--) {
       if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone + 1;
     }
@@ -1006,8 +1008,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   }
 
   byte getPreviousAlarmedZone(byte start, byte partition) {
-    if (start == 1) return 0;
-    if (start == 0 || start > MAXZONES) start = MAXZONES;
+    if (start < 2 || start > MAXZONES) start = MAXZONES;
     for (int zone = start - 2; zone >= 0 && zone < MAXZONES; zone--) {
       if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone + 1;
     }
@@ -1184,7 +1185,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
       for (byte partition = 0; partition < dscPartitions; partition++) {
         if (dsc.disabled[partition]) continue;
-        setStatus(partition);
+        setStatus(partition,true);
       }
 
       if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
@@ -2069,6 +2070,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
       if (options) {
         lcdLine2 = getOptionsString();
+        ESP_LOGD("test","got options string %s",lcdLine2.c_str());
       }
 
     }
@@ -2259,7 +2261,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     group1msg.append(group2msg);
     lightsCallback(group1msg, defaultPartition);
-
+    dsc.statusChanged=true;
   }
 
   void processEventBufferAA() {
