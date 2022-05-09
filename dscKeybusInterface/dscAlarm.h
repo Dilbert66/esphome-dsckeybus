@@ -79,6 +79,12 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     "No-Entry Arm",
     "Quick Arming"
   };
+  
+  const std::string outputMenu[3] = {
+          "Press # to exit",
+          "O/P 1",
+          "O/P 2"
+  };
 
   const std::string troubleMenu[9] = {
     "Press # to exit",
@@ -114,12 +120,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     "Event Buffer"
   };
 
-  const std::string statusMenu[5] = {
+  const std::string statusMenu[6] = {
     "placeholder",
     "placeholder",
-    "System Trouble:(*2) to view <>",
-    "Bypass Active:(*1) to View <>",
-    "Scroll to View:Open Zones <>"
+    "System Trouble:(*2) to view",
+    "Bypass Active:(*1) to view",
+    "Alarm Memory: (*3) to view",
+    "Open Zones:Scroll to view <>"
   };
 
   const std::string statusMenuLabels[2] = {
@@ -202,7 +209,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   bool extendedBuffer,
   partitionChanged;
   int defaultPartition = 1;
-  int activePartition=1;
+  int activePartition = 1;
 
   private: uint8_t zone;
 
@@ -223,6 +230,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     bool hex;
     bool eventViewer;
     bool submitted;
+    byte selectedMenu;
+    byte selectedZone;
 
   };
 
@@ -371,7 +380,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (partition < 1) partition = defaultPartition;
 
-    ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], currentSelection + 1, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
+    ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
 
     if (partitionStatus[partition - 1].locked) {
       line1DisplayCallback("System", partition);
@@ -388,22 +397,22 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
       if (key == '#') {
         partitionStatus[partition - 1].newData = false;
-        if (key == '#' && partitionStatus[partition - 1].hex){
-          dsc.setLCDSend(partition,(partitionStatus[partition - 1].digits > 8));
+        if (key == '#' && partitionStatus[partition - 1].hex) {
+          dsc.setLCDSend(partition, (partitionStatus[partition - 1].digits > 8));
         } else {
           dsc.write(key, partition);
         }
         return;
 
       } else if (key == '>') {
-        getNextIdx(tpl, partition);          
-          
+        getNextIdx(tpl, partition);
+
         if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx == 0) {
           dsc.setLCDSend(partition);
-          partitionStatus[partition-1].newData=false;
+          partitionStatus[partition - 1].newData = false;
           return;
         }
-  
+
       } else if (key == '<') {
         getPrevIdx(tpl, partition);
 
@@ -414,7 +423,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           sscanf(decimalInputBuffer, "%d", & num);
           dsc.pgmBuffer.data[0] = num;
           //convert data to int and store it to data[0];
-
         } else {
           byte y = partitionStatus[partition - 1].editIdx / 2;
           char k = key - 48;
@@ -435,9 +443,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         }
 
         getNextIdx(tpl, partition);
-        /*
-        partitionStatus[partition-1].editIdx = partitionStatus[partition-1].editIdx + 1 < partitionStatus[partition-1].digits ? partitionStatus[partition-1].editIdx + 1 : partitionStatus[partition-1].editIdx = 0;
-        */
 
       } else if (key == '*') {
         if (partitionStatus[partition - 1].hex) {
@@ -454,11 +459,11 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (key == '#') {
       currentSelection = 0xFF;
-      //   line2Status = 0;
-      // line2Digit = 0;
+      partitionStatus[partition-1].selectedMenu=0;
+      partitionStatus[partition-1].selectedZone=0;
       dsc.write(key, partition);
       partitionStatus[partition - 1].eventViewer = false;
-      activePartition=1;
+      activePartition = 1;
       setStatus(partition - 1, true);
       return;
     }
@@ -466,10 +471,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     if (dsc.status[partition - 1] < 0x04) {
       dsc.write(key, partition);
       if (key == '<') {
-        currentSelection = getPreviousOpenZone(currentSelection, partition);
+        getPreviousMainOption( partition);
       } else
       if (key == '>') {
-        currentSelection = getNextOpenZone(currentSelection, partition);
+       getNextMainOption(partition);
       };
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0x9E) { // * mainmenu
@@ -477,12 +482,14 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       if (key == '<') {
         currentSelection = currentSelection >= 11 ? 10 : (currentSelection > 0 ? currentSelection - 1 : 10);
         currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
-        if (currentSelection < 11) line2DisplayCallback(mainMenu[currentSelection], partition);
+        if (currentSelection < 11) 
+            line2DisplayCallback(mainMenu[currentSelection], partition);
 
       } else if (key == '>') {
         currentSelection = currentSelection >= 10 ? 0 : currentSelection + 1;
         currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
-        if (currentSelection < 11) line2DisplayCallback(mainMenu[currentSelection], partition);
+        if (currentSelection < 11) 
+            line2DisplayCallback(mainMenu[currentSelection], partition);
       } else if (key == '*' && currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", currentSelection % 10);
@@ -500,10 +507,12 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         dsc.write(out, partition);
       } else if (key == '>') {
         currentSelection = getNextOption(currentSelection);
-        if (currentSelection < 9) line2DisplayCallback(troubleMenu[currentSelection], partition);
+        if (currentSelection < 9) 
+            line2DisplayCallback(troubleMenu[currentSelection], partition);
       } else if (key == '<') {
         currentSelection = getPreviousOption(currentSelection);
-        if (currentSelection < 9) line2DisplayCallback(troubleMenu[currentSelection], partition);
+        if (currentSelection < 9) 
+            line2DisplayCallback(troubleMenu[currentSelection], partition);
       } else currentSelection = 0xFF;
     } else if (dsc.status[partition - 1] == 0xC8) { //trouble
       dsc.write(key, partition);
@@ -515,7 +524,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         dsc.write(out, partition);
       } else if (key == '>') {
         currentSelection = getNextOption(currentSelection);
-        if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection], partition);
+        if (currentSelection < 9) 
+            line2DisplayCallback(serviceMenu[currentSelection], partition);
       } else if (key == '<') {
         currentSelection = getPreviousOption(currentSelection);
         if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection], partition);
@@ -524,16 +534,18 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       if (key == '<') {
         currentSelection = currentSelection >= 7 ? 6 : (currentSelection > 0 ? currentSelection - 1 : 6);
         currentSelection = userMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
-        if (currentSelection < 7) line2DisplayCallback(userMenu[currentSelection], partition);
+        if (currentSelection < 7) 
+            line2DisplayCallback(userMenu[currentSelection], partition);
       } else if (key == '>') {
         currentSelection = currentSelection >= 6 ? 0 : currentSelection + 1;
         currentSelection = userMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
-        if (currentSelection < 7) line2DisplayCallback(userMenu[currentSelection], partition);
+        if (currentSelection < 7) 
+            line2DisplayCallback(userMenu[currentSelection], partition);
       } else if (key == '*' && currentSelection > 0) {
         char s[5];
         if (currentSelection == 6) {
           partitionStatus[partition - 1].eventViewer = true;
-          activePartition=partition;
+          activePartition = partition;
           dsc.write('b', partition);
         } else {
           dsc.write(key, partition);
@@ -545,8 +557,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       } else currentSelection = 0xFF;
     } else if (dsc.status[partition - 1] == 0xA2) { //alarm memory
       dsc.write(key, partition);
-      if (key == '>') currentSelection = getNextOption(currentSelection);
-      else if (key == '<') currentSelection = getPreviousOption(currentSelection);
+      if (key == '>') 
+          currentSelection = getNextOption(currentSelection);
+      else if (key == '<') 
+          currentSelection = getPreviousOption(currentSelection);
       else currentSelection = 0xFF;
     } else if (dsc.status[partition - 1] == 0xA6) { //user codes
       dsc.write(key, partition);
@@ -555,26 +569,51 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         sprintf(s, "%02d", currentSelection);
         const char * out = strcpy(new char[3], s);
         dsc.write(out, partition);
-        // ESP_LOGD("info","Wrote key bypass %s",s);
-      } else if (key == '>') currentSelection = getNextUserCode(currentSelection);
-      else if (key == '<') currentSelection = getPreviousUserCode(currentSelection);
+      } else if (key == '>') 
+          currentSelection = getNextUserCode(currentSelection);
+      else if (key == '<') 
+          currentSelection = getPreviousUserCode(currentSelection);
       setStatus(partition - 1, true);
-    } else if (dsc.status[partition - 1] == 0x11) { //alarms
+    }  else if (dsc.status[partition - 1] == 0x11) { //alarms
       dsc.write(key, partition);
-      if (key == '>') currentSelection = getNextAlarmedZone(currentSelection, partition);
-      else if (key == '<') currentSelection = getPreviousAlarmedZone(currentSelection, partition);
+      if (key == '>')
+          currentSelection = getNextAlarmedZone(currentSelection, partition);
+      else if (key == '<') 
+          currentSelection = getPreviousAlarmedZone(currentSelection, partition);
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xA0) { //bypass
       dsc.write(key, partition);
       if (key == '*') {
         char s[5];
-        sprintf(s, "%02d", currentSelection + 1);
+        sprintf(s, "%02d", currentSelection );
         const char * out = strcpy(new char[3], s);
         dsc.write(out, partition);
-        // ESP_LOGD("info","Wrote key bypass %s",s);
-      } else if (key == '>') currentSelection = getNextEnabledZone(currentSelection, partition);
-      else if (key == '<') currentSelection = getPreviousEnabledZone(currentSelection, partition);
+      } else if (key == '>') 
+          currentSelection = getNextEnabledZone(currentSelection, partition);
+      else if (key == '<') 
+          currentSelection = getPreviousEnabledZone(currentSelection, partition);
       setStatus(partition - 1, true);
+    } else if (dsc.status[partition - 1] == 0xB2) { // * output control
+     
+      if (key == '<') {
+        currentSelection = currentSelection >= 3 ? 2 : (currentSelection > 0 ? currentSelection - 1 : 2);
+        currentSelection = outputMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
+        if (currentSelection < 3) 
+            line2DisplayCallback(outputMenu[currentSelection], partition);
+
+      } else if (key == '>') {
+        currentSelection = currentSelection >= 2 ? 0 : currentSelection + 1;
+        currentSelection =outputMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
+        if (currentSelection < 3) 
+            line2DisplayCallback(outputMenu[currentSelection], partition);
+      } else if (key == '*' && currentSelection > 0) {
+
+        char s[5];
+        sprintf(s, "%d", currentSelection);
+        const char * out = strcpy(new char[3], s);
+        currentSelection = 0xFF;
+        dsc.write(s, partition);
+      } else currentSelection = 0xFF;
     } else {
       dsc.write(key, partition);
       setStatus(partition - 1, false);
@@ -583,15 +622,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   }
 
   void getPrevIdx(std::string tpl, byte partition) {
-    int count=0;
+    int count = 0;
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx > 0 ? partitionStatus[partition - 1].editIdx - 1 : partitionStatus[partition - 1].digits - 1;
-    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits );
+    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits);
 
   }
 
   void getNextIdx(std::string tpl, byte partition) {
-    int count=0;
+    int count = 0;
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx + 1 < partitionStatus[partition - 1].digits ? partitionStatus[partition - 1].editIdx + 1 : partitionStatus[partition - 1].editIdx = 0;
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits);
@@ -610,7 +649,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     partitionStatus[partition - 1].keyPressTime = millis();
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
-    } else  if ( !partitionStatus[partition].locked) dsc.write(keys, partition);
+    } else if (!partitionStatus[partition].locked) dsc.write(keys, partition);
   }
 
   bool isInt(std::string s, int base) {
@@ -626,8 +665,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     const char * alarmCode = strcpy(new char[code.length() + 1], code.c_str());
     if (!partition) partition = defaultPartition;
     // Arm stay
-    if (partitionStatus[partition-1].locked) return;
-    
+    if (partitionStatus[partition - 1].locked) return;
+
     if (state.compare("S") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
       dsc.write('s', partition); // Virtual keypad arm stay
     }
@@ -777,76 +816,137 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     else return 95;
   }
 
-  byte getPreviousOpenZone(byte start, byte partition) {
-    byte menu, option;
+ void getPreviousMainOption(byte partition) {
+        
+     byte menu=0;
+     byte zone=0;
 
-    if (start > MAXZONES || start < 2) start = MAXZONES + 0x10;
+    if (partitionStatus[partition-1].selectedMenu > 5) {
+        partitionStatus[partition-1].selectedMenu=0;
+        partitionStatus[partition-1].selectedZone=0;        
+        return;
+    } else if (partitionStatus[partition-1].selectedMenu==5) {
+        partitionStatus[partition-1].selectedZone=getPreviousOpenZone(partitionStatus[partition-1].selectedZone,partition);
+        if ( partitionStatus[partition-1].selectedZone) return;
+    } else if (partitionStatus[partition-1].selectedMenu < 2)
+        partitionStatus[partition-1].selectedMenu=6 ;
+    
+    for (int x=partitionStatus[partition-1].selectedMenu;x>=0;x--) {
 
-    //open zones start at selection 0x10 (16 decimal)
-    //menu options start at 00 -> 06  . We do this so that when scrolling we scroll the menu options first
-    for (option = start - 1; option >= 0 && option < MAXZONES + 0x10; option--) {
-      zone = option >= 0x10 ? option - 0x10 : 0xFF;
-      if (zone < MAXZONES && zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return option;
-      if (option == 1) return 1; //ready /open
-      if (option == 2 && dsc.lights[partition - 1] & 0x10) return 2; //trouble
-      if (option == 3 && dsc.lights[partition - 1] & 0x08) return 3; //bypass
-      if (option == 4 && !(dsc.lights[partition - 1] & 0x3)) return 4; //bypass 
-
+        if ((x==6) && !dsc.armed[partition-1] && !dsc.armed[partition-1]) { //openzones
+            menu=5;
+            zone=0;
+            break;
+        } else if ( x==3  && dsc.lights[partition - 1] & 0x10 ) { //trouble
+            menu=2;
+           zone=0;
+            break;
+        } else if ( x==4 && dsc.lights[partition - 1] & 0x08) { //bypass
+            menu=3;
+            zone=0;
+            break;
+        }  else if (x==5 && dsc.alarm[partition-1]) { //alarms
+            menu=4;
+            zone=0;
+            break;
+        } 
     }
-
-    return 0xFF;
-
+    partitionStatus[partition-1].selectedMenu=menu;
+    partitionStatus[partition-1].selectedZone=zone;    
+  
   }
 
+  
   byte getNextOpenZone(byte start, byte partition) {
-    byte zone, option;
-    //open zones start at selection 0x10 (16 decimal)
-    //menu options start at 00 -> 04  . We do this so that when scrolling we scroll the menu options first
-    if (start > MAXZONES) start = 0;
-    for (option = start + 1; option < MAXZONES + 0x10; option++) {
-      zone = option >= 0x10 ? option - 0x10 : 0xFF;
-      if (zone < MAXZONES && zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return option;
-
-      if (option == 1) return 1; //ready / open
-      if (option == 2 && dsc.lights[partition - 1] & 0x10) return 2; //trouble
-      if (option == 3 && dsc.lights[partition - 1] & 0x08) return 3; //bypass
-      if (option == 4 && !(dsc.lights[partition - 1] & 0x3)) return 4; //bypass  
+    if (start >= MAXZONES) start = 0;
+    for (int zone = start; zone < MAXZONES ; zone++) {
+       if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return zone+1;
     }
     return 0;
+  }
+  
+    byte getPreviousOpenZone(byte start, byte partition) {
+    if (start==1) return 0;
+    if (start==0 || start > MAXZONES) start=MAXZONES;
+    for (int zone = start-2; zone >=0; zone--) {
+       if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return zone+1;
+    }
+    return 0;
+  }
+  
+  void getNextMainOption(byte partition) {
+        
+     byte menu=0;
+     byte zone=0;
+
+    if (partitionStatus[partition-1].selectedMenu > 5) {
+        partitionStatus[partition-1].selectedMenu=0;
+        return;
+    }  else if (partitionStatus[partition-1].selectedMenu==5) {
+        partitionStatus[partition-1].selectedZone=getNextOpenZone(partitionStatus[partition-1].selectedZone,partition);
+        if ( partitionStatus[partition-1].selectedZone) return;
+    }
+    
+    for (int x=partitionStatus[partition-1].selectedMenu;x<6;x++) {
+        if ((x==0 || x==1) && dsc.lights[partition - 1] & 0x10) { //trouble
+            menu=2;
+            zone=0;
+            break;
+        } else if ( x==2 && dsc.lights[partition - 1] & 0x08) { //bypass
+            menu=3;
+            zone=0;
+            break;
+        } else if ( x==3 && dsc.alarm[partition-1]) { //alarm
+            menu=4;
+            zone=0;
+            break;
+        } else if ( x==4 && !dsc.armed[partition-1] && !dsc.armed[partition-1]) { //open
+            menu=5;
+            zone=0;
+            break;
+        } 
+    }
+    partitionStatus[partition-1].selectedMenu=menu;
+    partitionStatus[partition-1].selectedZone=zone;
+  
   }
 
   byte getNextEnabledZone(byte start, byte partition) {
     byte zone;
-    for (zone = start + 1; zone < MAXZONES; zone++) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone;
+    if (start>=MAXZONES) start=0;
+    for (zone = start; zone < MAXZONES; zone++) {
+      if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone+1;
     }
-    return 0xFF;
+    return 0;
   }
 
   byte getPreviousEnabledZone(byte start, byte partition) {
-    byte zone, s;
-    s = start == 0xFF || start == 0 ? MAXZONES : start;
-    for (zone = s - 1; zone >= 0 && zone < MAXZONES; zone--) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone;
+    int zone;
+    if (start==1) return 0;
+    if (start==0 || start > MAXZONES) start=MAXZONES;
+    for (zone = start - 2; zone >= 0 && zone < MAXZONES; zone--) {
+      if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone+1;
     }
-    return 0xFF;
+    return 0;
   }
 
   byte getNextAlarmedZone(byte start, byte partition) {
     byte zone;
-    for (zone = start + 1; zone < MAXZONES; zone++) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone;
+    if (start>=MAXZONES) start=0;    
+    for (zone = start; zone < MAXZONES; zone++) {
+      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone+1;
     }
-    return 0xFF;
+    return 0;
   }
 
   byte getPreviousAlarmedZone(byte start, byte partition) {
-    byte zone, s;
-    s = start == 0xFF || start == 0 ? MAXZONES : start;
-    for (zone = s - 1; zone >= 0 && zone < MAXZONES; zone--) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone;
+    int zone;
+    if (start==1) return 0;
+    if (start==0 || start > MAXZONES) start=MAXZONES;
+    for (zone = start-2; zone >= 0 && zone < MAXZONES; zone--) {
+      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone+1;
     }
-    return 0xFF;
+    return 0;
   }
 
   void getBypassZones(byte partition) {
@@ -891,10 +991,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         #endif
         //add partition loop
         for (byte partition = 1; partition <= dscPartitions; partition++) {
-          if (dsc.disabled[partition - 1] || partitionStatus[partition-1].locked) continue;
+          if (dsc.disabled[partition - 1] || partitionStatus[partition - 1].locked) continue;
           dsc.write("*", partition);
           dsc.write("27##", partition); //fetch low battery status
-          setStatus(partition-1,true);
+          setStatus(partition - 1, true);
         }
 
       }
@@ -987,15 +1087,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       if (dsc.panelData[0] == 0xB1) {
         getEnabledZones(2, 1, 1);
         getEnabledZones(6, 1, 2);
-        /*
-        for(byte z=0;z<MAXZONES;z++) {
-            if (zoneStatus[z].enabled) {
-                    ESP_LOGD("info","Zone %d enabled on partition %d",z+1,zoneStatus[z].partition);
-           
-            }
-            
-        }
-        */
+
       }
 
       if (dsc.panelData[0] == 0xE6 && dsc.panelData[2] == 0x2C) {
@@ -1030,8 +1122,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (dsc.disabled[partition]) continue;
         setStatus(partition);
       }
-      // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-      // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+
       if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
       dsc.bufferOverflow = false;
 
@@ -1117,7 +1208,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
             partitionStatusChangeCallback(STATUS_OFF, partition + 1);
             troubleStatusChangeCallback(armStatus, false, partition + 1);
           }
-
         }
         // Publishes exit delay status
         if (dsc.exitDelayChanged[partition]) {
@@ -1127,7 +1217,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         }
 
         // Publishes ready status
-        // ESP_LOGD("test","ready changed status partition=%d,ready=%d,ready changed=%d",partition+1,dsc.ready[partition],dsc.readyChanged[partition]);
+
         if (dsc.readyChanged[partition]) {
 
           dsc.readyChanged[partition] = false; // Resets the partition alarm status flag
@@ -1182,10 +1272,12 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
       //   ...
       //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64	
+      
       if (dsc.alarmZonesStatusChanged) {
         dsc.alarmZonesStatusChanged = false; // Resets the alarm zones status flag
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
           for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+
             if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) { // Checks an individual alarm zone status flag
               bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0); // Resets the individual alarm zone status flag
               zone = zoneBit + (zoneGroup * 8);
@@ -1194,7 +1286,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
                 zoneStatus[zone].alarm = true;
               } else {
                 zoneStatus[zone].alarm = false;
-              }
+              }                
             }
           }
         }
@@ -1718,8 +1810,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (partitionStatus[partition].digits == 0) partitionStatus[partition].newData = false;
 
-
-
     if (millis() - partitionStatus[partition].keyPressTime > 1000 && dsc.status[partition] > 0x8B) {
       if (!partitionStatus[partition].inprogram) {
         partitionStatus[partition].locked = true;
@@ -1734,18 +1824,18 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     if (dsc.status[partition] < 0x8B) {
       partitionStatus[partition].locked = false;
       partitionStatus[partition].inprogram = false;
-      activePartition=1;
+      activePartition = 1;
     }
 
     if (!skip) {
-        
-    ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1,currentSelection);        
+
+      ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, currentSelection);
 
       //if multi digit field, setup for 6E request to panel
-      if (dsc.status[partition] != partitionStatus[partition].lastStatus &&  !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
-          
-       ESP_LOGD("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked); 
-       
+      if (dsc.status[partition] != partitionStatus[partition].lastStatus && !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
+
+        ESP_LOGD("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked);
+
         dsc.setLCDReceive(partitionStatus[partition].digits, partition + 1);
         partitionStatus[partition].editIdx = 0;
         partitionStatus[partition].hexMode = false;
@@ -1753,8 +1843,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         lcdLine1 = "";
         lcdLine2 = "";
 
-     //ok, we should have the data now so display it
-      } else if (partitionStatus[partition].digits && partitionStatus[partition].newData && dsc.pgmBuffer.dataPending ) {
+        //ok, we should have the data now so display it
+      } else if (partitionStatus[partition].digits && partitionStatus[partition].newData && dsc.pgmBuffer.dataPending) {
 
         char s[8];
         if (partitionStatus[partition].digits > 16)
@@ -1786,7 +1876,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
               sprintf(s, "[%1X]", c);
             else
               sprintf(s, "%1X", c);
-          } else sprintf(s, " ");
+          } else
+            sprintf(s, " ");
 
           if (partitionStatus[partition].digits < 17)
             lcdLine2.append(s);
@@ -1805,88 +1896,97 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
       if (dsc.status[partition] < 0x04) {
 
-         if (currentSelection > 1 && currentSelection < 5) {
-          int pos = statusMenu[currentSelection].find(":");
-          lcdLine1 = statusMenu[currentSelection].substr(0, pos);
-          lcdLine2 = statusMenu[currentSelection].substr(pos + 1);
-        } else if (currentSelection >= 0x10 && currentSelection < MAXZONES + 0x10) {
-          char s[16];
-          lcdLine1 = "Open Zones";
-          sprintf(s, "Zone %02d  <>", (currentSelection - 0x10) + 1);
-          lcdLine2 = s;
+        if (partitionStatus[partition].selectedMenu > 1 && partitionStatus[partition].selectedMenu < 6) {
+          int pos = statusMenu[partitionStatus[partition].selectedMenu].find(":");
+          lcdLine1 = statusMenu[partitionStatus[partition].selectedMenu].substr(0, pos);
+          lcdLine2 = statusMenu[partitionStatus[partition].selectedMenu].substr(pos + 1);
         } else {
           byte c = dsc.ready[partition] ? 0 : 1;
           int pos = statusMenuLabels[c].find(":");
           lcdLine1 = statusMenuLabels[c].substr(0, pos);
           lcdLine2 = statusMenuLabels[c].substr(pos + 1);
-          currentSelection=1;
-
-        }
+          partitionStatus[partition].selectedMenu = 1;
+        } 
+        
+        if (partitionStatus[partition].selectedZone && partitionStatus[partition].selectedZone < MAXZONES) {
+          char s[16];
+          sprintf(s, "Zone %02d  <>", partitionStatus[partition].selectedZone);
+          lcdLine2 = s;
+        } 
       } else if (dsc.status[partition] == 0xA0) { //bypass
-        if (currentSelection == 0xFF )
+        if (currentSelection == 0xFF || currentSelection==0)
           currentSelection = getNextEnabledZone(0xFF, partition + 1);
-        if (currentSelection < MAXZONES) {
+        if (currentSelection < MAXZONES && currentSelection > 0) {
           char s[16];
           char bypassStatus = ' ';
-          if (zoneStatus[currentSelection].bypassed)
+          if (zoneStatus[currentSelection-1].bypassed)
             bypassStatus = 'B';
-          else if (zoneStatus[currentSelection].open)
+          else if (zoneStatus[currentSelection-1].open)
             bypassStatus = 'O';
-          sprintf(s, "%02d   %c", currentSelection + 1, bypassStatus);
+          sprintf(s, "%02d   %c", currentSelection, bypassStatus);
           lcdLine2 = s;
         }
       } else if (dsc.status[partition] == 0x11) { //alarms
 
-        if (currentSelection == 0xFF)
+        if (currentSelection == 0xFF || currentSelection==0)
           currentSelection = getNextAlarmedZone(0xFF, partition + 1);
-        if (currentSelection < MAXZONES) {
+        if (currentSelection < MAXZONES && currentSelection > 0) {
           char s[16];
-          sprintf(s, "zone %02d", currentSelection + 1);
+          sprintf(s, "zone %02d", currentSelection);
           lcdLine2 = s;
         }
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
 
-        if (currentSelection == 0xFF )
+        if (currentSelection == 0xFF || currentSelection==0)
           currentSelection = getNextOption(0xFF);
 
-        if (currentSelection < MAXZONES) {
+        if (currentSelection < MAXZONES && currentSelection > 0) {
           char s[16];
           lcdLine2 = "";
           char bypassStatus = ' ';
 
           sprintf(s, "zone %02d", currentSelection);
           lcdLine2 = s;
+        } else {
+            lcdLine1="No alarms";
+            lcdLine2="in memory";
         }
       } else if (dsc.status[partition] == 0x9E) { // main menu
-        if (currentSelection == 0xFF ) {
-          currentSelection = 1;
-        }
-          lcdLine2 = mainMenu[currentSelection];
-        
-      } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
         if (currentSelection == 0xFF) {
           currentSelection = 1;
         }
-          lcdLine2 = userMenu[currentSelection];
-        
+        lcdLine2 = mainMenu[currentSelection];
+
+      } else if (dsc.status[partition] == 0xB2) { // output menu
+        if (currentSelection == 0xFF ) {
+          currentSelection = 1;
+        }
+        lcdLine2 = outputMenu[currentSelection];
+
+      } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
+        if (currentSelection == 0xFF ) {
+          currentSelection = 1;
+        }
+        lcdLine2 = userMenu[currentSelection];
+
       } else if (dsc.status[partition] == 0xA1) { //trouble
 
         if (currentSelection == 0xFF ) {
           currentSelection = getNextOption(currentSelection);
         }
-          if (currentSelection < 9) {
-            lcdLine2 = troubleMenu[currentSelection];
-          }
-        
+        if (currentSelection < 9) {
+          lcdLine2 = troubleMenu[currentSelection];
+        }
+
       } else if (dsc.status[partition] == 0xC8) { //service
-        if (currentSelection==0xFF )
-            currentSelection = getNextOption(currentSelection);
+        if (currentSelection == 0xFF || currentSelection==0)
+          currentSelection = getNextOption(currentSelection);
         if (currentSelection < 9) {
           lcdLine2 = serviceMenu[currentSelection];
         }
 
       } else if (dsc.status[partition] == 0xA6) { //user code
-        if (currentSelection ==0xFF  )
+        if (currentSelection == 0xFF )
           currentSelection = getNextUserCode(currentSelection);
         if (currentSelection < 96) {
           char s[16];
@@ -1918,7 +2018,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     case 0x0F:
     case 0x0A:
-      processProgramZones(4); 
+      processProgramZones(4);
 
       break;
     case 0x5D:
@@ -1984,11 +2084,11 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       if (dsc.panelData[7] == 1)
         switch (dsc.panelData[8]) {
         case 0xAE:
-            line2DisplayCallback("Walk test end", activePartition);
-            break;
+          line2DisplayCallback("Walk test end", activePartition);
+          break;
         case 0xAF:
-            line2DisplayCallback("Walk test beging", activePartition);
-        break;          
+          line2DisplayCallback("Walk test beging", activePartition);
+          break;
         };
 
       break;
@@ -2029,14 +2129,14 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     char s[4];
     sprintf(s, "%d", beeps);
     for (byte partition = 0; partition < dscPartitions; partition++) {
-        if (dsc.disabled[partition] || partitionStatus[partition].locked) continue;
-            beepsCallback(s, partition+1);
-        if (beeps == 2 && partitionStatus[partition].digits ) {
-            dsc.setLCDReceive(partitionStatus[partition].digits, partition);
-            partitionStatus[partition].editIdx = 0;
-            partitionStatus[partition].hexMode = false;
-            partitionStatus[partition].newData = true;        
-        }        
+      if (dsc.disabled[partition] || partitionStatus[partition].locked) continue;
+      beepsCallback(s, partition + 1);
+      if (beeps == 2 && partitionStatus[partition].digits) {
+        dsc.setLCDReceive(partitionStatus[partition].digits, partition);
+        partitionStatus[partition].editIdx = 0;
+        partitionStatus[partition].hexMode = false;
+        partitionStatus[partition].newData = true;
+      }
     }
     beepTime = millis();
   }
@@ -2140,8 +2240,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     itoa(dscMinute, charBuffer, 10);
     strcat(eventInfo, charBuffer);
     byte partition = dsc.panelData[3] >> 6;
-     strcat(eventInfo, " Part:");
-     itoa(partition, charBuffer, 10);
+    strcat(eventInfo, " Part:");
+    itoa(partition, charBuffer, 10);
     strcat(eventInfo, charBuffer);
 
     line1DisplayCallback(eventInfo, activePartition);
@@ -2212,7 +2312,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     strcat(eventInfo, charBuffer);
 
     if (dsc.panelData[2] != 0) {
-       strcat(eventInfo, " Part:");
+      strcat(eventInfo, " Part:");
 
       byte bitCount = 0;
       for (byte bit = 0; bit <= 7; bit++) {
@@ -2223,45 +2323,45 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       }
       strcat(eventInfo, charBuffer);
     }
-      line1DisplayCallback(eventInfo, activePartition);
-      eventInfoCallback(eventInfo, activePartition);
+    line1DisplayCallback(eventInfo, activePartition);
+    eventInfoCallback(eventInfo, activePartition);
 
-      switch (dsc.panelData[7]) {
-      case 0x00:
-        printPanelStatus0(8,  activePartition);
-        break;
-      case 0x01:
-        printPanelStatus1(8,  activePartition);
-        break;
-      case 0x02:
-        printPanelStatus2(8,  activePartition);
-        break;
-      case 0x03:
-        printPanelStatus3(8,  activePartition);
-        break;
-      case 0x04:
-        printPanelStatus4(8,  activePartition);
-        break;
-      case 0x05:
-        printPanelStatus5(8,  activePartition);
-        break;
-      case 0x14:
-        printPanelStatus14(8,  activePartition);
-        break;
-      case 0x16:
-        printPanelStatus16(8,  activePartition);
-        break;
-      case 0x17:
-        printPanelStatus17(8,  activePartition);
-        break;
-      case 0x18:
-        printPanelStatus18(8,  activePartition);
-        break;
-      case 0x1B:
-        printPanelStatus1B(8,  activePartition);
-        break;
-      }
-    
+    switch (dsc.panelData[7]) {
+    case 0x00:
+      printPanelStatus0(8, activePartition);
+      break;
+    case 0x01:
+      printPanelStatus1(8, activePartition);
+      break;
+    case 0x02:
+      printPanelStatus2(8, activePartition);
+      break;
+    case 0x03:
+      printPanelStatus3(8, activePartition);
+      break;
+    case 0x04:
+      printPanelStatus4(8, activePartition);
+      break;
+    case 0x05:
+      printPanelStatus5(8, activePartition);
+      break;
+    case 0x14:
+      printPanelStatus14(8, activePartition);
+      break;
+    case 0x16:
+      printPanelStatus16(8, activePartition);
+      break;
+    case 0x17:
+      printPanelStatus17(8, activePartition);
+      break;
+    case 0x18:
+      printPanelStatus18(8, activePartition);
+      break;
+    case 0x1B:
+      printPanelStatus1B(8, activePartition);
+      break;
+    }
+
     #endif
   }
 
@@ -3186,7 +3286,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     //partitionStatus[partition].lcdline1=lcdLine1;
     //partitionStatus[partition].lcdline2=lcdLine2;    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-
 
   }
 
