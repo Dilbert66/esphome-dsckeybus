@@ -22,7 +22,7 @@
 
 #define MAXZONES 32 //set to 64 if your system supports it
 #define MODULESUPERVISION 0 //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
-
+//#define OLDVERSION
 //byte globalClockPin=id(dscClockPin);
 //byte globalReadPin=id(dscReadPin);
 //byte globalWritePin=id(dscWritePin);
@@ -469,36 +469,40 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
 
     if (dsc.status[partition - 1] < 0x04) {
-      dsc.write(key, partition);
+#ifndef OLDVERSION
       if (key == '<') {
         getPreviousMainOption(partition);
       } else
       if (key == '>') {
         getNextMainOption(partition);
       };
+      dsc.write(key, partition);      
       setStatus(partition - 1, true);
+#endif      
     } else if (dsc.status[partition - 1] == 0x9E) { // * mainmenu
-      dsc.write(key, partition);
       if (key == '<') {
         currentSelection = currentSelection >= 11 ? 10 : (currentSelection > 0 ? currentSelection - 1 : 10);
         currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
         if (currentSelection < 11)
           line2DisplayCallback(mainMenu[currentSelection], partition);
-
+       dsc.write(key, partition);
       } else if (key == '>') {
         currentSelection = currentSelection >= 10 ? 0 : currentSelection + 1;
         currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
         if (currentSelection < 11)
           line2DisplayCallback(mainMenu[currentSelection], partition);
+        dsc.write(key, partition);      
       } else if (key == '*' && currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", currentSelection % 10);
         const char * out = strcpy(new char[3], s);
         currentSelection = 0xFF;
         dsc.write(s, partition);
-      } else currentSelection = 0xFF;
+      } else {
+          dsc.write(key,partition);
+          currentSelection = 0xFF;
+      }
     } else if (dsc.status[partition - 1] == 0xA1) { //trouble
-      dsc.write(key, partition);
       if (key == '*' && currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", currentSelection);
@@ -509,11 +513,16 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         currentSelection = getNextOption(currentSelection);
         if (currentSelection < 9)
           line2DisplayCallback(troubleMenu[currentSelection], partition);
+          dsc.write(key,partition);      
       } else if (key == '<') {
         currentSelection = getPreviousOption(currentSelection);
         if (currentSelection < 9)
           line2DisplayCallback(troubleMenu[currentSelection], partition);
-      } else currentSelection = 0xFF;
+          dsc.write(key,partition);      
+      } else {
+          currentSelection = 0xFF;
+          dsc.write(key,partition);      
+      }
     } else if (dsc.status[partition - 1] == 0xC8) { //trouble
       if (key == '*' && currentSelection > 0) {
         char s[5];
@@ -530,7 +539,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         currentSelection = getPreviousOption(currentSelection);
         if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection], partition);
         dsc.write(key, partition);        
-      } else currentSelection = 0xFF;
+      } else {
+          currentSelection = 0xFF;
+          dsc.write(key,partition);      
+      }
   
     } else if (dsc.status[partition - 1] == 0xA9 && !partitionStatus[partition - 1].eventViewer) { // * user functions
       if (key == '<') {
@@ -552,13 +564,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           activePartition = partition;
           dsc.write('b', partition);
         } else {
-          dsc.write(key, partition);
           sprintf(s, "%d", currentSelection % 6);
           const char * out = strcpy(new char[3], s);
           currentSelection = 0xFF;
           dsc.write(s, partition);
         }
-      } else currentSelection = 0xFF;
+      } else {
+          dsc.write(key,partition);
+          currentSelection = 0xFF;
+      }
     } else if (dsc.status[partition - 1] == 0xA2) { //alarm memory
       if (key == '>') {
         currentSelection = getNextOption(currentSelection);
@@ -566,7 +580,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       } else if (key == '<') {
         currentSelection = getPreviousOption(currentSelection);
         dsc.write(key, partition);        
-      } else currentSelection = 0xFF;
+      } else {
+          currentSelection = 0xFF;
+          dsc.write(key,partition);      
+      }
     } else if (dsc.status[partition - 1] == 0xA6) { //user codes
       if (key == '*') {
         char s[5];
@@ -579,6 +596,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       } else if (key == '<') {
         currentSelection = getPreviousUserCode(currentSelection);
         dsc.write(key, partition);        
+      } else {
+          dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0x11) { //alarms
@@ -588,6 +607,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       } else if (key == '<') {
         currentSelection = getPreviousAlarmedZone(currentSelection, partition);
         dsc.write(key, partition);        
+      } else {
+          dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xA0) { //bypass
@@ -602,6 +623,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       } else if (key == '<') {
         currentSelection = getPreviousEnabledZone(currentSelection, partition);
         dsc.write(key, partition);
+      } else {
+          dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xB2) { // * output control
@@ -623,7 +646,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         const char * out = strcpy(new char[3], s);
         currentSelection = 0xFF;
         dsc.write(s, partition);
-      } else currentSelection = 0xFF;
+      } else {
+          currentSelection = 0xFF;
+          dsc.write(key,partition);      
+      }
         setStatus(partition - 1, true);
     } else {
       dsc.write(key, partition);
@@ -1961,6 +1987,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           sprintf(s, "Zone %02d  <>", partitionStatus[partition].selectedZone);
           lcdLine2 = s;
         }
+       
       } else if (dsc.status[partition] == 0xA0) { //bypass
         if (currentSelection == 0xFF || currentSelection == 0)
           currentSelection = getNextEnabledZone(0xFF, partition + 1);
