@@ -709,8 +709,20 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     ESP_LOGI(label, "%02X: %s", cmd, s.c_str());
 
   }
+  
+  byte getPanelBitNumber(byte panelByte, byte startNumber) {
 
-  bool getEnabledZones(byte inputByte, byte startZone, byte partition) {
+    byte bitCount = 0;
+    for (byte bit = 0; bit <= 7; bit++) {
+      if (bitRead(dsc.panelData[panelByte], bit)) {
+          return (startNumber + bitCount);
+      }
+      bitCount++;
+    }
+    return defaultPartition;
+}
+
+  bool getEnabledZonesB1(byte inputByte, byte startZone, byte partition) {
     bool zonesEnabled = false;
     byte zone;
     for (byte panelByte = inputByte; panelByte <= inputByte + 3; panelByte++) {
@@ -725,6 +737,30 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           } else {
             zoneStatus[zone].enabled = false;
           }
+          //ESP_LOGD("test","B1 zone %d is %d, partition=%d",zone+1,zoneStatus[zone].enabled,zoneStatus[zone].partition);
+        }
+      }
+    }
+    return zonesEnabled;
+  }
+  
+    bool getEnabledZonesE6(byte inputByte, byte startZone, byte partitionByte) {
+    bool zonesEnabled = false;
+    byte zone;
+    byte partition=getPanelBitNumber(partitionByte,1);
+    for (byte panelByte = inputByte; panelByte <= inputByte + 3; panelByte++) {
+      if (dsc.panelData[panelByte] != 0) {
+        zonesEnabled = true;
+        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+          zone = (zoneBit + startZone) + ((panelByte - inputByte) * 8) - 1;
+          if (zone >= MAXZONES) continue;
+          zoneStatus[zone].partition = partition;
+          if (bitRead(dsc.panelData[panelByte], zoneBit)) {
+            zoneStatus[zone].enabled = true;
+          } else {
+            zoneStatus[zone].enabled = false;
+          }
+        //  ESP_LOGD("test","E6 zone %d is %d, partition=%d",zone+1,zoneStatus[zone].enabled,zoneStatus[zone].partition);          
         }
       }
     }
@@ -845,7 +881,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
             menu=3;
             zone=0;
             break;
-        }  else if (x==5 && dsc.alarm[partition-1]) { //alarms
+        }  else if (x==5 && getNextAlarmedZone(0,partition)) { //alarms
             menu=4;
             zone=0;
             break;
@@ -856,6 +892,14 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   
   }
 
+
+   void clearZoneAlarms(byte partition) {
+    for (int zone =0; zone < MAXZONES ; zone++) {
+       // ESP_LOGD("test","clear zone %d,partiton%d",zone,partition);
+       if ( zoneStatus[zone].partition == partition && zoneStatus[zone].alarm)
+           zoneStatus[zone].alarm=false;
+    }
+  }
   
   byte getNextOpenZone(byte start, byte partition) {
     if (start >= MAXZONES) start = 0;
@@ -896,7 +940,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
             menu=3;
             zone=0;
             break;
-        } else if ( x==3 && dsc.alarm[partition-1]) { //alarm
+        } else if ( x==3 && getNextAlarmedZone(0,partition)) { //alarm
             menu=4;
             zone=0;
             break;
@@ -912,38 +956,35 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   }
 
   byte getNextEnabledZone(byte start, byte partition) {
-    byte zone;
     if (start>=MAXZONES) start=0;
-    for (zone = start; zone < MAXZONES; zone++) {
+    for (int zone = start; zone < MAXZONES; zone++) {
       if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone+1;
     }
     return 0;
   }
 
   byte getPreviousEnabledZone(byte start, byte partition) {
-    int zone;
     if (start==1) return 0;
     if (start==0 || start > MAXZONES) start=MAXZONES;
-    for (zone = start - 2; zone >= 0 && zone < MAXZONES; zone--) {
+    for (int zone = start - 2; zone >= 0 && zone < MAXZONES; zone--) {
       if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone+1;
     }
     return 0;
   }
 
   byte getNextAlarmedZone(byte start, byte partition) {
-    byte zone;
     if (start>=MAXZONES) start=0;    
-    for (zone = start; zone < MAXZONES; zone++) {
+    for (int zone = start; zone < MAXZONES; zone++) {
+       // ESP_LOGD("test","zone=%d,partition=%d,alarm=%d",zone+1,zoneStatus[zone].partition,zoneStatus[zone].alarm);
       if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone+1;
     }
     return 0;
   }
 
   byte getPreviousAlarmedZone(byte start, byte partition) {
-    int zone;
     if (start==1) return 0;
     if (start==0 || start > MAXZONES) start=MAXZONES;
-    for (zone = start-2; zone >= 0 && zone < MAXZONES; zone--) {
+    for (int zone = start-2; zone >= 0 && zone < MAXZONES; zone--) {
       if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone+1;
     }
     return 0;
@@ -1085,13 +1126,17 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       }
 
       if (dsc.panelData[0] == 0xB1) {
-        getEnabledZones(2, 1, 1);
-        getEnabledZones(6, 1, 2);
+        getEnabledZonesB1(2, 1, 1);
+        getEnabledZonesB1(6, 1, 2);
 
       }
 
+      if (dsc.panelData[0] == 0xE6 && dsc.panelData[2] == 0x2B) {
+        getEnabledZonesE6(4, 1, dsc.panelData[3]);
+      }
+      
       if (dsc.panelData[0] == 0xE6 && dsc.panelData[2] == 0x2C) {
-        getEnabledZones(4, 33, dsc.panelData[2]);
+        getEnabledZonesE6(4, 33, dsc.panelData[3]);
       }
       /*
       if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xB9) { //tamper
@@ -1187,6 +1232,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
         // Publishes alarm status
         if (dsc.alarmChanged[partition]) {
+            //ESP_LOGD("test","dsc alarm=%d",dsc.alarm[partition]);
           dsc.alarmChanged[partition] = false; // Resets the partition alarm status flag
           if (dsc.alarm[partition]) {
             dsc.readyChanged[partition] = false; //if we are triggered no need to trigger a ready state change
@@ -1204,6 +1250,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
             else if (dsc.armedStay[partition])
               partitionStatusChangeCallback(STATUS_STAY, partition + 1);
             else partitionStatusChangeCallback(STATUS_ARM, partition + 1);
+            clearZoneAlarms(partition+1);
           } else {
             partitionStatusChangeCallback(STATUS_OFF, partition + 1);
             troubleStatusChangeCallback(armStatus, false, partition + 1);
@@ -1272,7 +1319,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
       //   ...
       //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64	
-      
+     // ESP_LOGD("test","alarmzonestatuschanged=%d",dsc.alarmZonesStatusChanged);
       if (dsc.alarmZonesStatusChanged) {
         dsc.alarmZonesStatusChanged = false; // Resets the alarm zones status flag
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
@@ -1281,12 +1328,14 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
             if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) { // Checks an individual alarm zone status flag
               bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0); // Resets the individual alarm zone status flag
               zone = zoneBit + (zoneGroup * 8);
+
               if (zone >= MAXZONES) continue;
               if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
                 zoneStatus[zone].alarm = true;
-              } else {
-                zoneStatus[zone].alarm = false;
-              }                
+             // } else {
+              //  zoneStatus[zone].alarm = false;
+              }       
+             //ESP_LOGD("test","alarm zone=%d,status=%d",zone,zoneStatus[zone].alarm);
             }
           }
         }
@@ -1829,12 +1878,12 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     if (!skip) {
 
-      ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, currentSelection);
+    //  ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, currentSelection);
 
       //if multi digit field, setup for 6E request to panel
       if (dsc.status[partition] != partitionStatus[partition].lastStatus && !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
 
-        ESP_LOGD("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked);
+       // ESP_LOGD("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked);
 
         dsc.setLCDReceive(partitionStatus[partition].digits, partition + 1);
         partitionStatus[partition].editIdx = 0;
@@ -1934,7 +1983,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           char s[16];
           sprintf(s, "zone %02d", currentSelection);
           lcdLine2 = s;
-        }
+        } else lcdLine2="";
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
 
         if (currentSelection == 0xFF || currentSelection==0)
@@ -2189,7 +2238,6 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       byteCount++;
     }
     group1msg.append(group2msg);
-    ESP_LOGD("test", "program zones: ");
     lightsCallback(group1msg, defaultPartition);
 
   }
