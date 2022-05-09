@@ -476,23 +476,22 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       if (key == '>') {
         getNextMainOption(partition);
       };
+#endif        
       dsc.write(key, partition);      
       setStatus(partition - 1, true);
-#endif      
+    
     } else if (dsc.status[partition - 1] == 0x9E) { // * mainmenu
       if (key == '<') {
         currentSelection = currentSelection >= 11 ? 10 : (currentSelection > 0 ? currentSelection - 1 : 10);
         currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
         if (currentSelection < 11)
           line2DisplayCallback(mainMenu[currentSelection], partition);
-       dsc.write(key, partition);
       } else if (key == '>') {
         currentSelection = currentSelection >= 10 ? 0 : currentSelection + 1;
         currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
         if (currentSelection < 11)
           line2DisplayCallback(mainMenu[currentSelection], partition);
-        dsc.write(key, partition);      
-      } else if (key == '*' && currentSelection > 0) {
+       } else if (key == '*' && currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", currentSelection % 10);
         const char * out = strcpy(new char[3], s);
@@ -513,12 +512,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         currentSelection = getNextOption(currentSelection);
         if (currentSelection < 9)
           line2DisplayCallback(troubleMenu[currentSelection], partition);
-          dsc.write(key,partition);      
       } else if (key == '<') {
         currentSelection = getPreviousOption(currentSelection);
         if (currentSelection < 9)
           line2DisplayCallback(troubleMenu[currentSelection], partition);
-          dsc.write(key,partition);      
       } else {
           currentSelection = 0xFF;
           dsc.write(key,partition);      
@@ -534,12 +531,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         currentSelection = getNextOption(currentSelection);
         if (currentSelection < 9)
           line2DisplayCallback(serviceMenu[currentSelection], partition);
-        dsc.write(key, partition);      
       } else if (key == '<') {
         currentSelection = getPreviousOption(currentSelection);
         if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection], partition);
-        dsc.write(key, partition);        
-      } else {
+       } else {
           currentSelection = 0xFF;
           dsc.write(key,partition);      
       }
@@ -550,13 +545,11 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         currentSelection = userMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
         if (currentSelection < 7)
           line2DisplayCallback(userMenu[currentSelection], partition);
-        dsc.write(key, partition);      
       } else if (key == '>') {
         currentSelection = currentSelection >= 6 ? 0 : currentSelection + 1;
         currentSelection = userMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
         if (currentSelection < 7)
           line2DisplayCallback(userMenu[currentSelection], partition);
-        dsc.write(key, partition);      
       } else if (key == '*' && currentSelection > 0) {
         char s[5];
         if (currentSelection == 6) { //event viewer. 
@@ -564,6 +557,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           activePartition = partition;
           dsc.write('b', partition);
         } else {
+           dsc.write(key,partition);
           sprintf(s, "%d", currentSelection % 6);
           const char * out = strcpy(new char[3], s);
           currentSelection = 0xFF;
