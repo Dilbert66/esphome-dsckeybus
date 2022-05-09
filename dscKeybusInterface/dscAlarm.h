@@ -531,6 +531,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection], partition);
       } else currentSelection = 0xFF;
     } else if (dsc.status[partition - 1] == 0xA9 && !partitionStatus[partition - 1].eventViewer) { // * user functions
+      dsc.write(key,partition);
       if (key == '<') {
         currentSelection = currentSelection >= 7 ? 6 : (currentSelection > 0 ? currentSelection - 1 : 6);
         currentSelection = userMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
@@ -594,7 +595,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           currentSelection = getPreviousEnabledZone(currentSelection, partition);
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xB2) { // * output control
-     
+      dsc.write(key,partition);
       if (key == '<') {
         currentSelection = currentSelection >= 3 ? 2 : (currentSelection > 0 ? currentSelection - 1 : 2);
         currentSelection = outputMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;

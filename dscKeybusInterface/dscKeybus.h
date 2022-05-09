@@ -49,7 +49,7 @@ const byte maxModules = 4;
 const byte writeQueueSize=5; //write pending queue size
 #elif defined(ESP8266) || defined(ESP32)
 const byte maxModules = 4;
-const byte writeQueueSize=10; //zone pending update queue
+const byte writeQueueSize=20; //zone pending update queue
 #endif
 const byte partitionToBits[9]={9,9,17,57,65,9,17,57,65};
 

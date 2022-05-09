@@ -768,7 +768,7 @@ dscKeybusInterface::writeCharsToQueue(byte * keys, byte bit,byte partition, byte
   req.partition=partition;
   writeQueue[inIdx] = req;
   inIdx = (inIdx + 1) % writeQueueSize; //circular buffer - increment index
-    stream->printf("writing byte %02X,bits=%d,partition=%d,len=%d",req.data[0],req.writeBit,req.partition,req.len);  
+   // stream->printf("writing byte %02X,bits=%d,partition=%d,len=%d",req.data[0],req.writeBit,req.partition,req.len);  
 }
 
 
