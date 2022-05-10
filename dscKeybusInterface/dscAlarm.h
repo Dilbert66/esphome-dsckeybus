@@ -214,6 +214,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   private: uint8_t zone;
 
   bool firstrun;
+  bool options;
 
   struct partitionType {
     bool locked;
@@ -464,7 +465,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       dsc.write(key, partition);
       partitionStatus[partition - 1].eventViewer = false;
       activePartition = 1;
-      setStatus(partition - 1, true);
+      setStatus(partition-1,true);
       return;
     }
 
@@ -495,6 +496,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (currentSelection < 11)
           line2DisplayCallback(mainMenu[currentSelection], partition);
        } else if (key == '*' && currentSelection > 0) {
+        dsc.write(key,partition);
         char s[5];
         sprintf(s, "%d", currentSelection % 10);
         const char * out = strcpy(new char[3], s);
@@ -937,7 +939,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   }
 
   byte getPreviousOpenZone(byte start, byte partition) {
-    if (start < 2|| start > MAXZONES) start = MAXZONES;
+    if (start == 1) return 0;
+    if (start==0 || start > MAXZONES) start = MAXZONES;
     for (int zone = start - 2; zone >= 0; zone--) {
       if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return zone + 1;
     }
@@ -1501,7 +1504,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     std::string lcdLine1;
     std::string lcdLine2;
 
-    bool options = false;
+    //bool options = false;
+    options = false;
     partitionStatus[partition].digits = 0;
     partitionStatus[partition].hex = false;
     partitionStatus[partition].decimalInput = false;
@@ -1983,7 +1987,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         }
        
       } else if (dsc.status[partition] == 0xA0) { //bypass
-        if (currentSelection == 0xFF || currentSelection == 0)
+        if (currentSelection == 0xFF || currentSelection==0)
           currentSelection = getNextEnabledZone(0xFF, partition + 1);
         if (currentSelection < MAXZONES && currentSelection > 0) {
           char s[16];
@@ -1997,7 +2001,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         }
       } else if (dsc.status[partition] == 0x11) { //alarms
 
-        if (currentSelection == 0xFF || currentSelection == 0)
+        if (currentSelection == 0xFF || currentSelection==0)
           currentSelection = getNextAlarmedZone(0xFF, partition + 1);
         if (currentSelection < MAXZONES && currentSelection > 0) {
           char s[16];
@@ -2006,7 +2010,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         } else lcdLine2 = "";
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
 
-        if (currentSelection == 0xFF || currentSelection == 0)
+        if (currentSelection == 0xFF )
           currentSelection = getNextOption(0xFF);
 
         if (currentSelection < MAXZONES && currentSelection > 0) {
@@ -2020,8 +2024,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           lcdLine1 = "No alarms";
           lcdLine2 = "in memory";
         }
-      } else if (dsc.status[partition] == 0x9E) { // main menu
-        if (currentSelection == 0xFF) {
+      } else if (dsc.status[partition] == 0x9E  ) { // main menu
+        if (currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           currentSelection = 1;
         }
         lcdLine2 = mainMenu[currentSelection];
@@ -2038,25 +2042,25 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         }
         lcdLine2 = userMenu[currentSelection];
 
-      } else if (dsc.status[partition] == 0xA1) { //trouble
+      } else if (dsc.status[partition] == 0xA1 ) { //trouble
 
-        if (currentSelection == 0xFF) {
-          currentSelection = getNextOption(currentSelection);
+        if (currentSelection == 0xFF ) {
+          currentSelection = getNextOption(0xFF);
         }
         if (currentSelection < 9) {
           lcdLine2 = troubleMenu[currentSelection];
         }
 
       } else if (dsc.status[partition] == 0xC8) { //service
-        if (currentSelection == 0xFF || currentSelection == 0)
-          currentSelection = getNextOption(currentSelection);
+        if (currentSelection == 0xFF )
+          currentSelection = getNextOption(0xFF);
         if (currentSelection < 9) {
           lcdLine2 = serviceMenu[currentSelection];
         }
 
       } else if (dsc.status[partition] == 0xA6) { //user code
-        if (currentSelection == 0xFF)
-          currentSelection = getNextUserCode(currentSelection);
+        if (currentSelection == 0xFF )
+          currentSelection = getNextUserCode(0xFF);
         if (currentSelection < 96) {
           char s[16];
           char programmed = ' ';
@@ -2260,7 +2264,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     group1msg.append(group2msg);
     lightsCallback(group1msg, defaultPartition);
-    dsc.statusChanged=true;
+    if (options)
+        dsc.statusChanged=true;
   }
 
   void processEventBufferAA() {
