@@ -1366,6 +1366,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       zoneStatusMsg = "";
       char s1[7];
       for (int x = 0; x < MAXZONES; x++) {
+          if (!zoneStatus[x].enabled) continue;
         /*
             if (zoneStatus[x].open) {
                 sprintf(s1,"OP:%d",x+1);
