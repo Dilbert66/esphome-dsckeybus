@@ -15,7 +15,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+  */
 
 #include "dscKeybus.h"
 
@@ -62,7 +62,14 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
 
 }
 
-void dscKeybusInterface::begin(Stream & _stream) {
+void dscKeybusInterface::begin(Stream & _stream,byte setClockPin, byte setReadPin, byte setWritePin) {
+  
+  if (setClockPin > 0 && setReadPin > 0 && setWritePin > 0) {  
+    dscClockPin = setClockPin;
+    dscReadPin = setReadPin;
+    dscWritePin = setWritePin;
+  }
+  
   pinMode(dscClockPin, INPUT);
   pinMode(dscReadPin, INPUT);
   if (virtualKeypad) pinMode(dscWritePin, OUTPUT);
@@ -583,7 +590,7 @@ dscKeybusInterface::dscClockInterrupt() {
 
         break;
         //end expander
-        #elif
+        #else
       case 0x05: // Status: partitions 1-4
         if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) skipData = true;
         break;

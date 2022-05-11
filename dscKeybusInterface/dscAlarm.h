@@ -1,33 +1,33 @@
+//for project documenation visit https://github.com/Dilbert66/esphome-dsckeybus
+
+#define MAXZONES 32 //set to 64 if your system supports it
+#define MODULESUPERVISION //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
+//#define OLDVERSION  //uncomment if you are using an old panel or version or you see odd behavior
+
 #ifndef dscalarm_h
 #define dscalarm_h
 
 #include "esphome.h"
-
 #include "dscKeybusInterface.h"
 
-//for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
+using namespace esphome;
+
+
 #ifdef ESP32
 
-#define dscClockPin 22 // esp32: GPIO22
-#define dscReadPin 21 // esp32: GPIO21
-#define dscWritePin 18 // esp32: GPIO18
+#define dscClockPinDefault 22 // esp32: GPIO22
+#define dscReadPinDefault 21 // esp32: GPIO21
+#define dscWritePinDefault 18 // esp32: GPIO18
 
 #else
 
-#define dscClockPin 5 // esp8266: GPIO5 
-#define dscReadPin 4 // esp8266: GPIO4 
-#define dscWritePin 15 // esp8266: GPIO15 
+#define dscClockPinDefault 5 // esp8266: GPIO5 
+#define dscReadPinDefault 4 // esp8266: GPIO4 
+#define dscWritePinDefault 15 // esp8266: GPIO15 
 
 #endif
 
-#define MAXZONES 32 //set to 64 if your system supports it
-#define MODULESUPERVISION 0 //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
-//#define OLDVERSION  //uncomment if you are using an old panel or version or you see odd behavior with the <> arrows
-//byte globalClockPin=id(dscClockPin);
-//byte globalReadPin=id(dscReadPin);
-//byte globalWritePin=id(dscWritePin);
-
-dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
 bool forceDisconnect;
 
 void disconnectKeybus() {
@@ -47,9 +47,10 @@ enum troubleStatus {
   armStatus
 };
 
-class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
-  public: DSCkeybushome(const char * accessCode = "", unsigned long cmdWaitTime = 0): accessCode(accessCode),
-  cmdWaitTime(cmdWaitTime) {}
+
+class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
+  public: DSCkeybushome(byte dscClockPin=0,byte dscReadPin=0,byte dscWritePin=0): 
+ dscClockPin(dscClockPin),dscReadPin(dscReadPin),dscWritePin(dscWritePin) {}
 
   std:: function < void(uint8_t, bool) > zoneStatusChangeCallback;
   std:: function < void(std::string) > systemStatusChangeCallback;
@@ -62,7 +63,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   std:: function < void(uint8_t, bool) > relayChannelChangeCallback;
   std:: function < void(std::string, int) > line1DisplayCallback;
   std:: function < void(std::string, int) > line2DisplayCallback;
-  std:: function < void(std::string, int) > eventInfoCallback;
+  std:: function < void(std::string) > eventInfoCallback;
   std:: function < void(std::string, int) > lightsCallback;
   std:: function < void(std::string, int) > beepsCallback;
 
@@ -188,7 +189,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   void onLine2Display(std:: function < void(std::string msg, int partition) > callback) {
     line2DisplayCallback = callback;
   }
-  void onEventInfo(std:: function < void(std::string msg, int partition) > callback) {
+  void onEventInfo(std:: function < void(std::string msg) > callback) {
     eventInfoCallback = callback;
   }
   void onLights(std:: function < void(std::string msg, int partition) > callback) {
@@ -204,15 +205,14 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   byte debug;
   const char * accessCode;
   bool enable05Messages = true;
-  unsigned long cmdWaitTime,
-  beepTime;
+  unsigned long cmdWaitTime,beepTime,eventTime;
   bool extendedBuffer,
   partitionChanged;
   int defaultPartition = 1;
   int activePartition = 1;
 
   private: uint8_t zone;
-
+  byte dscClockPin,dscReadPin,dscWritePin;
   bool firstrun;
   bool options;
 
@@ -255,7 +255,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   systemMsg,
   previousSystemMsg,
   group1msg,
-  group2msg;
+  group2msg,
+  eventStatusMsg;
   bool relayStatus[16],
   previousRelayStatus[16];
   bool sendCmd;
@@ -270,12 +271,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
   byte currentSelection;
   byte beeps,
   previousBeeps;
-  uint8_t digitPtr;
 
   void setup() override {
+   // RealTimeClock *rtc;
+    //rtc->set_timezone("utc")	;
+
     if (debug > 2)
       Serial.begin(115200);
-    digitPtr = 0;
     set_update_interval(10);
 
     register_service( & DSCkeybushome::set_alarm_state, "set_alarm_state", {
@@ -313,16 +315,36 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     systemStatusChangeCallback(STATUS_OFFLINE);
     forceDisconnect = false;
     #ifdef EXPANDER
-    dsc.enableModuleSupervision = MODULESUPERVISION;
+    #ifdef MODULESUPERVISION
+    dsc.enableModuleSupervision = 1;
+    #endif
     dsc.debounce05 = (cmdWaitTime > 0);
     dsc.addModule(expanderAddr1);
     dsc.addModule(expanderAddr2);
+    dsc.maxZones = MAXZONES;    
     #endif
-    dsc.maxZones = MAXZONES;
+
     dsc.resetStatus();
     dsc.processModuleData = true;
-    dsc.begin();
 
+    if (dscClockPin && dscReadPin && dscWritePin)
+        dsc.begin(Serial,dscClockPin,dscReadPin,dscWritePin);    
+     else 
+        dsc.begin(Serial);
+    
+    
+    for (int x=0;x<MAXZONES;x++) {
+      zoneStatus[x].tamper=false;
+      zoneStatus[x].batteryLow=false;
+      zoneStatus[x].open=false;
+      zoneStatus[x].alarm=false;
+      zoneStatus[x].enabled=false;
+      zoneStatus[x].partition=0;
+      zoneStatus[x].bypassed=false;
+    }
+
+    system1=0;
+    system0=0;
   }
 
   void set_default_partition(int partition) {
@@ -538,7 +560,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           line2DisplayCallback(serviceMenu[currentSelection], partition);
       } else if (key == '<') {
         currentSelection = getPreviousOption(currentSelection);
-        if (currentSelection < 9) line2DisplayCallback(serviceMenu[currentSelection], partition);
+        if (currentSelection < 9) 
+            line2DisplayCallback(serviceMenu[currentSelection], partition);
        } else {
           currentSelection = 0xFF;
           dsc.write(key,partition);      
@@ -625,7 +648,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
-    } else if (dsc.status[partition - 1] == 0xB2) { // * output control
+    } else if (dsc.status[partition - 1] == 0xB2) { //output control
       if (key == '<') {
         currentSelection = currentSelection >= 3 ? 2 : (currentSelection > 0 ? currentSelection - 1 : 2);
         currentSelection = outputMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
@@ -734,19 +757,24 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
   }
 
+
   void printPacket(const char * label, char cmd, volatile byte cbuf[], int len) {
 
-    std::string s;
+    ESPTime rtc=now();
     char s1[4];
+    char s2[20];
+    std::string s="";
+    sprintf(s2,"%02d-%02d-%02d %02d:%02d ",rtc.year,rtc.month,rtc.day_of_month,rtc.hour,rtc.minute);
     for (int c = 0; c < len; c++) {
       sprintf(s1, "%02X ", cbuf[c]);
-      s.append(s1);
+      s=s.append(s1);
     }
-    ESP_LOGI(label, "%02X: %s", cmd, s.c_str());
+    
+    ESP_LOGI(label, "%s %02X: %s",s2, cmd, s.c_str());
 
   }
 
-  byte getPanelBitNumber(byte panelByte, byte startNumber) {
+   byte getPanelBitNumber(byte panelByte, byte startNumber) {
 
     byte bitCount = 0;
     for (byte bit = 0; bit <= 7; bit++) {
@@ -1041,13 +1069,23 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
   void update() override {
 
-    if (millis() - beepTime > 2000 && beeps > 0) {
+    if ((millis() - beepTime > 2000 && beeps > 0)) {
       beeps = 0;
       for (byte partition = 1; partition <= dscPartitions; partition++) {
         if (dsc.disabled[partition - 1]) continue;
         beepsCallback("0", partition);
       }
+      beepTime=millis();
+      
     }
+     if (millis() - eventTime > 30000 ) {
+      for (byte partition = 1; partition <= dscPartitions; partition++) {
+        if (dsc.disabled[partition - 1]) continue;
+        eventInfoCallback("");
+      }
+      eventTime=millis();
+    }
+
 
     if (!forceDisconnect && dsc.loop()) { //Processes data only when a valid Keybus command has been read
       if (firstrun) {
@@ -1058,13 +1096,16 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           if (dsc.disabled[partition - 1] || partitionStatus[partition - 1].locked) continue;
           dsc.write("*", partition);
           dsc.write("27##", partition); //fetch low battery status
-          setStatus(partition - 1, true);
+          //setStatus(partition - 1, true);
+          partitionMsgChangeCallback("",partition);
+          beepsCallback("0", partition);          
         }
 
       }
-
+ 
       if (debug > 1)
         printPacket("Paneldata: ", dsc.panelData[0], dsc.panelData, 16);
+#ifdef SERIALDEBUGCOMMANDS   
       if (debug > 2) {
         printTimestamp();
         Serial.print(" ");
@@ -1075,6 +1116,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         dsc.printPanelMessage(); // Prints the decoded message
         Serial.println();
       }
+#endif      
 
       processStatus();
       
@@ -1175,7 +1217,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       }
       */
 
-      firstrun = false;
+
 
     }
 
@@ -1232,7 +1274,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         if (dsc.keypadFireAlarm) {
           dsc.keypadFireAlarm = false;
           partitionMsgChangeCallback("Keypad Fire Alarm", partition + 1);
-        }
+        }  
         if (dsc.keypadPanicAlarm) {
           dsc.keypadPanicAlarm = false;
           troubleStatusChangeCallback(panicStatus, true, partition + 1);
@@ -1456,7 +1498,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         systemMsg.append("TIME");
       }
       if (systemMsg == "") systemMsg = "OK";
-        if (previousSystemMsg != systemMsg) 
+        if (previousSystemMsg != systemMsg || firstrun) 
          troubleMsgStatusCallback(systemMsg);
       previousSystemMsg = systemMsg;
 
@@ -1478,8 +1520,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           }
         }
       }
+#ifdef DEBUGCOMMANDS      
       if (debug > 1)
         printPacket("Moduledata:", dsc.moduleCmd, dsc.moduleData, 16);
+    
       if (debug > 2) {
         printTimestamp();
         Serial.print("[MODULE] ");
@@ -1490,10 +1534,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
         dsc.printModuleMessage(); // Prints the decoded message
         Serial.println();
       }
+#endif         
+      
     }
-     if (zoneStatusMsg != previousZoneStatusMsg)
+ 
+     if (zoneStatusMsg != previousZoneStatusMsg || firstrun)
        zoneMsgStatusCallback(zoneStatusMsg); 
     previousZoneStatusMsg = zoneStatusMsg;
+    
+    firstrun = false;
 
   }
 
@@ -2114,6 +2163,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           //ESP_LOGD("test", "A5 leave programming mode");
           break;
         }
+        processEventBufferAA(true);        
       break;
     case 0xAA:
 
@@ -2156,6 +2206,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       };
       break;
     case 0xEB:
+    
       if (dsc.panelData[7] == 1)
         switch (dsc.panelData[8]) {
         case 0xAE:
@@ -2165,7 +2216,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
           line2DisplayCallback("Walk test beging", activePartition);
           break;
         };
-
+       processEventBufferEC(true);
       break;
     case 0xEC:
       processEventBufferEC();
@@ -2233,7 +2284,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     if (dsc.pgmBuffer.partition) {
       if (dsc.pgmBuffer.idx == dsc.pgmBuffer.len) setStatus(dsc.pgmBuffer.partition - 1, true);
-      if (group1msg != "") lightsCallback(group1msg, dsc.pgmBuffer.partition - 1);
+      //if (group1msg != "") lightsCallback(group1msg, dsc.pgmBuffer.partition - 1);
     }
   }
 
@@ -2264,23 +2315,25 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       byteCount++;
     }
     group1msg.append(group2msg);
-    lightsCallback(group1msg, defaultPartition);
+    //lightsCallback(group1msg, defaultPartition);
     if (options)
         dsc.statusChanged=true;
   }
-
-  void processEventBufferAA() {
+  
+  void processEventBufferAA(bool showEvent=false) {
     #ifndef dscClassicSeries
     if (extendedBuffer) return; // Skips 0xAA data when 0xEC extended event buffer data is available
 
-    char eventInfo[45] = "Evnt:";
+    char eventInfo[45]="";
     char charBuffer[4];
-    itoa(dsc.panelData[7], charBuffer, 10);
-    if (dsc.panelData[7] < 10) strcat(eventInfo, "00");
-    else if (dsc.panelData[7] < 100) strcat(eventInfo, "0");
-    strcat(eventInfo, charBuffer);
-    strcat(eventInfo, " ");
-
+    if (!showEvent) {
+        strcat(eventInfo,"Evnt:");
+        itoa(dsc.panelData[7], charBuffer, 10);
+        if (dsc.panelData[7] < 10) strcat(eventInfo, "00");
+        else if (dsc.panelData[7] < 100) strcat(eventInfo, "0");
+        strcat(eventInfo, charBuffer);
+        strcat(eventInfo, " ");
+    }
     byte dscYear3 = dsc.panelData[2] >> 4;
     byte dscYear4 = dsc.panelData[2] & 0x0F;
     byte dscMonth = dsc.panelData[2 + 1] << 2;
@@ -2314,44 +2367,55 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     if (dscMinute < 10) strcat(eventInfo, "0");
     itoa(dscMinute, charBuffer, 10);
     strcat(eventInfo, charBuffer);
+    
     byte partition = dsc.panelData[3] >> 6;
     strcat(eventInfo, " Part:");
     itoa(partition, charBuffer, 10);
     strcat(eventInfo, charBuffer);
-
-    line1DisplayCallback(eventInfo, activePartition);
-    eventInfoCallback(eventInfo, activePartition);
-
+    strcat(eventInfo, " ");    
+   
+    
+    if (showEvent) 
+        eventStatusMsg=eventInfo;
+    else
+        line1DisplayCallback(eventInfo, activePartition);
+    
     switch (dsc.panelData[5] & 0x03) {
     case 0x00:
-      printPanelStatus0(6, activePartition);
+      printPanelStatus0(6, activePartition,showEvent);
       break;
     case 0x01:
-      printPanelStatus1(6, activePartition);
+      printPanelStatus1(6, activePartition,showEvent);
       break;
     case 0x02:
-      printPanelStatus2(6, activePartition);
+      printPanelStatus2(6, activePartition,showEvent);
       break;
     case 0x03:
-      printPanelStatus3(6, activePartition);
+      printPanelStatus3(6, activePartition,showEvent);
       break;
+    }
+    if (showEvent) {
+        eventInfoCallback(eventStatusMsg);
+        eventTime=millis();
     }
     #endif
   }
 
-  void processEventBufferEC() {
+  void processEventBufferEC(bool showEvent=false) {
     #ifndef dscClassicSeries
     if (!extendedBuffer) extendedBuffer = true;
 
-    char eventInfo[45] = "Evnt:";
+    char eventInfo[45] = "";
     char charBuffer[4];
-    int eventNumber = dsc.panelData[9] + ((dsc.panelData[4] >> 6) * 256);
-    itoa(eventNumber, charBuffer, 10);
-    if (eventNumber < 10) strcat(eventInfo, "00");
-    else if (eventNumber < 100) strcat(eventInfo, "0");
-    strcat(eventInfo, charBuffer);
-    strcat(eventInfo, " ");
-
+    if (!showEvent) {
+        strcat(eventInfo,"Evnt:");        
+        int eventNumber = dsc.panelData[9] + ((dsc.panelData[4] >> 6) * 256);
+        itoa(eventNumber, charBuffer, 10);
+        if (eventNumber < 10) strcat(eventInfo, "00");
+        else if (eventNumber < 100) strcat(eventInfo, "0");
+        strcat(eventInfo, charBuffer);
+        strcat(eventInfo, " ");
+    }
     byte dscYear3 = dsc.panelData[3] >> 4;
     byte dscYear4 = dsc.panelData[3] & 0x0F;
     byte dscMonth = dsc.panelData[4] << 2;
@@ -2398,49 +2462,57 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       }
       strcat(eventInfo, charBuffer);
     }
-    line1DisplayCallback(eventInfo, activePartition);
-    eventInfoCallback(eventInfo, activePartition);
+       strcat(eventInfo, " ");    
+       
+    if (showEvent)
+       eventStatusMsg=eventInfo; 
+    else
+        line1DisplayCallback(eventInfo, activePartition);
+   
 
     switch (dsc.panelData[7]) {
     case 0x00:
-      printPanelStatus0(8, activePartition);
+      printPanelStatus0(8, activePartition,showEvent);
       break;
     case 0x01:
-      printPanelStatus1(8, activePartition);
+      printPanelStatus1(8, activePartition,showEvent);
       break;
     case 0x02:
-      printPanelStatus2(8, activePartition);
+      printPanelStatus2(8, activePartition,showEvent);
       break;
     case 0x03:
-      printPanelStatus3(8, activePartition);
+      printPanelStatus3(8, activePartition,showEvent);
       break;
     case 0x04:
-      printPanelStatus4(8, activePartition);
+      printPanelStatus4(8, activePartition,showEvent);
       break;
     case 0x05:
-      printPanelStatus5(8, activePartition);
+      printPanelStatus5(8, activePartition,showEvent);
       break;
     case 0x14:
-      printPanelStatus14(8, activePartition);
+      printPanelStatus14(8, activePartition,showEvent);
       break;
     case 0x16:
-      printPanelStatus16(8, activePartition);
+      printPanelStatus16(8, activePartition,showEvent);
       break;
     case 0x17:
-      printPanelStatus17(8, activePartition);
+      printPanelStatus17(8, activePartition,showEvent);
       break;
     case 0x18:
-      printPanelStatus18(8, activePartition);
+      printPanelStatus18(8, activePartition,showEvent);
       break;
     case 0x1B:
-      printPanelStatus1B(8, activePartition);
+      printPanelStatus1B(8, activePartition,showEvent);
       break;
     }
-
+    if (showEvent) {
+        eventInfoCallback(eventStatusMsg);
+        eventTime=millis();
+    }
     #endif
   }
 
-  void printPanelStatus0(byte panelByte, byte partition) {
+  void printPanelStatus0(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
 
     std::string lcdLine1;
@@ -2498,10 +2570,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine1 = "Aux input";
       lcdLine2 = "alarm rest";
       break;
+    // 0x56 - 0x75: Zone tamper, zones 1-32
+    // 0x76 - 0x95: Zone tamper restored, zones 1-32      
     case 0x98:
       lcdLine1 = "Keypad";
       lcdLine2 = "lockout";
       break;
+    // 0x99 - 0xBD: Armed: Access codes 1-34, 40-42      
     case 0xBE:
       lcdLine1 = "Armed:";
       lcdLine2 = "Partial";
@@ -2510,6 +2585,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine1 = "Armed:";
       lcdLine2 = "Special";
       break;
+    // 0xC0 - 0xE4: Disarmed: Access codes 1-34, 40-42      
     case 0xE5:
       lcdLine1 = "Auto-arm";
       lcdLine2 = "canc";
@@ -2668,12 +2744,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     //partitionStatus[partition].lcdline1=lcdLine1;
     // partitionStatus[partition].lcdline2=lcdLine2;
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else
+        line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
     // if (lcdLine1 != "") line1DisplayCallback(lcdLine1,partition);
     // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
-  void printPanelStatus1(byte panelByte, byte partition) {
+  void printPanelStatus1(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -2690,6 +2769,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine1 = "Late to close";
       lcdLine2 = " ";
       break;
+    // 0x24 - 0x28: Access codes 33-34, 40-42      
     case 0x29:
       lcdLine1 = "Download";
       lcdLine2 = "forced ans";
@@ -2698,6 +2778,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine1 = "Armed:";
       lcdLine2 = "Auto-arm";
       break;
+    // 0x2C - 0x4B: Zone battery restored, zones 1-32
+    // 0x4C - 0x6B: Zone battery low, zones 1-32
+    // 0x6C - 0x8B: Zone fault restored, zones 1-32
+    // 0x8C - 0xAB: Zone fault, zones 1-32      
     case 0xAC:
       lcdLine1 = "Exit inst";
       lcdLine2 = "prog";
@@ -2714,6 +2798,7 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine1 = "Walk test";
       lcdLine2 = "begin";
       break;
+    // 0xB0 - 0xCF: Zones bypassed, zones 1-32      
     case 0xD0:
       lcdLine1 = "Command";
       lcdLine2 = "output 4";
@@ -2798,13 +2883,16 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine2 = " ";
     }
     // partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2;  
+    // partitionStatus[partition].lcdline2=lcdLine2; 
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
     //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
     // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
-  void printPanelStatus2(byte panelByte, byte partition) {
+  void printPanelStatus2(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -2885,6 +2973,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine1 = "Armed:";
       lcdLine2 = "No ent del";
       break;
+    // 0x9E - 0xC2: *1: Access codes 1-34, 40-42
+    // 0xC3 - 0xC5: *5: Access codes 40-42
+    // 0xC6 - 0xE5: Access codes 1-34, 40-42
+    // 0xE6 - 0xE8: *6: Access codes 40-42
+    // 0xE9 - 0xF0: Keypad restored: Slots 1-8
+    // 0xF1 - 0xF8: Keypad trouble: Slots 1-8
+    // 0xF9 - 0xFE: Zone expander restored: 1-6      
     case 0xFF:
       lcdLine1 = "Zone exp";
       lcdLine2 = "trble: 1";
@@ -2895,6 +2990,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
 
     char lcdMessage[20];
     char charBuffer[4];
+  if (dsc.panelData[panelByte] >= 0x67 && dsc.panelData[panelByte] <= 0x69) {
+     lcdLine1="Command output: ";
+     // itoa(dscCode, charBuffer, 10);
+     // strcat(lcdMessage, charBuffer);
+     // lcdLine2 = lcdMessage;
+      decoded = true;
+  }
 
     if (dsc.panelData[panelByte] >= 0x9E && dsc.panelData[panelByte] <= 0xC2) {
       byte dscCode = dsc.panelData[panelByte] - 0x9D;
@@ -2980,10 +3082,13 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     //ESP_LOGD("test","lcdline1=%s,lcdline2=%s",partitionStatus[partition].lcdline1.c_str(),partitionStatus[partition].lcdline2.c_str());
     //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
     //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
   }
 
-  void printPanelStatus3(byte panelByte, byte partition) {
+  void printPanelStatus3(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3012,6 +3117,10 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine1 = "Zone exp 7";
       lcdLine2 = "trble";
       break;
+    // 0x25 - 0x2C: Keypad tamper restored, slots 1-8
+    // 0x2D - 0x34: Keypad tamper, slots 1-8
+    // 0x35 - 0x3A: Module tamper restored, slots 9-14
+    // 0x3B - 0x40: Module tamper, slots 9-14      
     case 0x41:
       lcdLine1 = "PC/RF5132:";
       lcdLine2 = "Tamper rest";
@@ -3087,6 +3196,16 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine2 = "trouble";
       return;
     }
+  if (dsc.panelData[panelByte] >= 0x25 && dsc.panelData[panelByte] <= 0x2C) {
+    lcdLine1="Keypad tamper restored: ";
+   // printNumberOffset(panelByte, -0x24);
+  }
+  if (dsc.panelData[panelByte] >= 0x2D && dsc.panelData[panelByte] <= 0x34) {
+    //stream->print(F("Keypad tamper: "));
+    //printNumberOffset(panelByte, -0x2C);
+
+  }  
+      
 
     if (dsc.panelData[panelByte] >= 0x35 && dsc.panelData[panelByte] <= 0x3A) {
       strcpy(lcdMessage, "Zone expander ");
@@ -3094,6 +3213,8 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = "tamper rest";
+   // stream->print(F("Zone expander tamper restored: "));
+    //printNumberOffset(panelByte, -52);      
       return;
     }
 
@@ -3112,12 +3233,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     // partitionStatus[partition].lcdline1=lcdLine1;
     // partitionStatus[partition].lcdline2=lcdLine2; 
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
     //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
     // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
-  void printPanelStatus4(byte panelByte, byte partition) {
+  void printPanelStatus4(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3177,12 +3301,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     //partitionStatus[partition].lcdline1=lcdLine1;
     // partitionStatus[partition].lcdline2=lcdLine2;
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
     // if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
     // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
-  void printPanelStatus5(byte panelByte, byte partition) {
+  void printPanelStatus5(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
 
     std::string lcdLine1;
@@ -3218,12 +3345,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     //partitionStatus[partition].lcdline1=lcdLine1;
     //partitionStatus[partition].lcdline2=lcdLine2;
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
     //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
     // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
-  void printPanelStatus14(byte panelByte, byte partition) {
+  void printPanelStatus14(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
 
     std::string lcdLine1;
@@ -3255,12 +3385,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     //  partitionStatus[partition].lcdline1=lcdLine1;
     //partitionStatus[partition].lcdline2=lcdLine2;   
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
     //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
     //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
   }
 
-  void printPanelStatus16(byte panelByte, byte partition) {
+  void printPanelStatus16(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3287,12 +3420,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine2 = "";
     }
     // partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2;    
+    // partitionStatus[partition].lcdline2=lcdLine2;   
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus17(byte panelByte, byte partition) {
+  void printPanelStatus17(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3359,12 +3495,15 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
       lcdLine2 = "";
     }
     //partitionStatus[partition].lcdline1=lcdLine1;
-    //partitionStatus[partition].lcdline2=lcdLine2;    
+    //partitionStatus[partition].lcdline2=lcdLine2;   
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus18(byte panelByte, byte partition) {
+  void printPanelStatus18(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
 
     char lcdMessage[20];
@@ -3410,11 +3549,14 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     //partitionStatus[partition].lcdline1=lcdLine1;
     //partitionStatus[partition].lcdline2=lcdLine2;    
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else    
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus1B(byte panelByte, byte partition) {
+  void printPanelStatus1B(byte panelByte, byte partition,bool showEvent=false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3433,6 +3575,9 @@ class DSCkeybushome: public PollingComponent, public CustomAPIDevice {
     }
     //partitionStatus[partition].lcdline1=lcdLine1;
     // partitionStatus[partition].lcdline2=lcdLine2;
+    if (showEvent)
+       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+    else
     line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
   }
 

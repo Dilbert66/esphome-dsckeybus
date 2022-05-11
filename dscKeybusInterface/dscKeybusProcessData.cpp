@@ -92,15 +92,6 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
   strcat(timeEntry, timeChar);
 
   strcat(timeEntry, "#");
-/*
-  if (writePartition != timePartition) {
-    byte previousPartition = writePartition;
-    writePartition = timePartition;
-    write(timeEntry);
-    writePartition = previousPartition;
-  }
-  else write(timeEntry);
-*/
   write(timeEntry,timePartition);
   return true;
 }

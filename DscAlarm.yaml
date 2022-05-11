@@ -26,6 +26,16 @@ substitutions:
   expanderAddr1: "0" # 1st zone expander emulator address to use . Set to 0 to disable. 
   expanderAddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
   
+  #ESP32 Pins
+  dscClockPin: "22"
+  dscReadPin: "21"
+  dscWritePin: "18"
+  
+  #ESP8266 Pins
+  #dscClockPin "5"
+  #dscReadPin "4"
+  #dscWritePin "15"  
+  
 esphome:
   name: $systemName
   platform: ESP32
@@ -63,12 +73,14 @@ status_led:
     number: GPIO2
     inverted: no
     
- 
+time:
+ - platform: sntp
+   id: sntp_time 
 
 custom_component:
 - lambda: |-
     
-    auto DSCkeybus = new DSCkeybushome();
+    auto DSCkeybus = new DSCkeybushome($dscClockPin,$dscReadPin,$dscWritePin);
     DSCkeybus->accessCode="$accessCode";
     DSCkeybus->cmdWaitTime=$cmdWaitTime;
     DSCkeybus->defaultPartition=$defaultPartition;
@@ -120,7 +132,7 @@ custom_component:
            case 1: id(line2).publish_state(msg);break;
         }            
     });
-    DSCkeybus->onEventInfo([&](std::string msg,int partition) {
+    DSCkeybus->onEventInfo([&](std::string msg) {
             id(event1).publish_state(msg);
     });  
     DSCkeybus->onLights([&](std::string msg,int partition) {

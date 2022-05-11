@@ -1,3 +1,5 @@
+#include "dscKeybus.h"
+#ifdef SERIALDEBUGCOMMANDS
 /*
     DSC Keybus Interface
 
@@ -29,7 +31,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- #include "dscKeybus.h"
+
 
 
 /*
@@ -4010,3 +4012,4 @@ void dscKeybusInterface::printPanelCommand() {
     stream->print(panelData[2], HEX);
   }
 }
+#endif

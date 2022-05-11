@@ -16,14 +16,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#define EXPANDER
+//#define SERIALDEBUGCOMMANDS  //enable to use debug print to serial port
 
 #ifndef dscKeybus_h
 #define dscKeybus_h
 
 #include <Arduino.h>
-
-#define EXPANDER   // enable the use of zone expanders. comment to remove
-
 
 #if defined(__AVR__)
 const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
@@ -42,7 +41,7 @@ const DRAM_ATTR byte dscBufferSize = 50;
 const DRAM_ATTR byte dscReadSize = 16;
 #endif
 
-#ifdef EXPANDER
+
 //start expander
 #if defined(__AVR__)
 const byte maxModules = 4;
@@ -50,7 +49,7 @@ const byte writeQueueSize=5; //write pending queue size
 #elif defined(ESP8266) || defined(ESP32)
 const byte maxModules = 4;
 const byte writeQueueSize=20; //zone pending update queue
-#endif
+
 const byte partitionToBits[9]={9,9,17,57,65,9,17,57,65};
 
 
@@ -67,6 +66,10 @@ const byte partitionToBits[9]={9,9,17,57,65,9,17,57,65};
         byte zoneStatusByte;
     };
     
+
+//end expander
+#endif
+
 struct pgmBufferType {
     char data[32];
     byte len;
@@ -77,8 +80,6 @@ struct pgmBufferType {
     bool dataPending;
     bool sendhash;
 } ;
-//end expander
-#endif
 
 
 //start new command handling
@@ -107,7 +108,7 @@ class dscKeybusInterface {
     dscKeybusInterface(byte setClockPin, byte setReadPin, byte setWritePin = 255);
 
     // Interface control
-    void begin(Stream &_stream = Serial);             // Initializes the stream output to Serial by default
+    void begin(Stream &_stream = Serial,byte setClockPin=0, byte setReadPin=0, byte setWritePin=0);             // Initializes the stream output to Serial by default
     bool loop();                                      // Returns true if valid panel data is available
     void stop();                                      // Disables the clock hardware interrupt and data timer interrupt
     void resetStatus();                               // Resets the state of all status components as changed for sketches to get the current status
@@ -217,11 +218,11 @@ class dscKeybusInterface {
     void clearZoneRanges();
     static byte maxZones;
     static bool enableModuleSupervision;    
-    static bool debounce05;
-    static volatile pgmBufferType pgmBuffer;
+
     //end expander
 #endif 
- 
+    static bool debounce05;
+    static volatile pgmBufferType pgmBuffer;
     
   private:
 
@@ -257,7 +258,7 @@ class dscKeybusInterface {
     void processAlarmZonesStatus(byte zonesByte, byte zoneCount, byte writeValue);
     void processArmed(byte partitionIndex, bool armedStatus);
     void processPanelAccessCode(byte partitionIndex, byte dscCode, bool accessCodeIncrease = true);
-
+#ifdef SERIALDEBUGCOMMANDS
     void printPanelPartitionStatus(byte startPartition, byte startByte, byte endByte);
     void printPanelStatus0(byte panelByte);
     void printPanelStatus1(byte panelByte);
@@ -357,6 +358,7 @@ class dscKeybusInterface {
     void printModule_KeyCodes(byte keyByte);
     void printModule_Expander();
     bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
+#endif    
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
