@@ -32,9 +32,9 @@ substitutions:
   dscWritePin: "18"
   
   #ESP8266 Pins
-  #dscClockPin "5"
-  #dscReadPin "4"
-  #dscWritePin "15"  
+  #dscClockPin: "5"
+  #dscReadPin: "4"
+  #dscWritePin: "15"  
   
 esphome:
   name: $systemName
