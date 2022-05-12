@@ -138,7 +138,7 @@ void dscKeybusInterface::clearZoneRanges() {
     if (!modules[x].zoneStatusByte) continue;
     zoneupdate[modules[x].zoneStatusByte] &= modules[x].zoneStatusMask; //set update slot
   }
-  writeCharsToQueue(zoneupdate, 9,-1, maxFields05);
+  writeCharsToQueue(zoneupdate, 9,0, maxFields05);
 }
 
 //once we know what panelversion we have, we can then update the modules with the correct info here
@@ -335,7 +335,7 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
   memset(zoneupdate, 0xFF, maxFields05); //set update slots to 1's. Only zero bits indicate a request
   if (modules[idx].zoneStatusByte) {
     zoneupdate[modules[idx].zoneStatusByte] &= modules[idx].zoneStatusMask; //set update slot
-    writeCharsToQueue(zoneupdate, 9,-1, maxFields05);
+    writeCharsToQueue(zoneupdate, 9,0, maxFields05);
   }
 
 }
@@ -376,12 +376,9 @@ unsigned int dscKeybusInterface::dec2bcd(unsigned int num)
 }
 
 void dscKeybusInterface::setDateTime(unsigned int year,byte month,byte day,byte hour,byte minute) {
- 
- 
+
   int dataSum = 0;
-  memset(cmdD0buffer, 0, 6);
-  year = year % 100;
-  cmdD0buffer[0] = dec2bcd(year);
+  cmdD0buffer[0] = dec2bcd(year%100);
   cmdD0buffer[1] = dec2bcd(month);  
   cmdD0buffer[2] = day;
   cmdD0buffer[3] = dec2bcd(hour);
@@ -393,8 +390,8 @@ void dscKeybusInterface::setDateTime(unsigned int year,byte month,byte day,byte 
   pendingD0=true;
   byte zoneupdate[6];
   memset(zoneupdate, 0xFF, 6); //set update slots to 1's. Only zero bits indicate a request
-  zoneupdate[3] &= 0xfd; //set update slot
-  writeCharsToQueue(zoneupdate, 9,-1, 6);
+  zoneupdate[3] &= 0xfd; //set update slot for cmd d0
+  writeCharsToQueue(zoneupdate, 9,0, 6);
 }
 
 #endif

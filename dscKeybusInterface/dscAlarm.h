@@ -1,8 +1,7 @@
 //for project documenation visit https://github.com/Dilbert66/esphome-dsckeybus
 
 #define MAXZONES 32 //set to 64 if your system supports it
-//#define MODULESUPERVISION //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
-//#define OLDVERSION  //uncomment if you are using an old panel or version or you see odd behavior
+//#define MODULESUPERVISION //only enable this option if you want your virtual expander modules to be supervised by the panel and show errors if missing.  Not needed for operation.
 
 #ifndef dscalarm_h
 #define dscalarm_h
@@ -493,9 +492,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (dsc.status[partition - 1] < 0x04) {
-#ifdef OLDVERSION        
+    if (dsc.keybusVersion1) {  //older version don't support top level navigation 
       if (key == '<' || key == '>') return;
-#else       
+    } else {    
 
       if (key == '<') {
         getPreviousMainOption(partition);
@@ -503,7 +502,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       if (key == '>') {
         getNextMainOption(partition);
       };
-#endif      
+    } 
       dsc.write(key, partition);      
       setStatus(partition - 1, true);
     
@@ -1087,7 +1086,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
      if (millis() - eventTime > 30000 ) {
       for (byte partition = 1; partition <= dscPartitions; partition++) {
         if (dsc.disabled[partition - 1]) continue;
-       // eventInfoCallback("");
+          eventInfoCallback("");
       }
       eventTime=millis();
     }
@@ -2749,14 +2748,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine2 = " ";
     }
 
-    //partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2;
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else
-        line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    // if (lcdLine1 != "") line1DisplayCallback(lcdLine1,partition);
-    // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+
   }
 
   void printPanelStatus1(byte panelByte, byte partition,bool showEvent=false) {
@@ -2889,14 +2885,12 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    // partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2; 
+
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+
   }
 
   void printPanelStatus2(byte panelByte, byte partition,bool showEvent=false) {
@@ -3084,15 +3078,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    // partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2;
-    //ESP_LOGD("test","lcdline1=%s,lcdline2=%s",partitionStatus[partition].lcdline1.c_str(),partitionStatus[partition].lcdline2.c_str());
-    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else    
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
   }
 
   void printPanelStatus3(byte panelByte, byte partition,bool showEvent=false) {
@@ -3238,14 +3228,12 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    // partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2; 
+
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else    
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+
   }
 
   void printPanelStatus4(byte panelByte, byte partition,bool showEvent=false) {
@@ -3306,14 +3294,12 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    //partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2;
+
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else    
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    // if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+
   }
 
   void printPanelStatus5(byte panelByte, byte partition,bool showEvent=false) {
@@ -3350,14 +3336,12 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    //partitionStatus[partition].lcdline1=lcdLine1;
-    //partitionStatus[partition].lcdline2=lcdLine2;
+
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else    
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    // if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+
   }
 
   void printPanelStatus14(byte panelByte, byte partition,bool showEvent=false) {
@@ -3390,14 +3374,12 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-    //  partitionStatus[partition].lcdline1=lcdLine1;
-    //partitionStatus[partition].lcdline2=lcdLine2;   
+   
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else    
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
-    //if (lcdLine1 != "" && dsc.status[partition] != 0xA9) line1DisplayCallback(lcdLine1,partition);
-    //if (lcdLine2 != "") line2DisplayCallback(lcdLine2,partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+
   }
 
   void printPanelStatus16(byte panelByte, byte partition,bool showEvent=false) {
@@ -3426,12 +3408,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = "";
     }
-    // partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2;   
+ 
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
@@ -3501,12 +3482,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = "";
     }
-    //partitionStatus[partition].lcdline1=lcdLine1;
-    //partitionStatus[partition].lcdline2=lcdLine2;   
+   
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
@@ -3554,12 +3534,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = "";
     }
-    //partitionStatus[partition].lcdline1=lcdLine1;
-    //partitionStatus[partition].lcdline2=lcdLine2;    
+    
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else    
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
@@ -3580,12 +3559,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = "";
     }
-    //partitionStatus[partition].lcdline1=lcdLine1;
-    // partitionStatus[partition].lcdline2=lcdLine2;
+
     if (showEvent)
        eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
     else
-    line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
   }
 
 };

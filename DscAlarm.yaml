@@ -370,7 +370,7 @@ text_sensor:
     icon: "mdi:alert-box"  
   - platform: template
     id: lights
-    name: "$systemName lights"
+    #name: "$systemName lights"
     icon: "mdi:alert-box"
   - platform: template
     id: beeps

@@ -224,6 +224,7 @@ class dscKeybusInterface {
 #endif 
     static bool debounce05;
     static volatile pgmBufferType pgmBuffer;
+    bool keybusVersion1;    
     
   private:
 
@@ -391,7 +392,7 @@ class dscKeybusInterface {
     bool previousFire[dscPartitions];
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
     byte previousPgmOutputs[2];
-    bool keybusVersion1;
+
 
     static byte dscClockPin;
     static byte dscReadPin;
@@ -448,7 +449,7 @@ class dscKeybusInterface {
     volatile static byte writeBufferLength,writeBufferIdx;
     volatile static bool writeDataPending;
     static writeQueueType writeQueue[writeQueueSize];
-    static void writeCharsToQueue(byte* keys,byte bit,byte partition=-1,byte len=1,bool alarm=false,bool star=false);
+    static void writeCharsToQueue(byte* keys,byte bit,byte partition=0,byte len=1,bool alarm=false,bool star=false);
     byte getWriteBitFromPartition(byte partition);
     //end new command handling    
  

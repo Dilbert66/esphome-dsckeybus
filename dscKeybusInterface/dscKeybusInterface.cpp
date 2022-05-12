@@ -475,7 +475,7 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
 
    if (validKey) {
     if (isAlarm)
-      writeCharsToQueue((byte * ) & writeKey, 0,-1, 1, isAlarm, false);
+      writeCharsToQueue((byte * ) & writeKey, 0,0, 1, isAlarm, false);
     else
       writeCharsToQueue((byte * ) & writeKey, partitionToBits[partition],partition, 1, false, isStar);
 
@@ -771,7 +771,6 @@ dscKeybusInterface::writeCharsToQueue(byte * keys, byte bit,byte partition, byte
   req.alarm = alarm;
   req.writeBit = bit;
   req.star = false;
-
   req.partition=partition;
   writeQueue[inIdx] = req;
   inIdx = (inIdx + 1) % writeQueueSize; //circular buffer - increment index
@@ -848,8 +847,8 @@ IRAM_ATTR
 dscKeybusInterface::processPendingQueue(byte cmd) {
 
   //process queued 05/0b/1b requests
-  //if (inIdx == outIdx || (writeQueue[outIdx].partition > 4 && (cmd == 0x05 || cmd == 0x0A)) || (cmd == 0x1B && writeQueue[outIdx].partition < 5)) return;
-    if (inIdx==outIdx) return;
+  if (inIdx == outIdx || (writeQueue[outIdx].partition > 4 && (cmd == 0x05 || cmd == 0x0A) ) || (cmd == 0x1B && writeQueue[outIdx].partition < 5)) return;
+   // if (inIdx==outIdx) return;
   updateWriteBuffer((byte * ) writeQueue[outIdx].data,  writeQueue[outIdx].writeBit,writeQueue[outIdx].partition,writeQueue[outIdx].len, writeQueue[outIdx].alarm, writeQueue[outIdx].star); //populate write buffer and set ready to send flag
   outIdx = (outIdx + 1) % writeQueueSize; // advance index to next record
 }
