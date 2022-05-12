@@ -1520,10 +1520,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           }
         }
       }
-#ifdef DEBUGCOMMANDS      
+    
       if (debug > 1)
         printPacket("Moduledata:", dsc.moduleCmd, dsc.moduleData, 16);
     
+#ifdef DEBUGCOMMANDS      
       if (debug > 2) {
         printTimestamp();
         Serial.print("[MODULE] ");
