@@ -1,7 +1,6 @@
 //for project documenation visit https://github.com/Dilbert66/esphome-dsckeybus
 
 #define MAXZONES 32 //set to 64 if your system supports it
-//#define MODULESUPERVISION //only enable this option if you want your virtual expander modules to be supervised by the panel and show errors if missing.  Not needed for operation.
 
 #ifndef dscalarm_h
 #define dscalarm_h
@@ -287,6 +286,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     register_service( & DSCkeybushome::alarm_disarm, "alarm_disarm", {
       "code"
     });
+    register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {});    
     register_service( & DSCkeybushome::alarm_arm_home, "alarm_arm_home");
     register_service( & DSCkeybushome::alarm_arm_night, "alarm_arm_night", {
       "code"
@@ -694,6 +694,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits);
 
   }
+  
+  void set_panel_time() {
+        ESPTime rtc=now();
+        dsc.setDateTime(rtc.year ,rtc.month,rtc.day_of_month,rtc.hour,rtc.minute);
+  }
 
   void alarm_keypress(std::string keystring) {
     alarm_keypress_partition(keystring, defaultPartition);
@@ -705,11 +710,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     const char * keys = strcpy(new char[keystring.length() + 1], keystring.c_str());
     if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d", keystring.c_str(), partition);
     partitionStatus[partition - 1].keyPressTime = millis();
-    if (keys[0]=='?') {
-        ESPTime rtc=now();
-        dsc.setDateTime(rtc.year ,rtc.month,rtc.day_of_month,rtc.hour,rtc.minute);
-        return;
-    }
+
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
     } else if (!partitionStatus[partition].locked) dsc.write(keys, partition);
