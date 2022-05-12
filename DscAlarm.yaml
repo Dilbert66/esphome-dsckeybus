@@ -54,6 +54,8 @@ wifi:
   ap:
     ssid: "$systemName"
     password: !secret wifi_password
+    #encryption:
+      #key: !secret encryption_key
 
 logger:
   baud_rate: 115200
