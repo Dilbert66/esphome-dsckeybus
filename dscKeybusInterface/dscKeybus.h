@@ -208,6 +208,7 @@ class dscKeybusInterface {
 #ifdef EXPANDER    
     //start expander
     void setZoneFault(byte zone,bool fault) ;
+    void setDateTime(unsigned int year,byte month,byte day,byte hour, byte minute);
     void setLCDReceive(byte len,byte partition=-1);
     void setLCDSend(byte partition=-1,bool sendhash=false);    
     void addEmulatedZone(byte address);
@@ -418,6 +419,7 @@ class dscKeybusInterface {
     const byte zoneClosed=2;// Normal 
     static byte moduleIdx;    
     static void prepareModuleResponse(byte cmd,int bit); 
+    unsigned int dec2bcd(unsigned int);
     void removeModule(byte address);
     static void setPendingZoneUpdate();
     void setSupervisorySlot(byte slot,bool set);
@@ -434,7 +436,9 @@ class dscKeybusInterface {
      //start new command handling 
 
     volatile static  byte writePartition;    
-    volatile static byte writeBuffer[6];     
+    volatile static byte writeBuffer[6]; 
+    static byte cmdD0buffer[6];  
+    static bool pendingD0;    
     volatile static byte outIdx,inIdx;     
     static void processPendingResponses(byte cmd);
     static void processPendingResponses_0xE6(byte cmd);  

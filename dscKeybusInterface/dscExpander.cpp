@@ -27,10 +27,10 @@ void dscKeybusInterface::setSupervisorySlot(byte address, bool set = true) {
 
   } else {
     switch (address) {
-      //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 16
+      //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 18 
       //11111111 1 00111111 11111111 11111111 00111111 11111111 11111111 11111111 13
       // 1111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111 slots 9
-      //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 slots 16
+
     case 9:
       moduleSlots[2] = set ? moduleSlots[2] & 0x3f : moduleSlots[2] | ~0x3f;
       break; //pc5108 
@@ -57,12 +57,12 @@ void dscKeybusInterface::setSupervisorySlot(byte address, bool set = true) {
       break; //pc5108
     case 16:
       if (maxZones > 32) {
-        moduleSlots[5] = set ? moduleSlots[5] & 0x3f : moduleSlots[5] | ~0x3f;
+        moduleSlots[5] = set ? moduleSlots[5] & 0x3f : moduleSlots[5] | ~0x3f; //slot24
       }
       break; //pc5108 (shows on slot24)// reports as 16 in panel
       //reports as 18 in panel
     case 18:
-      moduleSlots[3] = set ? moduleSlots[3] & 0xfc : moduleSlots[3] | ~0xfc;
+      moduleSlots[3] = set ? moduleSlots[3] & 0xfc : moduleSlots[3] | ~0xfc; //slot 16
       break; // pc5208 relay board shows on slot 16 but reports as 18
     default:
       return;
@@ -76,6 +76,7 @@ zoneMaskType dscKeybusInterface::getUpdateMask(byte address) {
   //get our request byte and mask to send data for the zone that we need to publish info on. This gets sent on the 05 command
   //11111111 1 11111111 11111111 11111111 11111111 11111111 01111111 11111111 11111111 (12)
   //11111111 1 11111111 11111111 10111111 11111111 11111111 11111111 11111111 11111111 (9)
+  //11111111 1 11111111 11111111 11111111 11111101 11111111 11111111 11111111 11111111   it-100
   //11111111 1 11111111 11111111 10111111 11111111 version 2 zone 9 -16
   //11111111 1 11111111 11111111 11101111 11111111  version 2 system zone 27-32
 
@@ -172,7 +173,7 @@ void dscKeybusInterface::updateModules() {
 //add new expander modules and init zone fields
 void dscKeybusInterface::addModule(byte address) {
 
-  if (!address || (address > 12 && maxZones <= 32)) return;
+  if (!address) return;
   if (moduleIdx < maxModules) {
     modules[moduleIdx].address = address;
     memset(modules[moduleIdx].fields, 0x55, 4);
@@ -345,9 +346,14 @@ ICACHE_RAM_ATTR
 #elif defined(ESP32)
 IRAM_ATTR 
 #endif
-dscKeybusInterface::dscKeybusInterface::prepareModuleResponse(byte address, int bit) {
-
-
+dscKeybusInterface::prepareModuleResponse(byte address, int bit) {
+  
+  if (address==0xff) { //it100 emulation set date
+      if (pendingD0) 
+          updateWriteBuffer((byte *) cmdD0buffer,bit,1,6);
+      pendingD0=false;
+  }
+  else {
   for (int idx = 0; idx < moduleIdx; idx++) { //get the buffer data from the module record that matches the address we need
     if (modules[idx].address == address) {
       //pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
@@ -355,7 +361,40 @@ dscKeybusInterface::dscKeybusInterface::prepareModuleResponse(byte address, int 
       return;
     }
   }
+  }
+}
 
+unsigned int dscKeybusInterface::dec2bcd(unsigned int num)
+{
+    unsigned int ones = 0;
+    unsigned int tens = 0;
+    unsigned int temp = 0;
+    ones = num%10;
+    temp = num/10;
+    tens = temp<<4;
+    return (tens + ones);
+}
+
+void dscKeybusInterface::setDateTime(unsigned int year,byte month,byte day,byte hour,byte minute) {
+ 
+ 
+  int dataSum = 0;
+  memset(cmdD0buffer, 0, 6);
+  year = year % 100;
+  cmdD0buffer[0] = dec2bcd(year);
+  cmdD0buffer[1] = dec2bcd(month);  
+  cmdD0buffer[2] = day;
+  cmdD0buffer[3] = dec2bcd(hour);
+  cmdD0buffer[4] = dec2bcd(minute);  
+  for (byte x = 0; x < 5; x++) {
+    dataSum += cmdD0buffer[x];
+  }
+  cmdD0buffer[5] = dataSum % 256;
+  pendingD0=true;
+  byte zoneupdate[6];
+  memset(zoneupdate, 0xFF, 6); //set update slots to 1's. Only zero bits indicate a request
+  zoneupdate[3] &= 0xfd; //set update slot
+  writeCharsToQueue(zoneupdate, 9,-1, 6);
 }
 
 #endif

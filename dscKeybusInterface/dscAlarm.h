@@ -1,7 +1,7 @@
 //for project documenation visit https://github.com/Dilbert66/esphome-dsckeybus
 
 #define MAXZONES 32 //set to 64 if your system supports it
-#define MODULESUPERVISION //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
+//#define MODULESUPERVISION //only enable this option if you want your virtual modules to be supervised by the panel and show errors if missing.  Not needed for operation.
 //#define OLDVERSION  //uncomment if you are using an old panel or version or you see odd behavior
 
 #ifndef dscalarm_h
@@ -321,9 +321,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     dsc.debounce05 = (cmdWaitTime > 0);
     dsc.addModule(expanderAddr1);
     dsc.addModule(expanderAddr2);
+   
     dsc.maxZones = MAXZONES;    
     #endif
-
+ dsc.addModule(0xf0); //test for it100 emulation
     dsc.resetStatus();
     dsc.processModuleData = true;
 
@@ -705,6 +706,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     const char * keys = strcpy(new char[keystring.length() + 1], keystring.c_str());
     if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d", keystring.c_str(), partition);
     partitionStatus[partition - 1].keyPressTime = millis();
+    if (keys[0]=='?') {
+        ESPTime rtc=now();
+        dsc.setDateTime(rtc.year ,rtc.month,rtc.day_of_month,rtc.hour,rtc.minute);
+        return;
+    }
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
     } else if (!partitionStatus[partition].locked) dsc.write(keys, partition);
@@ -1081,7 +1087,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
      if (millis() - eventTime > 30000 ) {
       for (byte partition = 1; partition <= dscPartitions; partition++) {
         if (dsc.disabled[partition - 1]) continue;
-        eventInfoCallback("");
+       // eventInfoCallback("");
       }
       eventTime=millis();
     }

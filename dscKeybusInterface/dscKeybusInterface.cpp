@@ -464,7 +464,7 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       break; // Command output 4
     case '$':
       writeKey = 0xF7;
-      break; //place holder character during text editing      
+      break; //place holder character during text editing   
 
     default: {
       validKey = false;
@@ -775,7 +775,7 @@ dscKeybusInterface::writeCharsToQueue(byte * keys, byte bit,byte partition, byte
   req.partition=partition;
   writeQueue[inIdx] = req;
   inIdx = (inIdx + 1) % writeQueueSize; //circular buffer - increment index
-   // stream->printf("writing byte %02X,bits=%d,partition=%d,len=%d",req.data[0],req.writeBit,req.partition,req.len);  
+ 
 }
 
 
@@ -830,6 +830,9 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
   case 0x70:
     processCmd70();
     return; // installer program mode data write
+  case 0xD0:
+    prepareModuleResponse(0xff,9); //it-100 set date
+    return;
 #endif
   default:
     return;
