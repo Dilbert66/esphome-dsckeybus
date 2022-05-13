@@ -1549,13 +1549,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
     byte *currentSelection=&partitionStatus[partition].currentSelection;
     
-    if (dsc.status[partition] != partitionStatus[partition].lastStatus) {
-        *currentSelection=0xFF;
-    }
+
     std::string lcdLine1;
     std::string lcdLine2;
 
-    //bool options = false;
     options = false;
     partitionStatus[partition].digits = 0;
     partitionStatus[partition].hex = false;
@@ -2038,7 +2035,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         }
        
       } else if (dsc.status[partition] == 0xA0) { //bypass
-        if (*currentSelection == 0xFF || *currentSelection==0)
+        if (*currentSelection == 0xFF || *currentSelection==0 || dsc.status[partition] != partitionStatus[partition].lastStatus)
           *currentSelection = getNextEnabledZone(0xFF, partition + 1);
         if (*currentSelection < maxZones && *currentSelection > 0) {
           char s[16];
@@ -2050,9 +2047,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           sprintf(s, "%02d   %c", *currentSelection, bypassStatus);
           lcdLine2 = s;
         }
-      } else if (dsc.status[partition] == 0x11) { //alarms
+      } else if (dsc.status[partition] == 0x11 ) { //alarms
 
-        if (*currentSelection == 0xFF || *currentSelection==0)
+        if (*currentSelection == 0xFF || *currentSelection==0 || dsc.status[partition] != partitionStatus[partition].lastStatus)
           *currentSelection = getNextAlarmedZone(0xFF, partition + 1);
         if (*currentSelection < maxZones && *currentSelection > 0) {
           char s[16];
@@ -2061,7 +2058,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         } else lcdLine2 = " ";
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
 
-        if (*currentSelection == 0xFF )
+        if (*currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus)
           *currentSelection = getNextOption(0xFF);
 
         if (*currentSelection < maxZones && *currentSelection > 0) {
@@ -2076,19 +2073,19 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           lcdLine2 = "in memory";
         }
       } else if (dsc.status[partition] == 0x9E  ) { // main menu
-        if (*currentSelection == 0xFF ) {
+        if (*currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           *currentSelection = 1;
         }
         lcdLine2 = mainMenu[*currentSelection];
 
       } else if (dsc.status[partition] == 0xB2) { // output menu
-        if (*currentSelection == 0xFF) {
+        if (*currentSelection == 0xFF  || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           *currentSelection = 1;
         }
         lcdLine2 = outputMenu[*currentSelection];
 
       } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
-        if (*currentSelection == 0xFF) {
+        if (*currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           *currentSelection = 1;
         }
         lcdLine2 = userMenu[*currentSelection];
