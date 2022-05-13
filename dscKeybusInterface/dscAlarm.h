@@ -268,7 +268,6 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   char decimalInputBuffer[6];
   byte line2Digit,
   line2Status;
-  byte currentSelection;
   byte beeps,
   previousBeeps;
   bool refresh;
@@ -312,7 +311,6 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     });
 
     firstrun = true;
-    currentSelection = 0xFF;
     systemStatusChangeCallback(STATUS_OFFLINE);
     forceDisconnect = false;
     dsc.debounce05 = (cmdWaitTime > 0);    
@@ -402,8 +400,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   void processMenu(byte key, byte partition = -1) {
 
     if (partition < 1) partition = defaultPartition;
-
-    ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
+    byte *currentSelection= &partitionStatus[partition - 1].currentSelection;
+    
+    ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], *currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
 
     if (partitionStatus[partition - 1].locked) {
       line1DisplayCallback("System", partition);
@@ -483,8 +482,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (key == '#') {
-      currentSelection = 0xFF;
-      partitionStatus[partition - 1].currentSelection = 0;
+      *currentSelection = 0xFF;
       partitionStatus[partition - 1].selectedZone = 0;
       dsc.write(key, partition);
       partitionStatus[partition - 1].eventViewer = false;
@@ -510,170 +508,170 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     
     } else if (dsc.status[partition - 1] == 0x9E) { // * mainmenu
       if (key == '<') {
-        currentSelection = currentSelection >= 11 ? 10 : (currentSelection > 0 ? currentSelection - 1 : 10);
-        currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
-        if (currentSelection < 11)
-          line2DisplayCallback(mainMenu[currentSelection], partition);
+        *currentSelection = *currentSelection >= 11 ? 10 : (*currentSelection > 0 ? *currentSelection - 1 : 10);
+        *currentSelection = mainMenu[*currentSelection] != "" ? *currentSelection : *currentSelection - 1;
+        if (*currentSelection < 11)
+          line2DisplayCallback(mainMenu[*currentSelection], partition);
       } else if (key == '>') {
-        currentSelection = currentSelection >= 10 ? 0 : currentSelection + 1;
-        currentSelection = mainMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
-        if (currentSelection < 11)
-          line2DisplayCallback(mainMenu[currentSelection], partition);
-       } else if (key == '*' && currentSelection > 0) {
+        *currentSelection = *currentSelection >= 10 ? 0 : *currentSelection + 1;
+        *currentSelection = mainMenu[*currentSelection] != "" ? *currentSelection : *currentSelection + 1;
+        if (*currentSelection < 11)
+          line2DisplayCallback(mainMenu[*currentSelection], partition);
+       } else if (key == '*' && *currentSelection > 0) {
         dsc.write(key,partition);
         char s[5];
-        sprintf(s, "%d", currentSelection % 10);
+        sprintf(s, "%d", *currentSelection % 10);
         const char * out = strcpy(new char[3], s);
-        currentSelection = 0xFF;
+        *currentSelection = 0xFF;
         dsc.write(s, partition);
       } else {
           dsc.write(key,partition);
-          currentSelection = 0xFF;
+          *currentSelection = 0xFF;
       }
     } else if (dsc.status[partition - 1] == 0xA1) { //trouble
-      if (key == '*' && currentSelection > 0) {
+      if (key == '*' && *currentSelection > 0) {
         char s[5];
-        sprintf(s, "%d", currentSelection);
+        sprintf(s, "%d", *currentSelection);
         const char * out = strcpy(new char[3], s);
-        currentSelection = 0xFF;
+        *currentSelection = 0xFF;
         dsc.write(out, partition);
       } else if (key == '>') {
-        currentSelection = getNextOption(currentSelection);
-        if (currentSelection < 9)
-          line2DisplayCallback(troubleMenu[currentSelection], partition);
+        *currentSelection = getNextOption(*currentSelection);
+        if (*currentSelection < 9)
+          line2DisplayCallback(troubleMenu[*currentSelection], partition);
       } else if (key == '<') {
-        currentSelection = getPreviousOption(currentSelection);
-        if (currentSelection < 9)
-          line2DisplayCallback(troubleMenu[currentSelection], partition);
+        *currentSelection = getPreviousOption(*currentSelection);
+        if (*currentSelection < 9)
+          line2DisplayCallback(troubleMenu[*currentSelection], partition);
       } else {
-          currentSelection = 0xFF;
+          *currentSelection = 0xFF;
           dsc.write(key,partition);      
       }
     } else if (dsc.status[partition - 1] == 0xC8) { //trouble
-      if (key == '*' && currentSelection > 0) {
+      if (key == '*' && *currentSelection > 0) {
         char s[5];
-        sprintf(s, "%d", currentSelection);
+        sprintf(s, "%d", *currentSelection);
         const char * out = strcpy(new char[3], s);
-        currentSelection = 0xFF;
+        *currentSelection = 0xFF;
         dsc.write(out, partition);
       } else if (key == '>') {
-        currentSelection = getNextOption(currentSelection);
-        if (currentSelection < 9)
-          line2DisplayCallback(serviceMenu[currentSelection], partition);
+        *currentSelection = getNextOption(*currentSelection);
+        if (*currentSelection < 9)
+          line2DisplayCallback(serviceMenu[*currentSelection], partition);
       } else if (key == '<') {
-        currentSelection = getPreviousOption(currentSelection);
-        if (currentSelection < 9) 
-            line2DisplayCallback(serviceMenu[currentSelection], partition);
+        *currentSelection = getPreviousOption(*currentSelection);
+        if (*currentSelection < 9) 
+            line2DisplayCallback(serviceMenu[*currentSelection], partition);
        } else {
-          currentSelection = 0xFF;
+          *currentSelection = 0xFF;
           dsc.write(key,partition);      
       }
   
     } else if (dsc.status[partition - 1] == 0xA9 && !partitionStatus[partition - 1].eventViewer) { // * user functions
       if (key == '<') {
-        currentSelection = currentSelection >= 7 ? 6 : (currentSelection > 0 ? currentSelection - 1 : 6);
-        currentSelection = userMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
-        if (currentSelection < 7)
-          line2DisplayCallback(userMenu[currentSelection], partition);
+        *currentSelection = *currentSelection >= 7 ? 6 : (*currentSelection > 0 ? *currentSelection - 1 : 6);
+        *currentSelection = userMenu[*currentSelection] != "" ? *currentSelection : *currentSelection - 1;
+        if (*currentSelection < 7)
+          line2DisplayCallback(userMenu[*currentSelection], partition);
       } else if (key == '>') {
-        currentSelection = currentSelection >= 6 ? 0 : currentSelection + 1;
-        currentSelection = userMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
-        if (currentSelection < 7)
-          line2DisplayCallback(userMenu[currentSelection], partition);
-      } else if (key == '*' && currentSelection > 0) {
+        *currentSelection = *currentSelection >= 6 ? 0 : *currentSelection + 1;
+        *currentSelection = userMenu[*currentSelection] != "" ? *currentSelection : *currentSelection + 1;
+        if (*currentSelection < 7)
+          line2DisplayCallback(userMenu[*currentSelection], partition);
+      } else if (key == '*' && *currentSelection > 0) {
         char s[5];
-        if (currentSelection == 6) { //event viewer. 
+        if (*currentSelection == 6) { //event viewer. 
           partitionStatus[partition - 1].eventViewer = true;
           activePartition = partition;
           dsc.write('b', partition);
         } else {
-          sprintf(s, "%d", currentSelection % 6);
+          sprintf(s, "%d", *currentSelection % 6);
           const char * out = strcpy(new char[3], s);
-          currentSelection = 0xFF;
+          *currentSelection = 0xFF;
           dsc.write(s, partition);
         }
       } else {
           dsc.write(key,partition);
-          currentSelection = 0xFF;
+          *currentSelection = 0xFF;
       }
     } else if (dsc.status[partition - 1] == 0xA2) { //alarm memory
       if (key == '>') {
-        currentSelection = getNextOption(currentSelection);
+        *currentSelection = getNextOption(*currentSelection);
         dsc.write(key, partition);        
       } else if (key == '<') {
-        currentSelection = getPreviousOption(currentSelection);
+        *currentSelection = getPreviousOption(*currentSelection);
         dsc.write(key, partition);        
       } else {
-          currentSelection = 0xFF;
+          *currentSelection = 0xFF;
           dsc.write(key,partition);      
       }
     } else if (dsc.status[partition - 1] == 0xA6) { //user codes
       if (key == '*') {
         char s[5];
-        sprintf(s, "%02d", currentSelection);
+        sprintf(s, "%02d", *currentSelection);
         const char * out = strcpy(new char[3], s);
         dsc.write(out, partition);
       } else if (key == '>') {
-        currentSelection = getNextUserCode(currentSelection);
+        *currentSelection = getNextUserCode(*currentSelection);
         dsc.write(key, partition);        
       } else if (key == '<') {
-        currentSelection = getPreviousUserCode(currentSelection);
+        *currentSelection = getPreviousUserCode(*currentSelection);
         dsc.write(key, partition);        
       } else {
-          currentSelection = 0xFF;          
+          *currentSelection = 0xFF;          
           dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0x11) { //alarms
       if (key == '>') {
-        currentSelection = getNextAlarmedZone(currentSelection, partition);
+        *currentSelection = getNextAlarmedZone(*currentSelection, partition);
         dsc.write(key, partition);        
       } else if (key == '<') {
-        currentSelection = getPreviousAlarmedZone(currentSelection, partition);
+        *currentSelection = getPreviousAlarmedZone(*currentSelection, partition);
         dsc.write(key, partition);        
       } else {
-          currentSelection = 0xFF;          
+          *currentSelection = 0xFF;          
           dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xA0) { //bypass
       if (key == '*') {
         char s[5];
-        sprintf(s, "%02d", currentSelection);
+        sprintf(s, "%02d", *currentSelection);
         const char * out = strcpy(new char[3], s);
         dsc.write(out, partition);
       } else if (key == '>') {
-        currentSelection = getNextEnabledZone(currentSelection, partition);
+        *currentSelection = getNextEnabledZone(*currentSelection, partition);
         dsc.write(key, partition);        
       } else if (key == '<') {
-        currentSelection = getPreviousEnabledZone(currentSelection, partition);
+        *currentSelection = getPreviousEnabledZone(*currentSelection, partition);
         dsc.write(key, partition);
       } else {
-          currentSelection = 0xFF;          
+          *currentSelection = 0xFF;          
           dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xB2) { //output control
       if (key == '<') {
-        currentSelection = currentSelection >= 3 ? 2 : (currentSelection > 0 ? currentSelection - 1 : 2);
-        currentSelection = outputMenu[currentSelection] != "" ? currentSelection : currentSelection - 1;
-        if (currentSelection < 3)
-          line2DisplayCallback(outputMenu[currentSelection], partition);
+        *currentSelection = *currentSelection >= 3 ? 2 : (*currentSelection > 0 ? *currentSelection - 1 : 2);
+        *currentSelection = outputMenu[*currentSelection] != "" ? *currentSelection : *currentSelection - 1;
+        if (*currentSelection < 3)
+          line2DisplayCallback(outputMenu[*currentSelection], partition);
         dsc.write(key, partition);
       } else if (key == '>') {
-        currentSelection = currentSelection >= 2 ? 0 : currentSelection + 1;
-        currentSelection = outputMenu[currentSelection] != "" ? currentSelection : currentSelection + 1;
-        if (currentSelection < 3)
-          line2DisplayCallback(outputMenu[currentSelection], partition);
+        *currentSelection = *currentSelection >= 2 ? 0 : *currentSelection + 1;
+        *currentSelection = outputMenu[*currentSelection] != "" ? *currentSelection : *currentSelection + 1;
+        if (*currentSelection < 3)
+          line2DisplayCallback(outputMenu[*currentSelection], partition);
         dsc.write(key, partition);      
-      } else if (key == '*' && currentSelection > 0) {
+      } else if (key == '*' && *currentSelection > 0) {
         char s[5];
-        sprintf(s, "%d", currentSelection);
+        sprintf(s, "%d", *currentSelection);
         const char * out = strcpy(new char[3], s);
-        currentSelection = 0xFF;
+        *currentSelection = 0xFF;
         dsc.write(s, partition);
       } else {
-          currentSelection = 0xFF;
+          *currentSelection = 0xFF;
           dsc.write(key,partition);      
       }
         setStatus(partition - 1, true);
@@ -1549,10 +1547,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     // if (dsc.status[partition] == partitionStatus[partition].lastStatus && line2Status != dsc.status[partition] && beeps == 0 && !force) return;
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
-
+    byte *currentSelection=&partitionStatus[partition].currentSelection;
+    
     if (dsc.status[partition] != partitionStatus[partition].lastStatus) {
-        currentSelection=0xFF;
-        partitionStatus[partition].currentSelection=0xFF;
+        *currentSelection=0xFF;
     }
     std::string lcdLine1;
     std::string lcdLine2;
@@ -1563,7 +1561,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     partitionStatus[partition].hex = false;
     partitionStatus[partition].decimalInput = false;
 
-    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, currentSelection, partition + 1);
+    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, *currentSelection, partition + 1);
     switch (dsc.status[partition]) {
     case 0x01:
       lcdLine1 = "Partition ready";
@@ -1954,7 +1952,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (!skip) {
 
-      //  ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, currentSelection);
+      //  ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, *currentSelection);
 
       //if multi digit field, setup for 6E request to panel
       if (dsc.status[partition] != partitionStatus[partition].lastStatus && !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
@@ -2021,16 +2019,16 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
       if (dsc.status[partition] < 0x04) {
 
-        if (partitionStatus[partition].currentSelection > 1 && partitionStatus[partition].currentSelection < 6) {
-          int pos = statusMenu[partitionStatus[partition].currentSelection].find(":");
-          lcdLine1 = statusMenu[partitionStatus[partition].currentSelection].substr(0, pos);
-          lcdLine2 = statusMenu[partitionStatus[partition].currentSelection].substr(pos + 1);
+        if (*currentSelection > 1 && *currentSelection < 6) {
+          int pos = statusMenu[*currentSelection].find(":");
+          lcdLine1 = statusMenu[*currentSelection].substr(0, pos);
+          lcdLine2 = statusMenu[*currentSelection].substr(pos + 1);
         } else {
           byte c = dsc.ready[partition] ? 0 : 1;
           int pos = statusMenuLabels[c].find(":");
           lcdLine1 = statusMenuLabels[c].substr(0, pos);
           lcdLine2 = statusMenuLabels[c].substr(pos + 1);
-          partitionStatus[partition].currentSelection = 1;
+          *currentSelection = 1;
         }
 
         if (partitionStatus[partition].selectedZone && partitionStatus[partition].selectedZone < maxZones) {
@@ -2040,86 +2038,86 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         }
        
       } else if (dsc.status[partition] == 0xA0) { //bypass
-        if (currentSelection == 0xFF || currentSelection==0)
-          currentSelection = getNextEnabledZone(0xFF, partition + 1);
-        if (currentSelection < maxZones && currentSelection > 0) {
+        if (*currentSelection == 0xFF || *currentSelection==0)
+          *currentSelection = getNextEnabledZone(0xFF, partition + 1);
+        if (*currentSelection < maxZones && *currentSelection > 0) {
           char s[16];
           char bypassStatus = ' ';
-          if (zoneStatus[currentSelection - 1].bypassed)
+          if (zoneStatus[*currentSelection - 1].bypassed)
             bypassStatus = 'B';
-          else if (zoneStatus[currentSelection - 1].open)
+          else if (zoneStatus[*currentSelection - 1].open)
             bypassStatus = 'O';
-          sprintf(s, "%02d   %c", currentSelection, bypassStatus);
+          sprintf(s, "%02d   %c", *currentSelection, bypassStatus);
           lcdLine2 = s;
         }
       } else if (dsc.status[partition] == 0x11) { //alarms
 
-        if (currentSelection == 0xFF || currentSelection==0)
-          currentSelection = getNextAlarmedZone(0xFF, partition + 1);
-        if (currentSelection < maxZones && currentSelection > 0) {
+        if (*currentSelection == 0xFF || *currentSelection==0)
+          *currentSelection = getNextAlarmedZone(0xFF, partition + 1);
+        if (*currentSelection < maxZones && *currentSelection > 0) {
           char s[16];
-          sprintf(s, "zone %02d", currentSelection);
+          sprintf(s, "zone %02d", *currentSelection);
           lcdLine2 = s;
         } else lcdLine2 = " ";
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
 
-        if (currentSelection == 0xFF )
-          currentSelection = getNextOption(0xFF);
+        if (*currentSelection == 0xFF )
+          *currentSelection = getNextOption(0xFF);
 
-        if (currentSelection < maxZones && currentSelection > 0) {
+        if (*currentSelection < maxZones && *currentSelection > 0) {
           char s[16];
           lcdLine2 = "";
           char bypassStatus = ' ';
 
-          sprintf(s, "zone %02d", currentSelection);
+          sprintf(s, "zone %02d", *currentSelection);
           lcdLine2 = s;
         } else {
           lcdLine1 = "No alarms";
           lcdLine2 = "in memory";
         }
       } else if (dsc.status[partition] == 0x9E  ) { // main menu
-        if (currentSelection == 0xFF ) {
-          currentSelection = 1;
+        if (*currentSelection == 0xFF ) {
+          *currentSelection = 1;
         }
-        lcdLine2 = mainMenu[currentSelection];
+        lcdLine2 = mainMenu[*currentSelection];
 
       } else if (dsc.status[partition] == 0xB2) { // output menu
-        if (currentSelection == 0xFF) {
-          currentSelection = 1;
+        if (*currentSelection == 0xFF) {
+          *currentSelection = 1;
         }
-        lcdLine2 = outputMenu[currentSelection];
+        lcdLine2 = outputMenu[*currentSelection];
 
       } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
-        if (currentSelection == 0xFF) {
-          currentSelection = 1;
+        if (*currentSelection == 0xFF) {
+          *currentSelection = 1;
         }
-        lcdLine2 = userMenu[currentSelection];
+        lcdLine2 = userMenu[*currentSelection];
 
       } else if (dsc.status[partition] == 0xA1 ) { //trouble
 
-        if (currentSelection == 0xFF ) {
-          currentSelection = getNextOption(0xFF);
+        if (*currentSelection == 0xFF ) {
+          *currentSelection = getNextOption(0xFF);
         }
-        if (currentSelection < 9) {
-          lcdLine2 = troubleMenu[currentSelection];
+        if (*currentSelection < 9) {
+          lcdLine2 = troubleMenu[*currentSelection];
         }
 
       } else if (dsc.status[partition] == 0xC8) { //service
-        if (currentSelection == 0xFF )
-          currentSelection = getNextOption(0xFF);
-        if (currentSelection < 9) {
-          lcdLine2 = serviceMenu[currentSelection];
+        if (*currentSelection == 0xFF )
+          *currentSelection = getNextOption(0xFF);
+        if (*currentSelection < 9) {
+          lcdLine2 = serviceMenu[*currentSelection];
         }
 
       } else if (dsc.status[partition] == 0xA6) { //user code
-        if (currentSelection == 0xFF )
-          currentSelection = getNextUserCode(0xFF);
-        if (currentSelection < 96) {
+        if (*currentSelection == 0xFF )
+          *currentSelection = getNextUserCode(0xFF);
+        if (*currentSelection < 96) {
           char s[16];
           char programmed = ' ';
-          if (checkUserCode(currentSelection))
+          if (checkUserCode(*currentSelection))
             programmed = 'P';
-          sprintf(s, "%02d   %c", currentSelection, programmed);
+          sprintf(s, "%02d   %c", *currentSelection, programmed);
           lcdLine2 = s;
         }
       }
