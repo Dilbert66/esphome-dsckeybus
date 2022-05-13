@@ -460,12 +460,14 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           else
             dsc.pgmBuffer.data[y] = (dsc.pgmBuffer.data[y] & 0x0F) | (k << 4);
         }
-        if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx + 1 == partitionStatus[partition - 1].digits) {
+        getNextIdx(tpl, partition);
+        if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx == 0) {
           dsc.setLCDSend(partition);
+          partitionStatus[partition - 1].newData = false;          
           return;
         }
 
-        getNextIdx(tpl, partition);
+
 
       } else if (key == '*') {
         if (partitionStatus[partition - 1].hex) {
