@@ -1086,7 +1086,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
      if (millis() - eventTime > 30000 ) {
       refresh=true;
-      //eventInfoCallback("");
+      eventInfoCallback("");
       eventTime=millis();
     }
 
