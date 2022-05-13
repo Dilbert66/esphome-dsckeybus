@@ -231,7 +231,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     bool hex;
     bool eventViewer;
     bool submitted;
-    byte selectedMenu;
+    byte currentSelection;
     byte selectedZone;
 
   };
@@ -484,7 +484,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (key == '#') {
       currentSelection = 0xFF;
-      partitionStatus[partition - 1].selectedMenu = 0;
+      partitionStatus[partition - 1].currentSelection = 0;
       partitionStatus[partition - 1].selectedZone = 0;
       dsc.write(key, partition);
       partitionStatus[partition - 1].eventViewer = false;
@@ -620,6 +620,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         currentSelection = getPreviousUserCode(currentSelection);
         dsc.write(key, partition);        
       } else {
+          currentSelection = 0xFF;          
           dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
@@ -631,6 +632,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         currentSelection = getPreviousAlarmedZone(currentSelection, partition);
         dsc.write(key, partition);        
       } else {
+          currentSelection = 0xFF;          
           dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
@@ -647,6 +649,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         currentSelection = getPreviousEnabledZone(currentSelection, partition);
         dsc.write(key, partition);
       } else {
+          currentSelection = 0xFF;          
           dsc.write(key,partition);      
       }
       setStatus(partition - 1, true);
@@ -924,17 +927,17 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     byte menu = 0;
     byte zone = 0;
 
-    if (partitionStatus[partition - 1].selectedMenu > 5) {
-      partitionStatus[partition - 1].selectedMenu = 0;
+    if (partitionStatus[partition - 1].currentSelection > 5) {
+      partitionStatus[partition - 1].currentSelection = 0;
       partitionStatus[partition - 1].selectedZone = 0;
       return;
-    } else if (partitionStatus[partition - 1].selectedMenu == 5) { //open zones
+    } else if (partitionStatus[partition - 1].currentSelection == 5) { //open zones
       partitionStatus[partition - 1].selectedZone = getPreviousOpenZone(partitionStatus[partition - 1].selectedZone, partition);
       if (partitionStatus[partition - 1].selectedZone) return;
-    } else if (partitionStatus[partition - 1].selectedMenu < 2)
-      partitionStatus[partition - 1].selectedMenu = 6;
+    } else if (partitionStatus[partition - 1].currentSelection < 2)
+      partitionStatus[partition - 1].currentSelection = 6;
 
-    for (int x = partitionStatus[partition - 1].selectedMenu; x >= 0; x--) {
+    for (int x = partitionStatus[partition - 1].currentSelection; x >= 0; x--) {
 
       if ((x == 6) && !dsc.armed[partition - 1] && !dsc.armed[partition - 1]) { //openzones
         menu = 5;
@@ -954,7 +957,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         break;
       }
     }
-    partitionStatus[partition - 1].selectedMenu = menu;
+    partitionStatus[partition - 1].currentSelection = menu;
     partitionStatus[partition - 1].selectedZone = zone;
 
   }
@@ -988,15 +991,15 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     byte menu = 0;
     byte zone = 0;
 
-    if (partitionStatus[partition - 1].selectedMenu > 5) {
-      partitionStatus[partition - 1].selectedMenu = 0;
+    if (partitionStatus[partition - 1].currentSelection > 5) {
+      partitionStatus[partition - 1].currentSelection = 0;
       return;
-    } else if (partitionStatus[partition - 1].selectedMenu == 5) { //open zones
+    } else if (partitionStatus[partition - 1].currentSelection == 5) { //open zones
       partitionStatus[partition - 1].selectedZone = getNextOpenZone(partitionStatus[partition - 1].selectedZone, partition);
       if (partitionStatus[partition - 1].selectedZone) return;
     }
 
-    for (int x = partitionStatus[partition - 1].selectedMenu; x < 6; x++) {
+    for (int x = partitionStatus[partition - 1].currentSelection; x < 6; x++) {
       if ((x == 0 || x == 1) && dsc.lights[partition - 1] & 0x10) { //trouble
         menu = 2;
         zone = 0;
@@ -1015,7 +1018,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         break;
       }
     }
-    partitionStatus[partition - 1].selectedMenu = menu;
+    partitionStatus[partition - 1].currentSelection = menu;
     partitionStatus[partition - 1].selectedZone = zone;
 
   }
@@ -1208,23 +1211,6 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         getEnabledZonesE6(4, 33, dsc.panelData[3]);
       }
       
-      /*
-      if (dsc.panelData[0]==0x0A && dsc.panelData[3]==0xB9) { //tamper
-          for (byte panelByte = 4; panelByte < 8; panelByte++) {
-                  for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-                      zone=zoneBit + ((panelByte-4) *  8);
-                      if (bitRead(dsc.panelData[panelByte],zoneBit)) {
-                          if (zone < maxZones)
-                              zoneStatus[zone].tamper=true;
-                      } else  if (zone < maxZones)
-                                  zoneStatus[zone].tamper=false;
-                  }
-          }
-      }
-      */
-
-
-
     }
 
     if (!forceDisconnect && dsc.statusChanged) { // Processes data only when a valid Keybus command has been read and statuses were changed
@@ -1420,13 +1406,18 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
-        /*
+        if (zoneStatus[x].bypassed) {
+          sprintf(s1, "BY:%d", x + 1);
+          if (zoneStatusMsg != "") zoneStatusMsg.append(",");
+          zoneStatusMsg.append(s1);
+        }        
+        
         if (zoneStatus[x].tamper) {
           sprintf(s1, "TA:%d", x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
-        */
+        
         if (zoneStatus[x].batteryLow) {
           sprintf(s1, "BL:%d", x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
@@ -1559,6 +1550,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     // if (dsc.status[partition] == partitionStatus[partition].lastStatus && line2Status != dsc.status[partition] && beeps == 0 && !force) return;
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
 
+    if (dsc.status[partition] != partitionStatus[partition].lastStatus) {
+        currentSelection=0xFF;
+        partitionStatus[partition].currentSelection=0xFF;
+    }
     std::string lcdLine1;
     std::string lcdLine2;
 
@@ -1628,7 +1623,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       break;
     case 0x11:
       lcdLine1 = "Partition in alarm";
-      lcdLine2 = " ";
+      lcdLine2 = "  ";
       break;
     case 0x12:
       lcdLine1 = "Battery check";
@@ -2026,16 +2021,16 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
       if (dsc.status[partition] < 0x04) {
 
-        if (partitionStatus[partition].selectedMenu > 1 && partitionStatus[partition].selectedMenu < 6) {
-          int pos = statusMenu[partitionStatus[partition].selectedMenu].find(":");
-          lcdLine1 = statusMenu[partitionStatus[partition].selectedMenu].substr(0, pos);
-          lcdLine2 = statusMenu[partitionStatus[partition].selectedMenu].substr(pos + 1);
+        if (partitionStatus[partition].currentSelection > 1 && partitionStatus[partition].currentSelection < 6) {
+          int pos = statusMenu[partitionStatus[partition].currentSelection].find(":");
+          lcdLine1 = statusMenu[partitionStatus[partition].currentSelection].substr(0, pos);
+          lcdLine2 = statusMenu[partitionStatus[partition].currentSelection].substr(pos + 1);
         } else {
           byte c = dsc.ready[partition] ? 0 : 1;
           int pos = statusMenuLabels[c].find(":");
           lcdLine1 = statusMenuLabels[c].substr(0, pos);
           lcdLine2 = statusMenuLabels[c].substr(pos + 1);
-          partitionStatus[partition].selectedMenu = 1;
+          partitionStatus[partition].currentSelection = 1;
         }
 
         if (partitionStatus[partition].selectedZone && partitionStatus[partition].selectedZone < maxZones) {
@@ -2065,7 +2060,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           char s[16];
           sprintf(s, "zone %02d", currentSelection);
           lcdLine2 = s;
-        } else lcdLine2 = "";
+        } else lcdLine2 = " ";
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
 
         if (currentSelection == 0xFF )
@@ -2083,7 +2078,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           lcdLine2 = "in memory";
         }
       } else if (dsc.status[partition] == 0x9E  ) { // main menu
-        if (currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
+        if (currentSelection == 0xFF ) {
           currentSelection = 1;
         }
         lcdLine2 = mainMenu[currentSelection];
@@ -2687,6 +2682,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] >= 0x09 && dsc.panelData[panelByte] <= 0x28) {
       strcpy(lcdMessage, "Zone alarm: ");
+      byte zone=dsc.panelData[panelByte] - 8;      
+      if (zone > 0 && zone < maxZones) 
+         zoneStatus[zone-1].alarm=true;      
       itoa(dsc.panelData[panelByte] - 8, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -2697,6 +2695,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (dsc.panelData[panelByte] >= 0x29 && dsc.panelData[panelByte] <= 0x48) {
       lcdLine1 = "Zone alarm";
       strcpy(lcdMessage, "restored: ");
+      byte zone=dsc.panelData[panelByte] - 40;      
+     // if (zone > 0 && zone < maxZones) 
+        // zoneStatus[zone-1].alarm=false;      
       itoa(dsc.panelData[panelByte] - 40, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -2705,7 +2706,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] >= 0x56 && dsc.panelData[panelByte] <= 0x75) {
       strcpy(lcdMessage, "Zone tamper: ");
-      itoa(dsc.panelData[panelByte] - 85, charBuffer, 10);
+      byte zone=dsc.panelData[panelByte] - 85;
+      if (zone > 0 && zone < maxZones) 
+         zoneStatus[zone-1].tamper=true;
+      itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
@@ -2715,7 +2719,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (dsc.panelData[panelByte] >= 0x76 && dsc.panelData[panelByte] <= 0x95) {
       lcdLine1 = "Zone tamper";
       strcpy(lcdMessage, "restored: ");
-      itoa(dsc.panelData[panelByte] - 117, charBuffer, 10);
+      byte zone=dsc.panelData[panelByte] - 117;      
+      if (zone > 0 && zone < maxZones) 
+         zoneStatus[zone-1].tamper=false;
+      itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3264,6 +3271,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] <= 0x1F) {
       strcpy(lcdMessage, "Zone alarm: ");
+      byte zone=dsc.panelData[panelByte] - 33;      
+      if (zone > 0 && zone < maxZones) 
+         zoneStatus[zone-1].alarm=true;
       itoa(dsc.panelData[panelByte] + 33, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -3272,13 +3282,19 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     } else if (dsc.panelData[panelByte] >= 0x20 && dsc.panelData[panelByte] <= 0x3F) {
       lcdLine1 = "Zone alarm";
       strcpy(lcdMessage, "rest: ");
+      byte zone=dsc.panelData[panelByte] + 1;      
+   //   if (zone > 0 && zone < maxZones) 
+     //    zoneStatus[zone-1].alarm=false;      
       itoa(dsc.panelData[panelByte] + 1, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x40 && dsc.panelData[panelByte] <= 0x5F) {
       strcpy(lcdMessage, "Zone tamper: ");
-      itoa(dsc.panelData[panelByte] - 31, charBuffer, 10);
+      byte zone=dsc.panelData[panelByte] - 31;      
+      if (zone > 0 && zone < maxZones) 
+         zoneStatus[zone-1].tamper=true;
+      itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
@@ -3286,7 +3302,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     } else if (dsc.panelData[panelByte] >= 0x60 && dsc.panelData[panelByte] <= 0x7F) {
       lcdLine1 = "Zone tamper";
       strcpy(lcdMessage, "rest: ");
-      itoa(dsc.panelData[panelByte] - 63, charBuffer, 10);
+      byte zone=dsc.panelData[panelByte] - 63;      
+      if (zone > 0 && zone < maxZones) 
+         zoneStatus[zone-1].tamper=false;      
+      itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
