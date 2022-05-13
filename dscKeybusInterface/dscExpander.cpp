@@ -356,7 +356,6 @@ dscKeybusInterface::prepareModuleResponse(byte address, int bit) {
   else {
   for (int idx = 0; idx < moduleIdx; idx++) { //get the buffer data from the module record that matches the address we need
     if (modules[idx].address == address) {
-      //pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
       updateWriteBuffer((byte * ) modules[idx].faultBuffer, bit, 1,  5,false);
       return;
     }
