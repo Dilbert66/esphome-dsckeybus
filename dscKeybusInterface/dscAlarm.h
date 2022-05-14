@@ -962,10 +962,18 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
   void clearZoneAlarms(byte partition) {
     for (int zone = 0; zone < maxZones; zone++) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm)
+      if (zoneStatus[zone].partition == partition )
         zoneStatus[zone].alarm = false;
     }
   }
+  
+  void clearZoneBypass(byte partition) {
+    for (int zone = 0; zone < maxZones; zone++) {
+      if (zoneStatus[zone].partition == partition )
+        zoneStatus[zone].bypassed = false;
+    }
+  }
+  
 
   byte getNextOpenZone(byte start, byte partition) {
     if (start >= maxZones) start = 0;
@@ -1125,12 +1133,13 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       }
 #endif      
 
-      processStatus();
-      
+
+      processStatus(); 
       for (byte partition = 0; partition < dscPartitions; partition++) {
         if (dsc.disabled[partition]) continue;
         getBypassZones(partition);
       }
+     
       
       if (dsc.panelData[0] == 0x0A && dsc.panelData[3] == 0xBA) { //low battery zones
         for (byte panelByte = 4; panelByte < 8; panelByte++) {
@@ -1306,6 +1315,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
             else partitionStatusChangeCallback(STATUS_ARM, partition + 1);
             clearZoneAlarms(partition + 1);
           } else {
+            clearZoneBypass(partition+1);
             partitionStatusChangeCallback(STATUS_OFF, partition + 1);
             troubleStatusChangeCallback(armStatus, false, partition + 1);
           }
@@ -2843,46 +2853,56 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (dsc.panelData[panelByte] >= 0x2C && dsc.panelData[panelByte] <= 0x4B) {
       lcdLine1 = "Zone bat";
       strcpy(lcdMessage, "rest: ");
+      zoneStatus[dsc.panelData[panelByte] - 42].batteryLow=false;
       itoa(dsc.panelData[panelByte] - 43, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
+      dsc.statusChanged=true;      
     }
 
     if (dsc.panelData[panelByte] >= 0x4C && dsc.panelData[panelByte] <= 0x6B) {
       lcdLine1 = "Zone bat";
       strcpy(lcdMessage, "low: ");
+      zoneStatus[dsc.panelData[panelByte] - 74].batteryLow=true;
       itoa(dsc.panelData[panelByte] - 75, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
+      dsc.statusChanged=true;      
     }
 
     if (dsc.panelData[panelByte] >= 0x6C && dsc.panelData[panelByte] <= 0x8B) {
       lcdLine1 = "Zone fault";
       strcpy(lcdMessage, "rest: ");
+     // zoneStatus[dsc.panelData[panelByte] - 106].open=false;
       itoa(dsc.panelData[panelByte] - 107, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
+      dsc.statusChanged=true;      
     }
 
     if (dsc.panelData[panelByte] >= 0x8C && dsc.panelData[panelByte] <= 0xAB) {
       strcpy(lcdMessage, "Zone fault: ");
       itoa(dsc.panelData[panelByte] - 139, charBuffer, 10);
+      //zoneStatus[dsc.panelData[panelByte] - 138].open=true;
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
       decoded = true;
+      dsc.statusChanged=true;
     }
 
     if (dsc.panelData[panelByte] >= 0xB0 && dsc.panelData[panelByte] <= 0xCF) {
       strcpy(lcdMessage, "Zone bypass: ");
       itoa(dsc.panelData[panelByte] - 175, charBuffer, 10);
+     // zoneStatus[dsc.panelData[panelByte] - 174].bypassed=true;
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
       decoded = true;
+      dsc.statusChanged=true;
     }
 
     if (!decoded) {
@@ -2916,7 +2936,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       break;
     case 0x66:
       lcdLine1 = "Zone bypass";
-      lcdLine2 = "prog";
+      lcdLine2 = "program";
       break;
     case 0x67:
       lcdLine1 = "Command";
