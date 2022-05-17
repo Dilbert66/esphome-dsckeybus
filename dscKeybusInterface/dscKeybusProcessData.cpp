@@ -326,8 +326,7 @@ void dscKeybusInterface::processPanelStatus() {
       case 0x9E:
       case 0xB8: {
           
-        if (starKeyWait[partitionIndex]) {  // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
-          starKeyWait[partitionIndex] = false;
+       if ( starKeyCheck) {  // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
           starKeyCheck = false;
           writeDataPending = false;
         }
@@ -450,7 +449,7 @@ void dscKeybusInterface::processPanel_0x6E() {
      if (pgmBuffer.idx < pgmBuffer.len) {
         pgmBuffer.pending6E=true;
         key=0xA5; //more data available so set up also for next group send request
-        writeCharsToQueue(&key,partitionToBits[pgmBuffer.partition]);        
+        writeCharsToQueue(&key,pgmBuffer.partition);        
      }  else pgmBuffer.dataPending=true;
 }
 

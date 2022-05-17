@@ -138,7 +138,7 @@ void dscKeybusInterface::clearZoneRanges() {
     if (!modules[x].zoneStatusByte) continue;
     zoneupdate[modules[x].zoneStatusByte] &= modules[x].zoneStatusMask; //set update slot
   }
-  writeCharsToQueue(zoneupdate, 9,0, maxFields05);
+  writeCharsToQueue(zoneupdate, 1, maxFields05);
 }
 
 //once we know what panelversion we have, we can then update the modules with the correct info here
@@ -229,7 +229,7 @@ dscKeybusInterface::processCmd70() {
     pgmBuffer.pending70 = true;
     key = 0xAA; //more data available so set up also for next group send request
   }
-  if (key) writeCharsToQueue( & key, partitionToBits[pgmBuffer.partition]);
+  if (key) writeCharsToQueue( & key, pgmBuffer.partition);
 
 }
 
@@ -243,7 +243,7 @@ void dscKeybusInterface::setLCDReceive(byte digits,byte partition) {
   pgmBuffer.pending6E=true;
   pgmBuffer.dataPending=false;
   byte key = 0xa5;
-  writeCharsToQueue( & key, partitionToBits[partition]);
+  writeCharsToQueue( & key,partition);
 }
 
 void dscKeybusInterface::setLCDSend(byte partition,bool sendhash) {
@@ -253,7 +253,7 @@ void dscKeybusInterface::setLCDSend(byte partition,bool sendhash) {
   byte key = 0xAA;
   pgmBuffer.sendhash=sendhash;
   pgmBuffer.dataPending=false;
-  writeCharsToQueue( & key, partitionToBits[partition]);
+  writeCharsToQueue( & key, partition);
 
 }
 
@@ -335,7 +335,7 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
   memset(zoneupdate, 0xFF, maxFields05); //set update slots to 1's. Only zero bits indicate a request
   if (modules[idx].zoneStatusByte) {
     zoneupdate[modules[idx].zoneStatusByte] &= modules[idx].zoneStatusMask; //set update slot
-    writeCharsToQueue(zoneupdate, 9,0, maxFields05);
+    writeCharsToQueue(zoneupdate, 1, maxFields05);
   }
 
 }
@@ -390,7 +390,7 @@ void dscKeybusInterface::setDateTime(unsigned int year,byte month,byte day,byte 
   byte zoneupdate[6];
   memset(zoneupdate, 0xFF, 6); //set update slots to 1's. Only zero bits indicate a request
   zoneupdate[3] &= 0xfd; //set update slot for cmd d0
-  writeCharsToQueue(zoneupdate, 9,0, 6);
+  writeCharsToQueue(zoneupdate, 1, 6);
 }
 
 #endif

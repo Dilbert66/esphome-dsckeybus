@@ -260,8 +260,8 @@ bool dscKeybusInterface::loop() {
     processPanel_0x27();
     break; // Panel status and zones 1-8 status
   case 0x2D:
-    processPanel_0x2D();
     break; // Panel status and zones 9-16 status
+    processPanel_0x2D();
   case 0x34:
     processPanel_0x34();
     break; // Panel status and zones 17-24 status
@@ -275,7 +275,7 @@ bool dscKeybusInterface::loop() {
     processPanel_0x87();
     break; // PGM outputs
   case 0xA5:
-    processPanel_0xA5();
+     processPanel_0xA5();
     break; // Date, time, system status messages - partitions 1-2
   case 0xE6:
     if (dscPartitions > 2) processPanel_0xE6();
@@ -284,6 +284,11 @@ bool dscKeybusInterface::loop() {
     if (dscPartitions > 2) processPanel_0xEB();
     break; // Date, time, system status messages - partitions 1-8    
   }
+  if (millis() - starWaitTime > 5000 && starKeyCheck && writeDataPending) { // timeout after no response from * write
+      // starKeyWait[partition-1] = false;
+       starKeyCheck = false;
+       writeDataPending = false;
+	}
 
   return true;
 }
@@ -329,6 +334,7 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
     }
     return;
   }
+
 
   // Sets the binary to write for virtual keypad keys
 
@@ -385,7 +391,10 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       break;
     case '*':
       writeKey = 0x28;
-      if (status[partition - 1] < 0x9E) isStar = true;
+      if (status[partition - 1] < 0x9E)  {
+          isStar = true;
+            starWaitTime=millis();            
+      }
       break;
     case '#':
       writeKey = 0x2D;
@@ -475,9 +484,9 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
 
    if (validKey) {
     if (isAlarm)
-      writeCharsToQueue((byte * ) & writeKey, 0,0, 1, isAlarm, false);
+      writeCharsToQueue((byte * ) & writeKey, 0,1, isAlarm, false);
     else
-      writeCharsToQueue((byte * ) & writeKey, partitionToBits[partition],partition, 1, false, isStar);
+      writeCharsToQueue((byte * ) & writeKey, partition, 1, false, isStar);
 
   }
 
@@ -648,11 +657,8 @@ dscKeybusInterface::dscClockInterrupt() {
 
           if (writeBufferIdx == writeBufferLength) { //all bits written
             writeStart = false;
-            if (starKeyCheck && writePartition)
-              starKeyWait[writePartition - 1] = true; // Handles waiting until the panel is  ready            
-            else
+            if (!starKeyCheck ) 
               writeDataPending = false;
-
             if (writeAlarm) {
               writeAlarm = false;
               writeBufferIdx = 0; //reset byte counter to resend
@@ -764,13 +770,12 @@ ICACHE_RAM_ATTR
 #elif defined(ESP32)
 IRAM_ATTR
 #endif
-dscKeybusInterface::writeCharsToQueue(byte * keys, byte bit,byte partition, byte len, bool alarm, bool star) {
+dscKeybusInterface::writeCharsToQueue(byte * keys,byte partition, byte len, bool alarm, bool star) {
   writeQueueType req;
   req.len = len;
   for (byte x = 0; x < len; x++) req.data[x] = keys[x];
   req.alarm = alarm;
-  req.writeBit = bit;
-  req.star = false;
+  req.writeBit = partitionToBits[partition];
   req.partition=partition;
   writeQueue[inIdx] = req;
   inIdx = (inIdx + 1) % writeQueueSize; //circular buffer - increment index
@@ -790,7 +795,7 @@ dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int bit,by
   writeDataBit = bit;
   writeBufferIdx = 0;
   writeAlarm = alarm;
-  starKeyCheck = star;
+  starKeyCheck = false;
   writePartition=partition;
   for (byte x = 0; x < len; x++) writeBuffer[x] = src[x];
   writeDataPending = true; //set flag to send it  
@@ -848,8 +853,7 @@ dscKeybusInterface::processPendingQueue(byte cmd) {
 
   //process queued 05/0b/1b requests
   if (inIdx == outIdx || (writeQueue[outIdx].partition > 4 && (cmd == 0x05 || cmd == 0x0A) ) || (cmd == 0x1B && writeQueue[outIdx].partition < 5)) return;
-   // if (inIdx==outIdx) return;
-  updateWriteBuffer((byte * ) writeQueue[outIdx].data,  writeQueue[outIdx].writeBit,writeQueue[outIdx].partition,writeQueue[outIdx].len, writeQueue[outIdx].alarm, writeQueue[outIdx].star); //populate write buffer and set ready to send flag
+    updateWriteBuffer((byte * ) writeQueue[outIdx].data,  writeQueue[outIdx].writeBit,writeQueue[outIdx].partition,writeQueue[outIdx].len, writeQueue[outIdx].alarm, writeQueue[outIdx].star); //populate write buffer and set ready to send flag
   outIdx = (outIdx + 1) % writeQueueSize; // advance index to next record
 }
 

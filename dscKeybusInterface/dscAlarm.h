@@ -4,10 +4,10 @@
 #define dscalarm_h
 
 #include "esphome.h"
+
 #include "dscKeybusInterface.h"
 
 using namespace esphome;
-
 
 #ifdef ESP32
 
@@ -25,6 +25,9 @@ using namespace esphome;
 
 #define maxZonesDefault 32 //set to 64 if your system supports it
 
+
+
+
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
 bool forceDisconnect;
 
@@ -35,7 +38,7 @@ void disconnectKeybus() {
   forceDisconnect = true;
 
 }
-enum troubleStatus {
+enum panelStatus {
   acStatus,
   batStatus,
   trStatus,
@@ -45,17 +48,105 @@ enum troubleStatus {
   armStatus
 };
 
+       const char mm0[] PROGMEM ="Press # to exit";
+    const char mm1[] PROGMEM ="Zone Bypass";
+      const char mm2[] PROGMEM ="System Troubles";
+     const char mm3[] PROGMEM ="Alarm Memory";
+    const char mm4[] PROGMEM ="Door Chime";
+     const char mm5[] PROGMEM ="Access Codes";
+     const char mm6[] PROGMEM ="User Functions";
+       const char mm7[] PROGMEM ="Output Contact";
+      const char mm8[] PROGMEM =" ";
+      const char mm9[] PROGMEM ="No-Entry Arm";
+       const char mm10[] PROGMEM ="Quick Arming";
+       
+     const char om0[] PROGMEM ="Press # to exit";
+     const char om1[] PROGMEM ="O/P 1";
+     const char om2[] PROGMEM ="O/P 2";
+     
 
-class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
-  public: DSCkeybushome(byte dscClockPin=0,byte dscReadPin=0,byte dscWritePin=0): 
- dscClockPin(dscClockPin),dscReadPin(dscReadPin),dscWritePin(dscWritePin) {}
+
+  
+     const char tm0[] PROGMEM ="Press # to exit";
+     const char tm1[] PROGMEM ="Service Required *";
+     const char tm2[] PROGMEM ="AC Failure";
+     const char tm3[] PROGMEM ="Tel Line Trouble";
+     const char tm4[] PROGMEM ="Comm Failure";
+     const char tm5[] PROGMEM ="Zone Fault *";
+     const char tm6[] PROGMEM ="Zone Tamper *";
+     const char tm7[] PROGMEM ="Low Battery *";
+     const char tm8[] PROGMEM ="System Time";
+     
+
+
+
+     const char sm0[] PROGMEM ="Press # to exit";
+     const char sm1[] PROGMEM ="Low Battery";
+     const char sm2[] PROGMEM ="Bell Circuit";
+     const char sm3[] PROGMEM ="System Trouble";
+     const char sm4[] PROGMEM ="System Tamper";
+     const char sm5[] PROGMEM ="Mod Supervision";
+     const char sm6[] PROGMEM ="RF Jam detected";
+     const char sm7[] PROGMEM ="PC5204 Low Battery";
+     const char sm8[] PROGMEM ="PC5204 AC Fail";
+     
+
+
+     const char um0[] PROGMEM ="Press # to exit";
+     const char um1[] PROGMEM ="Time and Date";
+     const char um2[] PROGMEM ="Auto Arm/Disarm";
+     const char um3[] PROGMEM ="Auto Arm Time";
+     const char um4[] PROGMEM ="System Test";
+     const char um5[] PROGMEM ="System Serv/DLS";
+     const char um6[] PROGMEM ="Event Buffer";
+     
+
+
+     const char am0[] PROGMEM =" ";
+     const char am1[] PROGMEM =" ";
+     const char am2[] PROGMEM ="System Trouble:(*2) to view";
+     const char am3[] PROGMEM ="Bypass Active:(*1) to view";
+     const char am4[] PROGMEM ="Alarm Memory: (*3) to view";
+     const char am5[] PROGMEM ="Open Zones:Scroll to view <>";
+     
+
+
+     const char ml0[] PROGMEM ="System is Ready:Ready to Arm <>";
+     const char ml1[] PROGMEM ="Secure System:Before Arming <>";
+
+   const char * const mainMenu[] PROGMEM = {mm0,mm1,mm2,mm3,mm4,mm5,mm6,mm7,mm8,mm9,mm10};  
+const char * const outputMenu[] PROGMEM ={om0,om1,om2};
+const char * const troubleMenu[] PROGMEM={tm0,tm1,tm2,tm3,tm4,tm5,tm6,tm7,tm8};
+const char * const serviceMenu[] PROGMEM={sm0,sm1,sm2,sm3,sm4,sm5,sm6,sm7,sm8};
+const char * const userMenu[] PROGMEM={um0,um1,um2,um3,um4,um5,um6};
+const char * const statusMenu[] PROGMEM={am0,am1,am2,am3,am4,am5};
+const char * const statusMenuLabels[] PROGMEM={ml0,ml1};
+
+
+  const char STATUS_PENDING[] PROGMEM=  "pending";
+  const char STATUS_ARM[] PROGMEM=  "armed_away";
+  const char STATUS_STAY[] PROGMEM=  "armed_home";
+  const char STATUS_NIGHT[] PROGMEM=  "armed_night";
+  const char STATUS_OFF[] PROGMEM=  "disarmed";
+  const char STATUS_ONLINE[] PROGMEM=  "online";
+  const char STATUS_OFFLINE[] PROGMEM=  "offline";
+  const char STATUS_TRIGGERED[] PROGMEM=  "triggered";
+  const char STATUS_READY[] PROGMEM=  "ready";
+  const char STATUS_NOT_READY[] PROGMEM=  "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
+
+
+ 
+       
+class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
+  public: DSCkeybushome(byte dscClockPin = 0, byte dscReadPin = 0, byte dscWritePin = 0): dscClockPin(dscClockPin),
+  dscReadPin(dscReadPin),
+  dscWritePin(dscWritePin) {}
 
   std:: function < void(uint8_t, bool) > zoneStatusChangeCallback;
   std:: function < void(std::string) > systemStatusChangeCallback;
-  std:: function < void(troubleStatus, bool, int) > troubleStatusChangeCallback;
+  std:: function < void(panelStatus, bool, int) > panelStatusChangeCallback;
   std:: function < void(bool, int) > fireStatusChangeCallback;
   std:: function < void(std::string, int) > partitionStatusChangeCallback;
-  std:: function < void(std::string, int) > partitionMsgChangeCallback;
   std:: function < void(std::string) > zoneMsgStatusCallback;
   std:: function < void(std::string) > troubleMsgStatusCallback;
   std:: function < void(uint8_t, bool) > relayChannelChangeCallback;
@@ -65,93 +156,6 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   std:: function < void(std::string, int) > lightsCallback;
   std:: function < void(std::string, int) > beepsCallback;
 
-  const std::string mainMenu[11] = {
-    "Press # to exit",
-    "Zone Bypass",
-    "System Troubles",
-    "Alarm Memory",
-    "Door Chime",
-    "Access Codes",
-    "User Functions",
-    "Output Contact",
-    "",
-    "No-Entry Arm",
-    "Quick Arming"
-  };
-
-  const std::string outputMenu[3] = {
-    "Press # to exit",
-    "O/P 1",
-    "O/P 2"
-  };
-
-  const std::string troubleMenu[9] = {
-    "Press # to exit",
-    "Service Required *",
-    "AC Failure",
-    "Tel Line Trouble",
-    "Comm Failure",
-    "Zone Fault *",
-    "Zone Tamper *",
-    "Low Battery *",
-    "System Time"
-  };
-
-  const std::string serviceMenu[9] = {
-    "Press # to exit",
-    "Low Battery",
-    "Bell Circuit",
-    "System Trouble",
-    "System Tamper",
-    "Mod Supervision",
-    "RF Jam detected",
-    "PC5204 Low Battery",
-    "PC5204 AC Fail"
-  };
-
-  const std::string userMenu[7] = {
-    "Press # to exit",
-    "Time and Date",
-    "Auto Arm/Disarm",
-    "Auto Arm Time",
-    "System Test",
-    "System Serv/DLS",
-    "Event Buffer"
-  };
-
-  const std::string statusMenu[6] = {
-    "placeholder",
-    "placeholder",
-    "System Trouble:(*2) to view",
-    "Bypass Active:(*1) to view",
-    "Alarm Memory: (*3) to view",
-    "Open Zones:Scroll to view <>"
-  };
-
-  const std::string statusMenuLabels[2] = {
-    "System is Ready:Ready to Arm <>",
-    "Secure System:Before Arming <>",
-  };
-
-  const std::string faultMenuLabels[2] = {
-    "Press *2 for faults",
-    "Press *3 for alarms"
-  };
-
-  const std::string STATUS_PENDING = "pending";
-  const std::string STATUS_ARM = "armed_away";
-  const std::string STATUS_STAY = "armed_home";
-  const std::string STATUS_NIGHT = "armed_night";
-  const std::string STATUS_OFF = "disarmed";
-  const std::string STATUS_ONLINE = "online";
-  const std::string STATUS_OFFLINE = "offline";
-  const std::string STATUS_TRIGGERED = "triggered";
-  const std::string STATUS_READY = "ready";
-  const std::string STATUS_NOT_READY = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
-  const std::string MSG_ZONE_BYPASS = "zone_bypass_entered";
-  const std::string MSG_ARMED_BYPASS = "armed_custom_bypass";
-  const std::string MSG_NO_ENTRY_DELAY = "no_entry_delay";
-  const std::string MSG_NONE = "no_messages";
 
   void onZoneStatusChange(std:: function < void(uint8_t zone, bool isOpen) > callback) {
     zoneStatusChangeCallback = callback;
@@ -162,14 +166,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   void onFireStatusChange(std:: function < void(bool isOpen, int partition) > callback) {
     fireStatusChangeCallback = callback;
   }
-  void onTroubleStatusChange(std:: function < void(troubleStatus ts, bool isOpen, int partition) > callback) {
-    troubleStatusChangeCallback = callback;
+  void onPanelStatusChange(std:: function < void(panelStatus ts, bool isOpen, int partition) > callback) {
+    panelStatusChangeCallback = callback;
   }
   void onPartitionStatusChange(std:: function < void(std::string status, int partition) > callback) {
     partitionStatusChangeCallback = callback;
-  }
-  void onPartitionMsgChange(std:: function < void(std::string msg, int partition) > callback) {
-    partitionMsgChangeCallback = callback;
   }
   void onZoneMsgStatus(std:: function < void(std::string msg) > callback) {
     zoneMsgStatusCallback = callback;
@@ -203,16 +204,19 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   byte debug;
   const char * accessCode;
   bool enable05Messages = true;
-  unsigned long cmdWaitTime,beepTime,eventTime;
+  unsigned long cmdWaitTime,
+  beepTime,
+  eventTime;
   bool extendedBuffer,
   partitionChanged;
   int defaultPartition = 1;
   int activePartition = 1;
-  byte maxZones=maxZonesDefault;
+  byte maxZones = maxZonesDefault;
 
-  private: 
-  uint8_t zone;
-  byte dscClockPin,dscReadPin,dscWritePin;
+  private: uint8_t zone;
+  byte dscClockPin,
+  dscReadPin,
+  dscWritePin;
   bool firstrun;
   bool options;
 
@@ -247,8 +251,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
   };
 
-  bool faultMenu[2];
-  zoneType *zoneStatus;
+  zoneType * zoneStatus;
   partitionType partitionStatus[dscPartitions];
   std::string zoneStatusMsg,
   previousZoneStatusMsg,
@@ -271,10 +274,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   byte beeps,
   previousBeeps;
   bool refresh;
+  std::string s;
 
   void setup() override {
-      
-     zoneStatus = new zoneType[maxZones];
+
+    zoneStatus = new zoneType[maxZones];
     if (debug > 2)
       Serial.begin(115200);
     set_update_interval(10);
@@ -287,7 +291,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     register_service( & DSCkeybushome::alarm_disarm, "alarm_disarm", {
       "code"
     });
-    register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {});    
+    register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {});
     register_service( & DSCkeybushome::alarm_arm_home, "alarm_arm_home");
     register_service( & DSCkeybushome::alarm_arm_night, "alarm_arm_night", {
       "code"
@@ -311,38 +315,37 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     });
 
     firstrun = true;
-    systemStatusChangeCallback(STATUS_OFFLINE);
+    systemStatusChangeCallback(&String(FPSTR(STATUS_OFFLINE))[0]);
     forceDisconnect = false;
-    dsc.debounce05 = (cmdWaitTime > 0);    
+    dsc.debounce05 = (cmdWaitTime > 0);
     #ifdef EXPANDER
     #ifdef MODULESUPERVISION
     dsc.enableModuleSupervision = 1;
     #endif
     dsc.addModule(expanderAddr1);
     dsc.addModule(expanderAddr2);
-    dsc.maxZones = maxZones;    
+    dsc.maxZones = maxZones;
     #endif
     dsc.resetStatus();
     dsc.processModuleData = true;
 
     if (dscClockPin && dscReadPin && dscWritePin)
-        dsc.begin(Serial,dscClockPin,dscReadPin,dscWritePin);    
-     else 
-        dsc.begin(Serial);
-    
-    
-    for (int x=0;x<maxZones;x++) {
-      zoneStatus[x].tamper=false;
-      zoneStatus[x].batteryLow=false;
-      zoneStatus[x].open=false;
-      zoneStatus[x].alarm=false;
-      zoneStatus[x].enabled=false;
-      zoneStatus[x].partition=0;
-      zoneStatus[x].bypassed=false;
+      dsc.begin(Serial, dscClockPin, dscReadPin, dscWritePin);
+    else
+      dsc.begin(Serial);
+
+    for (int x = 0; x < maxZones; x++) {
+      zoneStatus[x].tamper = false;
+      zoneStatus[x].batteryLow = false;
+      zoneStatus[x].open = false;
+      zoneStatus[x].alarm = false;
+      zoneStatus[x].enabled = false;
+      zoneStatus[x].partition = 0;
+      zoneStatus[x].bypassed = false;
     }
 
-    system1=0;
-    system0=0;
+    system1 = 0;
+    system0 = 0;
   }
 
   void set_default_partition(int partition) {
@@ -400,9 +403,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   void processMenu(byte key, byte partition = -1) {
 
     if (partition < 1) partition = defaultPartition;
-    byte *currentSelection= &partitionStatus[partition - 1].currentSelection;
-    
-    ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], *currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
+    byte * currentSelection = & partitionStatus[partition - 1].currentSelection;
+
+    ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], * currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
 
     if (partitionStatus[partition - 1].locked) {
       line1DisplayCallback("System", partition);
@@ -462,11 +465,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         getNextIdx(tpl, partition);
         if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx == 0) {
           dsc.setLCDSend(partition);
-          partitionStatus[partition - 1].newData = false;          
+          partitionStatus[partition - 1].newData = false;
           return;
         }
-
-
 
       } else if (key == '*') {
         if (partitionStatus[partition - 1].hex) {
@@ -482,199 +483,215 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (key == '#') {
-      *currentSelection = 0xFF;
+      * currentSelection = 0xFF;
       partitionStatus[partition - 1].selectedZone = 0;
       dsc.write(key, partition);
       partitionStatus[partition - 1].eventViewer = false;
       activePartition = 1;
-      setStatus(partition-1,true);
+      setStatus(partition - 1, true);
       return;
     }
 
     if (dsc.status[partition - 1] < 0x04) {
-    if (dsc.keybusVersion1) {  //older version don't support top level navigation 
-      if (key == '<' || key == '>') return;
-    } else {    
+      if (dsc.keybusVersion1) { //older version don't support top level navigation 
+        if (key == '<' || key == '>') return;
+      } else {
 
-      if (key == '<') {
-        getPreviousMainOption(partition);
-     } else
-      if (key == '>') {
-        getNextMainOption(partition);
-      };
-    } 
-      dsc.write(key, partition);      
+        if (key == '<') {
+          getPreviousMainOption(partition);
+        } else
+        if (key == '>') {
+          getNextMainOption(partition);
+        };
+      }
+      dsc.write(key, partition);
       setStatus(partition - 1, true);
-    
+
     } else if (dsc.status[partition - 1] == 0x9E) { // * mainmenu
-      if (key == '<') {
-        *currentSelection = *currentSelection >= 11 ? 10 : (*currentSelection > 0 ? *currentSelection - 1 : 10);
-        *currentSelection = mainMenu[*currentSelection] != "" ? *currentSelection : *currentSelection - 1;
-        if (*currentSelection < 11)
-          line2DisplayCallback(mainMenu[*currentSelection], partition);
+     // strcpy_P(menuBuffer, (char*)pgm_read_dword(&(mainMenu[ * currentSelection])));    
+      s=&String(FPSTR(mainMenu[*currentSelection]))[0];
+        if (key == '<') {
+        * currentSelection = * currentSelection >= 11 ? 10 : ( * currentSelection > 0 ? * currentSelection - 1 : 10);
+        * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
+        s=&(String(FPSTR(mainMenu[*currentSelection])))[0];    
+        if ( * currentSelection < 11)
+          line2DisplayCallback(s, partition);
       } else if (key == '>') {
-        *currentSelection = *currentSelection >= 10 ? 0 : *currentSelection + 1;
-        *currentSelection = mainMenu[*currentSelection] != "" ? *currentSelection : *currentSelection + 1;
-        if (*currentSelection < 11)
-          line2DisplayCallback(mainMenu[*currentSelection], partition);
-       } else if (key == '*' && *currentSelection > 0) {
-        dsc.write(key,partition);
+        * currentSelection = * currentSelection >= 10 ? 0 : * currentSelection + 1;
+        * currentSelection =s != "" ? * currentSelection : * currentSelection + 1;
+      s=&(String(FPSTR(mainMenu[*currentSelection])))[0];   
+        if ( * currentSelection < 11)
+          line2DisplayCallback(s, partition);
+      } else if (key == '*' && * currentSelection > 0) {
+        dsc.write(key, partition);
         char s[5];
-        sprintf(s, "%d", *currentSelection % 10);
+        sprintf(s, "%d", * currentSelection % 10);
         const char * out = strcpy(new char[3], s);
-        *currentSelection = 0xFF;
+        * currentSelection = 0xFF;
         dsc.write(s, partition);
       } else {
-          dsc.write(key,partition);
-          *currentSelection = 0xFF;
+        dsc.write(key, partition);
+        * currentSelection = 0xFF;
       }
     } else if (dsc.status[partition - 1] == 0xA1) { //trouble
-      if (key == '*' && *currentSelection > 0) {
+      s=&(String(FPSTR(troubleMenu[*currentSelection])))[0];
+      if (key == '*' && * currentSelection > 0) {
         char s[5];
-        sprintf(s, "%d", *currentSelection);
+        sprintf(s, "%d", * currentSelection);
         const char * out = strcpy(new char[3], s);
-        *currentSelection = 0xFF;
+        * currentSelection = 0xFF;
         dsc.write(out, partition);
       } else if (key == '>') {
-        *currentSelection = getNextOption(*currentSelection);
-        if (*currentSelection < 9)
-          line2DisplayCallback(troubleMenu[*currentSelection], partition);
+        * currentSelection = getNextOption( * currentSelection);
+      s=&(String(FPSTR(troubleMenu[*currentSelection])))[0];           
+        if ( * currentSelection < 9)
+          line2DisplayCallback(s, partition);
       } else if (key == '<') {
-        *currentSelection = getPreviousOption(*currentSelection);
-        if (*currentSelection < 9)
-          line2DisplayCallback(troubleMenu[*currentSelection], partition);
+        * currentSelection = getPreviousOption( * currentSelection);
+      s=&(String(FPSTR(troubleMenu[*currentSelection])))[0];       
+        if ( * currentSelection < 9)
+          line2DisplayCallback(s, partition);
       } else {
-          *currentSelection = 0xFF;
-          dsc.write(key,partition);      
+        * currentSelection = 0xFF;
+        dsc.write(key, partition);
       }
-    } else if (dsc.status[partition - 1] == 0xC8) { //trouble
-      if (key == '*' && *currentSelection > 0) {
+    } else if (dsc.status[partition - 1] == 0xC8) { //service
+      s=&(String(FPSTR(serviceMenu[*currentSelection])))[0];      
+      if (key == '*' && * currentSelection > 0) {
         char s[5];
-        sprintf(s, "%d", *currentSelection);
+        sprintf(s, "%d", * currentSelection);
         const char * out = strcpy(new char[3], s);
-        *currentSelection = 0xFF;
+        * currentSelection = 0xFF;
         dsc.write(out, partition);
       } else if (key == '>') {
-        *currentSelection = getNextOption(*currentSelection);
-        if (*currentSelection < 9)
-          line2DisplayCallback(serviceMenu[*currentSelection], partition);
+        * currentSelection = getNextOption( * currentSelection);
+      s=&(String(FPSTR(serviceMenu[*currentSelection])))[0];             
+        if ( * currentSelection < 9)
+          line2DisplayCallback(s, partition);
       } else if (key == '<') {
-        *currentSelection = getPreviousOption(*currentSelection);
-        if (*currentSelection < 9) 
-            line2DisplayCallback(serviceMenu[*currentSelection], partition);
-       } else {
-          *currentSelection = 0xFF;
-          dsc.write(key,partition);      
+        * currentSelection = getPreviousOption( * currentSelection);
+      s=&(String(FPSTR(serviceMenu[*currentSelection])))[0];           
+        if ( * currentSelection < 9)
+          line2DisplayCallback(s, partition);
+      } else {
+        * currentSelection = 0xFF;
+        dsc.write(key, partition);
       }
-  
+
     } else if (dsc.status[partition - 1] == 0xA9 && !partitionStatus[partition - 1].eventViewer) { // * user functions
+      s=&(String(FPSTR(userMenu[*currentSelection])))[0];      
       if (key == '<') {
-        *currentSelection = *currentSelection >= 7 ? 6 : (*currentSelection > 0 ? *currentSelection - 1 : 6);
-        *currentSelection = userMenu[*currentSelection] != "" ? *currentSelection : *currentSelection - 1;
-        if (*currentSelection < 7)
-          line2DisplayCallback(userMenu[*currentSelection], partition);
+        * currentSelection = * currentSelection >= 7 ? 6 : ( * currentSelection > 0 ? * currentSelection - 1 : 6);
+        * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
+      s=&(String(FPSTR(userMenu[*currentSelection])))[0]; ;            
+        if ( * currentSelection < 7)
+          line2DisplayCallback(s, partition);
       } else if (key == '>') {
-        *currentSelection = *currentSelection >= 6 ? 0 : *currentSelection + 1;
-        *currentSelection = userMenu[*currentSelection] != "" ? *currentSelection : *currentSelection + 1;
-        if (*currentSelection < 7)
-          line2DisplayCallback(userMenu[*currentSelection], partition);
-      } else if (key == '*' && *currentSelection > 0) {
+        * currentSelection = * currentSelection >= 6 ? 0 : * currentSelection + 1;
+        * currentSelection = s != "" ? * currentSelection : * currentSelection + 1;
+      s=&(String(FPSTR(userMenu[*currentSelection])))[0];            
+        if ( * currentSelection < 7)
+          line2DisplayCallback(s, partition);
+      } else if (key == '*' && * currentSelection > 0) {
         char s[5];
-        if (*currentSelection == 6) { //event viewer. 
+        if ( * currentSelection == 6) { //event viewer. 
           partitionStatus[partition - 1].eventViewer = true;
           activePartition = partition;
           dsc.write('b', partition);
         } else {
-          sprintf(s, "%d", *currentSelection % 6);
+          sprintf(s, "%d", * currentSelection % 6);
           const char * out = strcpy(new char[3], s);
-          *currentSelection = 0xFF;
+          * currentSelection = 0xFF;
           dsc.write(s, partition);
         }
       } else {
-          dsc.write(key,partition);
-          *currentSelection = 0xFF;
+        dsc.write(key, partition);
+        * currentSelection = 0xFF;
       }
     } else if (dsc.status[partition - 1] == 0xA2) { //alarm memory
       if (key == '>') {
-        *currentSelection = getNextOption(*currentSelection);
-        dsc.write(key, partition);        
+        * currentSelection = getNextOption( * currentSelection);
+        dsc.write(key, partition);
       } else if (key == '<') {
-        *currentSelection = getPreviousOption(*currentSelection);
-        dsc.write(key, partition);        
+        * currentSelection = getPreviousOption( * currentSelection);
+        dsc.write(key, partition);
       } else {
-          *currentSelection = 0xFF;
-          dsc.write(key,partition);      
+        * currentSelection = 0xFF;
+        dsc.write(key, partition);
       }
     } else if (dsc.status[partition - 1] == 0xA6) { //user codes
       if (key == '*') {
         char s[5];
-        sprintf(s, "%02d", *currentSelection);
+        sprintf(s, "%02d", * currentSelection);
         const char * out = strcpy(new char[3], s);
         dsc.write(out, partition);
       } else if (key == '>') {
-        *currentSelection = getNextUserCode(*currentSelection);
-        dsc.write(key, partition);        
+        * currentSelection = getNextUserCode( * currentSelection);
+        dsc.write(key, partition);
       } else if (key == '<') {
-        *currentSelection = getPreviousUserCode(*currentSelection);
-        dsc.write(key, partition);        
+        * currentSelection = getPreviousUserCode( * currentSelection);
+        dsc.write(key, partition);
       } else {
-          *currentSelection = 0xFF;          
-          dsc.write(key,partition);      
+        * currentSelection = 0xFF;
+        dsc.write(key, partition);
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0x11) { //alarms
       if (key == '>') {
-        *currentSelection = getNextAlarmedZone(*currentSelection, partition);
-        dsc.write(key, partition);        
+        * currentSelection = getNextAlarmedZone( * currentSelection, partition);
+        dsc.write(key, partition);
       } else if (key == '<') {
-        *currentSelection = getPreviousAlarmedZone(*currentSelection, partition);
-        dsc.write(key, partition);        
+        * currentSelection = getPreviousAlarmedZone( * currentSelection, partition);
+        dsc.write(key, partition);
       } else {
-          *currentSelection = 0xFF;          
-          dsc.write(key,partition);      
+        * currentSelection = 0xFF;
+        dsc.write(key, partition);
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xA0) { //bypass
       if (key == '*') {
         char s[5];
-        sprintf(s, "%02d", *currentSelection);
+        sprintf(s, "%02d", * currentSelection);
         const char * out = strcpy(new char[3], s);
         dsc.write(out, partition);
       } else if (key == '>') {
-        *currentSelection = getNextEnabledZone(*currentSelection, partition);
-        dsc.write(key, partition);        
+        * currentSelection = getNextEnabledZone( * currentSelection, partition);
+        dsc.write(key, partition);
       } else if (key == '<') {
-        *currentSelection = getPreviousEnabledZone(*currentSelection, partition);
+        * currentSelection = getPreviousEnabledZone( * currentSelection, partition);
         dsc.write(key, partition);
       } else {
-          *currentSelection = 0xFF;          
-          dsc.write(key,partition);      
+        * currentSelection = 0xFF;
+        dsc.write(key, partition);
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xB2) { //output control
+      s=&(String(FPSTR(outputMenu[*currentSelection])))[0];      
       if (key == '<') {
-        *currentSelection = *currentSelection >= 3 ? 2 : (*currentSelection > 0 ? *currentSelection - 1 : 2);
-        *currentSelection = outputMenu[*currentSelection] != "" ? *currentSelection : *currentSelection - 1;
-        if (*currentSelection < 3)
-          line2DisplayCallback(outputMenu[*currentSelection], partition);
+        * currentSelection = * currentSelection >= 3 ? 2 : ( * currentSelection > 0 ? * currentSelection - 1 : 2);
+        * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
+      s=&(String(FPSTR(outputMenu[*currentSelection])))[0];            
+        if ( * currentSelection < 3)
+          line2DisplayCallback(s, partition);
         dsc.write(key, partition);
       } else if (key == '>') {
-        *currentSelection = *currentSelection >= 2 ? 0 : *currentSelection + 1;
-        *currentSelection = outputMenu[*currentSelection] != "" ? *currentSelection : *currentSelection + 1;
-        if (*currentSelection < 3)
-          line2DisplayCallback(outputMenu[*currentSelection], partition);
-        dsc.write(key, partition);      
-      } else if (key == '*' && *currentSelection > 0) {
+        * currentSelection = * currentSelection >= 2 ? 0 : * currentSelection + 1;
+        * currentSelection = s != "" ? * currentSelection : * currentSelection + 1;
+      s=&(String(FPSTR(outputMenu[*currentSelection])))[0];   
+        if ( * currentSelection < 3)
+          line2DisplayCallback(s, partition);
+        dsc.write(key, partition);
+      } else if (key == '*' && * currentSelection > 0) {
         char s[5];
-        sprintf(s, "%d", *currentSelection);
+        sprintf(s, "%d", * currentSelection);
         const char * out = strcpy(new char[3], s);
-        *currentSelection = 0xFF;
+        * currentSelection = 0xFF;
         dsc.write(s, partition);
       } else {
-          *currentSelection = 0xFF;
-          dsc.write(key,partition);      
+        * currentSelection = 0xFF;
+        dsc.write(key, partition);
       }
-        setStatus(partition - 1, true);
+      setStatus(partition - 1, true);
     } else {
       dsc.write(key, partition);
       setStatus(partition - 1, false);
@@ -697,10 +714,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits);
 
   }
-  
+
   void set_panel_time() {
-        ESPTime rtc=now();
-        dsc.setDateTime(rtc.year ,rtc.month,rtc.day_of_month,rtc.hour,rtc.minute);
+    ESPTime rtc = now();
+    dsc.setDateTime(rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
   }
 
   void alarm_keypress(std::string keystring) {
@@ -733,7 +750,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (!partition) partition = defaultPartition;
 
     if (partitionStatus[partition - 1].locked) return;
-    
+
     // Arm stay
     if (state.compare("S") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
       dsc.write('s', partition); // Virtual keypad arm stay
@@ -766,24 +783,23 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
   }
 
-
   void printPacket(const char * label, char cmd, volatile byte cbuf[], int len) {
 
-    ESPTime rtc=now();
+    ESPTime rtc = now();
     char s1[4];
-    char s2[20];
-    std::string s="";
-    sprintf(s2,"%02d-%02d-%02d %02d:%02d ",rtc.year,rtc.month,rtc.day_of_month,rtc.hour,rtc.minute);
+    char s2[25];
+    std::string s = "";
+    sprintf(s2, "%02d-%02d-%02d %02d:%02d ", rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
     for (int c = 0; c < len; c++) {
       sprintf(s1, "%02X ", cbuf[c]);
-      s=s.append(s1);
+      s = s.append(s1);
     }
-    
-    ESP_LOGI(label, "%s %02X: %s",s2, cmd, s.c_str());
+
+    ESP_LOGI(label, "%s %02X: %s", s2, cmd, s.c_str());
 
   }
 
-   byte getPanelBitNumber(byte panelByte, byte startNumber) {
+  byte getPanelBitNumber(byte panelByte, byte startNumber) {
 
     byte bitCount = 0;
     for (byte bit = 0; bit <= 7; bit++) {
@@ -907,17 +923,17 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   }
 
   byte getNextUserCode(byte start) {
-    if (start < 95) 
-        return start + 1;
-    else 
-        return 1;
+    if (start < 95)
+      return start + 1;
+    else
+      return 1;
   }
 
   byte getPreviousUserCode(byte start) {
-    if (start > 1) 
-        return start - 1;
-    else 
-        return 95;
+    if (start > 1)
+      return start - 1;
+    else
+      return 95;
   }
 
   void getPreviousMainOption(byte partition) {
@@ -962,18 +978,17 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
   void clearZoneAlarms(byte partition) {
     for (int zone = 0; zone < maxZones; zone++) {
-      if (zoneStatus[zone].partition == partition )
+      if (zoneStatus[zone].partition == partition)
         zoneStatus[zone].alarm = false;
     }
   }
-  
+
   void clearZoneBypass(byte partition) {
     for (int zone = 0; zone < maxZones; zone++) {
-      if (zoneStatus[zone].partition == partition )
+      if (zoneStatus[zone].partition == partition)
         zoneStatus[zone].bypassed = false;
     }
   }
-  
 
   byte getNextOpenZone(byte start, byte partition) {
     if (start >= maxZones) start = 0;
@@ -985,7 +1000,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
   byte getPreviousOpenZone(byte start, byte partition) {
     if (start == 1) return 0;
-    if (start==0 || start > maxZones) start = maxZones;
+    if (start == 0 || start > maxZones) start = maxZones;
     for (int zone = start - 2; zone >= 0; zone--) {
       if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return zone + 1;
     }
@@ -1063,20 +1078,18 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
   }
 
   void getBypassZones(byte partition) {
-    if (dsc.status[partition] == 0xA0) { //bypass zones
-      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
-        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-          zone = zoneBit + (zoneGroup * 8);
-          if (!(zoneStatus[zone].partition == partition + 1 && zoneStatus[zone].enabled) || zone >= maxZones) continue;
-          if (bitRead(programZones[zoneGroup], zoneBit)) {
-            zoneStatus[zone].bypassed = true;
-          } else {
-            zoneStatus[zone].bypassed = false;
-          }
+    for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
+      for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+        zone = zoneBit + (zoneGroup * 8);
+        if (!(zoneStatus[zone].partition == partition + 1 && zoneStatus[zone].enabled) || zone >= maxZones) continue;
+        if (bitRead(programZones[zoneGroup], zoneBit)) {
+          zoneStatus[zone].bypassed = true;
+        } else {
+          zoneStatus[zone].bypassed = false;
         }
       }
-      setStatus(partition, true);
     }
+    setStatus(partition, true);
   }
 
   void rtrim(std::string & s) {
@@ -1092,35 +1105,38 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         if (dsc.disabled[partition - 1]) continue;
         beepsCallback("0", partition);
       }
-      beepTime=millis();
-      
-    }
-     if (millis() - eventTime > 30000 ) {
-      refresh=true;
-      eventInfoCallback("");
-      eventTime=millis();
-    }
+      beepTime = millis();
 
+    }
+    if (millis() - eventTime > 30000) {
+       eventInfoCallback("");
+      eventTime = millis();
+    }
 
     if (!forceDisconnect && dsc.loop()) { //Processes data only when a valid Keybus command has been read
       if (firstrun) {
         #ifdef EXPANDER
         dsc.clearZoneRanges(); // start with clear expanded zones
         #endif
+      }
+
+      static bool delayedStart = true;
+      static unsigned long startWait = millis();
+      if (millis() - startWait > 10000 && delayedStart) {
+        delayedStart = false;
+        if (!dsc.disabled[defaultPartition] && !partitionStatus[defaultPartition].locked) {
+          dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery
+        }
         for (byte partition = 1; partition <= dscPartitions; partition++) {
-          if (dsc.disabled[partition - 1] || partitionStatus[partition - 1].locked) continue;
-          dsc.write("*", partition);
-          dsc.write("27##", partition); //fetch low battery status
-          //setStatus(partition - 1, true);
-          partitionMsgChangeCallback("",partition);
-          beepsCallback("0", partition);          
+          if (dsc.disabled[partition - 1]) continue;
+          beepsCallback("0", partition);
         }
 
       }
- 
+
       if (debug > 1)
         printPacket("Paneldata: ", dsc.panelData[0], dsc.panelData, 16);
-#ifdef SERIALDEBUGCOMMANDS   
+      #ifdef SERIALDEBUGCOMMANDS
       if (debug > 2) {
         printTimestamp();
         Serial.print(" ");
@@ -1131,93 +1147,14 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         dsc.printPanelMessage(); // Prints the decoded message
         Serial.println();
       }
-#endif      
+      #endif
 
-
-      processStatus(); 
+      processStatus();
       for (byte partition = 0; partition < dscPartitions; partition++) {
-        if (dsc.disabled[partition]) continue;
+        if (dsc.disabled[partition] || dsc.status[partition] != 0xA0) continue;
         getBypassZones(partition);
       }
-     
-      
-      if (dsc.panelData[0] == 0x0A && dsc.panelData[3] == 0xBA) { //low battery zones
-        for (byte panelByte = 4; panelByte < 8; panelByte++) {
-          for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-            zone = zoneBit + ((panelByte - 4) * 8);
-            if (zone >= maxZones) continue;
-            if (bitRead(dsc.panelData[panelByte], zoneBit)) {
-              zoneStatus[zone].batteryLow = true;
-            } else
-              zoneStatus[zone].batteryLow = false;
-          }
-        }
-      }
-      
-      if (dsc.panelData[0] == 0x0A && dsc.panelData[3] == 0xA1) { //system status
-        system0 = dsc.panelData[4];
 
-      }
-      
-      if (dsc.panelData[0] == 0x0A && dsc.panelData[3] == 0xC8) { //service required menu
-        system1 = dsc.panelData[4];
-
-      }
-      
-      if (dsc.panelData[0] == 0xE6 && dsc.panelData[2] == 0x1A) { //system status comm/time/ac
-        for (byte partition = 0; partition < dscPartitions; partition++) {
-          if (dsc.disabled[partition]) continue;
-          if (bitRead(dsc.panelData[6], 4)) //ac status bit
-            troubleStatusChangeCallback(acStatus, false, partition + 1);
-          else troubleStatusChangeCallback(acStatus, true, partition + 1);
-        }
-      }
-      
-      if (dsc.panelData[0] == 0xA5 && dsc.panelData[6] == 0 && (dsc.trouble || sendCmd)) { //periodic - sent every 4 minutes
-        sendCmd = false;
-      }
-      
-      if (dsc.panelData[0] == 0x87) { //relay cmd
-        byte rchan;
-        byte pgm = 2;
-        for (byte relayByte = 2; relayByte < 4; relayByte++) {
-          for (byte x = 0; x < 8; x++) {
-
-            if (relayByte == 3) {
-              if (x < 2)
-                pgm = 0;
-              else if (x == 2 || x == 3)
-                continue;
-              else if (x > 3)
-                pgm = 6;
-
-            }
-            rchan = pgm + x;
-            if (bitRead(dsc.panelData[relayByte], x)) {
-              relayStatus[rchan] = true;
-            } else {
-              relayStatus[rchan] = false;
-            }
-            if (previousRelayStatus[rchan] != relayStatus[rchan])
-              relayChannelChangeCallback(rchan + 1, relayStatus[rchan]);
-            previousRelayStatus[rchan] = relayStatus[rchan];
-          }
-        }
-      }
-
-      if (dsc.panelData[0] == 0xB1) {
-        getEnabledZonesB1(2, 1, 1);
-        getEnabledZonesB1(6, 1, 2);
-      }
-
-      if (dsc.panelData[0] == 0xE6 && dsc.panelData[2] == 0x2B) {
-        getEnabledZonesE6(4, 1, dsc.panelData[3]);
-      }
-
-      if (dsc.panelData[0] == 0xE6 && dsc.panelData[2] == 0x2C) {
-        getEnabledZonesE6(4, 33, dsc.panelData[3]);
-      }
-      
     }
 
     if (!forceDisconnect && dsc.statusChanged) { // Processes data only when a valid Keybus command has been read and statuses were changed
@@ -1227,8 +1164,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         printPacket("Paneldata: ", dsc.panelData[0], dsc.panelData, 16);
 
       for (byte partition = 0; partition < dscPartitions; partition++) {
+        if (firstrun)
+          beepsCallback("0", partition + 1);
         if (dsc.disabled[partition]) continue;
-        setStatus(partition,true);
+        setStatus(partition, true);
+
       }
 
       if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
@@ -1238,12 +1178,45 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       if (dsc.keybusChanged) {
         dsc.keybusChanged = false; // Resets the Keybus data status flag
         if (dsc.keybusConnected) {
-          systemStatusChangeCallback(STATUS_ONLINE);
-        } else systemStatusChangeCallback(STATUS_OFFLINE);
+          systemStatusChangeCallback(&String(FPSTR(STATUS_ONLINE))[0]);
+        } else systemStatusChangeCallback(&String(FPSTR(STATUS_OFFLINE))[0]);
       }
 
-      //non partition specific problems so we send to all keypads
+      if (dsc.powerChanged) {
+        dsc.powerChanged = false;
+        if (dsc.powerTrouble) {
+          panelStatusChangeCallback(acStatus, false, 0); //no ac
+        } else panelStatusChangeCallback(acStatus, true, 0);
+
+      }
+
+      if (dsc.batteryChanged) {
+        dsc.batteryChanged = false;
+        if (dsc.batteryTrouble) {
+          panelStatusChangeCallback(batStatus, true, 0);
+        } else panelStatusChangeCallback(batStatus, false, 0);
+      }
+
+      if (dsc.keypadFireAlarm) {
+        dsc.keypadFireAlarm = false;
+        //panelStatusChangeCallback(fireStatus, true,0); //needs status reset
+      }
+
+      if (dsc.keypadPanicAlarm) {
+        dsc.keypadPanicAlarm = false;
+        //panelStatusChangeCallback(panicStatus, true,0);
+      }
+
+      // Publishes trouble status
+      if (dsc.troubleChanged) {
+        dsc.troubleChanged = false; // Resets the trouble status flag
+        if (dsc.trouble) panelStatusChangeCallback(trStatus, true, 0); // Trouble alarm tripped
+        else panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
+      }
+
+      // Publishes status per partition
       for (byte partition = 0; partition < dscPartitions; partition++) {
+
         if (dsc.disabled[partition] || partitionStatus[partition].locked) continue;
 
         // Sends the access code when needed by the panel for arming
@@ -1253,46 +1226,6 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           if (debug > 0) ESP_LOGD("Debug", "got access code prompt for partition %d", partition + 1);
         }
 
-        if (dsc.powerChanged) {
-          dsc.powerChanged = false;
-
-          if (dsc.powerTrouble) {
-            troubleStatusChangeCallback(acStatus, false, partition + 1); //no ac
-          } else troubleStatusChangeCallback(acStatus, true, partition + 1);
-
-        }
-
-        if (dsc.batteryChanged) {
-          dsc.batteryChanged = false;
-          if (dsc.batteryTrouble) {
-            troubleStatusChangeCallback(batStatus, true, partition + 1);
-          } else troubleStatusChangeCallback(batStatus, false, partition + 1);
-          sendCmd = true;
-        }
-
-        if (dsc.keypadFireAlarm) {
-          dsc.keypadFireAlarm = false;
-          partitionMsgChangeCallback("Keypad Fire Alarm", partition + 1);
-        }  
-        if (dsc.keypadPanicAlarm) {
-          dsc.keypadPanicAlarm = false;
-          troubleStatusChangeCallback(panicStatus, true, partition + 1);
-          partitionMsgChangeCallback("Keypad Panic Alarm", partition + 1);
-        }
-        // Publishes trouble status
-        if (dsc.troubleChanged) {
-          dsc.troubleChanged = false; // Resets the trouble status flag
-          if (dsc.trouble) troubleStatusChangeCallback(trStatus, true, partition + 1); // Trouble alarm tripped
-          else troubleStatusChangeCallback(trStatus, false, partition + 1); // Trouble alarm restored
-          // we set a flag to only send the system status request a minute or so after the trouble status so that we don't impact warning beeps sent after the trouble light is turned on.
-          sendCmd = true;
-        }
-      }
-      // Publishes status per partition
-      for (byte partition = 0; partition < dscPartitions; partition++) {
-
-        if (dsc.disabled[partition]) continue; //skip disabled or partitions in install programming	
-
         // Publishes alarm status
         if (dsc.alarmChanged[partition]) {
           //ESP_LOGD("test","dsc alarm=%d",dsc.alarm[partition]);
@@ -1300,7 +1233,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           if (dsc.alarm[partition]) {
             dsc.readyChanged[partition] = false; //if we are triggered no need to trigger a ready state change
             dsc.armedChanged[partition] = false; // no need to display armed changed
-            partitionStatusChangeCallback(STATUS_TRIGGERED, partition + 1);
+            partitionStatusChangeCallback(&String(FPSTR(STATUS_TRIGGERED))[0], partition + 1);
           }
         }
 
@@ -1308,23 +1241,23 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         if (dsc.armedChanged[partition]) {
           dsc.armedChanged[partition] = false; // Resets the partition armed status flag
           if (dsc.armed[partition]) {
-            troubleStatusChangeCallback(armStatus, true, partition + 1);
-            if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(STATUS_NIGHT, partition + 1);
+            panelStatusChangeCallback(armStatus, true, partition + 1);
+            if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(&String(FPSTR(STATUS_NIGHT))[0], partition + 1);
             else if (dsc.armedStay[partition])
-              partitionStatusChangeCallback(STATUS_STAY, partition + 1);
-            else partitionStatusChangeCallback(STATUS_ARM, partition + 1);
+              partitionStatusChangeCallback(&String(FPSTR(STATUS_STAY))[0], partition + 1);
+            else partitionStatusChangeCallback(&String(FPSTR(STATUS_ARM))[0], partition + 1);
             clearZoneAlarms(partition + 1);
           } else {
-            clearZoneBypass(partition+1);
-            partitionStatusChangeCallback(STATUS_OFF, partition + 1);
-            troubleStatusChangeCallback(armStatus, false, partition + 1);
+            clearZoneBypass(partition + 1);
+            partitionStatusChangeCallback(&String(FPSTR(STATUS_OFF))[0], partition + 1);
+            panelStatusChangeCallback(armStatus, false, partition + 1);
           }
         }
         // Publishes exit delay status
         if (dsc.exitDelayChanged[partition]) {
           dsc.exitDelayChanged[partition] = false; // Resets the exit delay status flag
-          if (dsc.exitDelay[partition]) partitionStatusChangeCallback(STATUS_PENDING, partition + 1);
-          else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) partitionStatusChangeCallback(STATUS_OFF, partition + 1);
+          if (dsc.exitDelay[partition]) partitionStatusChangeCallback(&String(FPSTR(STATUS_PENDING))[0], partition + 1);
+          else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) partitionStatusChangeCallback(&String(FPSTR(STATUS_OFF))[0], partition + 1);
         }
 
         // Publishes ready status
@@ -1333,11 +1266,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
           dsc.readyChanged[partition] = false; // Resets the partition alarm status flag
           if (dsc.ready[partition] && !dsc.armed[partition]) {
-            partitionStatusChangeCallback(STATUS_OFF, partition + 1);
-            troubleStatusChangeCallback(rdyStatus, true, partition + 1);
+            partitionStatusChangeCallback(&(String(FPSTR(STATUS_OFF)))[0], partition + 1);
+            panelStatusChangeCallback(rdyStatus, true, partition + 1);
           } else {
-            if (!dsc.armed[partition]) partitionStatusChangeCallback(STATUS_NOT_READY, partition + 1);
-            troubleStatusChangeCallback(rdyStatus, false, partition + 1);
+            if (!dsc.armed[partition]) partitionStatusChangeCallback(&String(FPSTR(STATUS_NOT_READY))[0], partition + 1);
+            panelStatusChangeCallback(rdyStatus, false, partition + 1);
           }
 
         }
@@ -1409,6 +1342,12 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       for (int x = 0; x < maxZones; x++) {
         if (!zoneStatus[x].enabled) continue;
 
+        if (zoneStatus[x].open) {
+          sprintf(s1, "OP:%d", x + 1);
+          if (zoneStatusMsg != "") zoneStatusMsg.append(",");
+          zoneStatusMsg.append(s1);
+        }
+
         if (zoneStatus[x].alarm) {
           sprintf(s1, "AL:%d", x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
@@ -1418,35 +1357,35 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           sprintf(s1, "BY:%d", x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
-        }        
-        
+        }
+
         if (zoneStatus[x].tamper) {
           sprintf(s1, "TA:%d", x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
-        
+
         if (zoneStatus[x].batteryLow) {
           sprintf(s1, "BL:%d", x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
       }
-      if (zoneStatusMsg == "") 
-          zoneStatusMsg = "OK";
+      if (zoneStatusMsg == "")
+        zoneStatusMsg = "OK";
 
-
-     if (zoneStatusMsg != previousZoneStatusMsg || refresh) 
-       zoneMsgStatusCallback(zoneStatusMsg); 
+      if (zoneStatusMsg != previousZoneStatusMsg )
+        zoneMsgStatusCallback(zoneStatusMsg);
 
       previousZoneStatusMsg = zoneStatusMsg;
-
 
       systemMsg = "";
       if (bitRead(system1, 0)) {
         if (systemMsg != "") systemMsg.append(",");
         systemMsg.append("BAT");
-      }
+        panelStatusChangeCallback(batStatus, true, 0);
+      } else
+        panelStatusChangeCallback(batStatus, false, 0);
       if (bitRead(system1, 1)) {
         if (systemMsg != "") systemMsg.append(",");
         systemMsg.append("BELL");
@@ -1505,9 +1444,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         systemMsg.append("TIME");
       }
       if (systemMsg == "") systemMsg = "OK";
-      
-        if (previousSystemMsg != systemMsg || refresh) 
-         troubleMsgStatusCallback(systemMsg);
+
+      if (previousSystemMsg != systemMsg )
+        troubleMsgStatusCallback(systemMsg);
       previousSystemMsg = systemMsg;
 
     }
@@ -1528,11 +1467,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           }
         }
       }
-    
+
       if (debug > 1)
         printPacket("Moduledata:", dsc.moduleCmd, dsc.moduleData, 16);
-    
-#ifdef DEBUGCOMMANDS      
+
+      #ifdef DEBUGCOMMANDS
       if (debug > 2) {
         printTimestamp();
         Serial.print("[MODULE] ");
@@ -1543,12 +1482,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         dsc.printModuleMessage(); // Prints the decoded message
         Serial.println();
       }
-#endif         
-      
-    }
- 
+      #endif
 
-    
+    }
+
     firstrun = false;
 
   }
@@ -1557,21 +1494,20 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     // if (dsc.status[partition] == partitionStatus[partition].lastStatus && line2Status != dsc.status[partition] && beeps == 0 && !force) return;
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
-    byte *currentSelection=&partitionStatus[partition].currentSelection;
-    
+    byte * currentSelection = & partitionStatus[partition].currentSelection;
 
     std::string lcdLine1;
-    std::string lcdLine2;
+    std::string  lcdLine2;
 
     options = false;
     partitionStatus[partition].digits = 0;
     partitionStatus[partition].hex = false;
     partitionStatus[partition].decimalInput = false;
 
-    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, *currentSelection, partition + 1);
+    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1);
     switch (dsc.status[partition]) {
     case 0x01:
-      lcdLine1 = "Partition ready";
+      lcdLine1 ="Partition ready";
       lcdLine2 = " ";
       break;
     case 0x02:
@@ -2011,11 +1947,14 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
           if (partitionStatus[partition].digits < 17)
             lcdLine2.append(s);
+        //lcdLine2+=s;
           else {
             if (x < 16)
               lcdLine1.append(s);
+         //lcdLine1+=s;
             else
               lcdLine2.append(s);
+              //lcdLine2+=s;
           }
         }
 
@@ -2023,119 +1962,129 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         lcdLine1 = "";
         lcdLine2 = "";
       }
-
       if (dsc.status[partition] < 0x04) {
-
-        if (*currentSelection > 1 && *currentSelection < 6) {
-          int pos = statusMenu[*currentSelection].find(":");
-          lcdLine1 = statusMenu[*currentSelection].substr(0, pos);
-          lcdLine2 = statusMenu[*currentSelection].substr(pos + 1);
+        if ( * currentSelection > 1 && * currentSelection < 6) {
+      s=&String(FPSTR(statusMenu[*currentSelection]))[0];          
+          int pos = s.find(":");
+          lcdLine1 = (s.substr(0, pos));
+          lcdLine2 =(s.substr(pos + 1));
         } else {
           byte c = dsc.ready[partition] ? 0 : 1;
-          int pos = statusMenuLabels[c].find(":");
-          lcdLine1 = statusMenuLabels[c].substr(0, pos);
-          lcdLine2 = statusMenuLabels[c].substr(pos + 1);
-          *currentSelection = 1;
+         s=&String(FPSTR(statusMenuLabels[c]))[0];           
+          int pos = s.find(":");
+          lcdLine1 =(s.substr(0, pos));
+          lcdLine2 = (s.substr(pos + 1));
+          * currentSelection = 1;
         }
 
         if (partitionStatus[partition].selectedZone && partitionStatus[partition].selectedZone < maxZones) {
           char s[16];
           sprintf(s, "Zone %02d  <>", partitionStatus[partition].selectedZone);
-          lcdLine2 = s;
+          lcdLine2 =  s;
         }
-       
+
       } else if (dsc.status[partition] == 0xA0) { //bypass
-        if (*currentSelection == 0xFF || *currentSelection==0 || dsc.status[partition] != partitionStatus[partition].lastStatus)
-          *currentSelection = getNextEnabledZone(0xFF, partition + 1);
-        if (*currentSelection < maxZones && *currentSelection > 0) {
+        if ( * currentSelection == 0xFF || * currentSelection == 0 || dsc.status[partition] != partitionStatus[partition].lastStatus)
+          *
+          currentSelection = getNextEnabledZone(0xFF, partition + 1);
+        if ( * currentSelection < maxZones && * currentSelection > 0) {
           char s[16];
           char bypassStatus = ' ';
-          if (zoneStatus[*currentSelection - 1].bypassed)
+          if (zoneStatus[ * currentSelection - 1].bypassed)
             bypassStatus = 'B';
-          else if (zoneStatus[*currentSelection - 1].open)
+          else if (zoneStatus[ * currentSelection - 1].open)
             bypassStatus = 'O';
-          sprintf(s, "%02d   %c", *currentSelection, bypassStatus);
+          sprintf(s, "%02d   %c", * currentSelection, bypassStatus);
           lcdLine2 = s;
         }
-      } else if (dsc.status[partition] == 0x11 ) { //alarms
+      } else if (dsc.status[partition] == 0x11) { //alarms
 
-        if (*currentSelection == 0xFF || *currentSelection==0 || dsc.status[partition] != partitionStatus[partition].lastStatus)
-          *currentSelection = getNextAlarmedZone(0xFF, partition + 1);
-        if (*currentSelection < maxZones && *currentSelection > 0) {
+        if ( * currentSelection == 0xFF || * currentSelection == 0 || dsc.status[partition] != partitionStatus[partition].lastStatus)
+          *
+          currentSelection = getNextAlarmedZone(0xFF, partition + 1);
+        if ( * currentSelection < maxZones && * currentSelection > 0) {
           char s[16];
-          sprintf(s, "zone %02d", *currentSelection);
+          sprintf(s, "zone %02d", * currentSelection);
           lcdLine2 = s;
         } else lcdLine2 = " ";
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
 
-        if (*currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus)
-          *currentSelection = getNextOption(0xFF);
+        if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus)
+          *
+          currentSelection = getNextOption(0xFF);
 
-        if (*currentSelection < maxZones && *currentSelection > 0) {
+        if ( * currentSelection < maxZones && * currentSelection > 0) {
           char s[16];
           lcdLine2 = "";
           char bypassStatus = ' ';
 
-          sprintf(s, "zone %02d", *currentSelection);
+          sprintf(s, "zone %02d", * currentSelection);
           lcdLine2 = s;
         } else {
           lcdLine1 = "No alarms";
           lcdLine2 = "in memory";
         }
-      } else if (dsc.status[partition] == 0x9E  ) { // main menu
-        if (*currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
-          *currentSelection = 1;
+      } else if (dsc.status[partition] == 0x9E) { // main menu
+
+        if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
+          * currentSelection = 1;
         }
-        lcdLine2 = mainMenu[*currentSelection];
+       lcdLine2=&String(FPSTR(mainMenu[*currentSelection]))[0];              
 
       } else if (dsc.status[partition] == 0xB2) { // output menu
-        if (*currentSelection == 0xFF  || dsc.status[partition] != partitionStatus[partition].lastStatus) {
-          *currentSelection = 1;
+
+        if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
+          * currentSelection = 1;
         }
-        lcdLine2 = outputMenu[*currentSelection];
+      lcdLine2=&String(FPSTR(mainMenu[*currentSelection]))[0];
+      
 
       } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
-        if (*currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
-          *currentSelection = 1;
-        }
-        lcdLine2 = userMenu[*currentSelection];
 
-      } else if (dsc.status[partition] == 0xA1 ) { //trouble
-
-        if (*currentSelection == 0xFF ) {
-          *currentSelection = getNextOption(0xFF);
+        if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
+          * currentSelection = 1;
         }
-        if (*currentSelection < 9) {
-          lcdLine2 = troubleMenu[*currentSelection];
+        lcdLine2=&String(FPSTR(userMenu[*currentSelection]))[0];
+
+      } else if (dsc.status[partition] == 0xA1) { //trouble
+
+        if ( * currentSelection == 0xFF) {
+          * currentSelection = getNextOption(0xFF);
+        }
+        if ( * currentSelection < 9) {
+      lcdLine2=&String(FPSTR(troubleMenu[*currentSelection]))[0];              
+
         }
 
       } else if (dsc.status[partition] == 0xC8) { //service
-        if (*currentSelection == 0xFF )
+
+        if ( * currentSelection == 0xFF)
           *currentSelection = getNextOption(0xFF);
-        if (*currentSelection < 9) {
-          lcdLine2 = serviceMenu[*currentSelection];
+        if ( * currentSelection < 9) {
+        lcdLine2=&String(FPSTR(serviceMenu[*currentSelection]))[0]; 
+
         }
 
       } else if (dsc.status[partition] == 0xA6) { //user code
-        if (*currentSelection == 0xFF )
-          *currentSelection = getNextUserCode(0xFF);
-        if (*currentSelection < 96) {
+        if ( * currentSelection == 0xFF)
+          *
+          currentSelection = getNextUserCode(0xFF);
+        if ( * currentSelection < 96) {
           char s[16];
           char programmed = ' ';
-          if (checkUserCode(*currentSelection))
+          if (checkUserCode( * currentSelection))
             programmed = 'P';
-          sprintf(s, "%02d   %c", *currentSelection, programmed);
+          sprintf(s, "%02d   %c", * currentSelection, programmed);
           lcdLine2 = s;
         }
       }
 
       if (options) {
         lcdLine2 = getOptionsString();
-        ESP_LOGD("test","got options string %s",lcdLine2.c_str());
       }
 
     }
-
+    
     if (lcdLine1 != "") line1DisplayCallback(lcdLine1, partition + 1);
     if (lcdLine2 != "") line2DisplayCallback(lcdLine2, partition + 1);
 
@@ -2147,10 +2096,17 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     #ifndef dscClassicSeries
     byte partition = 0;
     switch (dsc.panelData[0]) {
-
     case 0x0F:
     case 0x0A:
       processProgramZones(4);
+      if (dsc.panelData[3] == 0xBA)
+        processLowBatteryZones();
+      if (dsc.panelData[3] == 0xA1) { //system status
+        system0 = dsc.panelData[4];
+      }
+      if (dsc.panelData[3] == 0xC8) { //service required menu
+        system1 = dsc.panelData[4];
+      }
 
       break;
     case 0x5D:
@@ -2171,7 +2127,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           //ESP_LOGD("test", "A5 leave programming mode");
           break;
         }
-        processEventBufferAA(true);        
+      processEventBufferAA(true);
       break;
     case 0xAA:
 
@@ -2188,6 +2144,13 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     case 0x7D:
       //ESP_LOGD("info", "Sent tones cmd %02X,%02X", dsc.panelData[0], dsc.panelData[3]);
       break; //tones 2
+    case 0x87: //relay cmd
+      processRelayCmd();
+      break;
+    case 0xB1:
+      getEnabledZonesB1(2, 1, 1);
+      getEnabledZonesB1(6, 1, 2);
+      break;
     case 0xE6:
 
       switch (dsc.panelData[2]) {
@@ -2202,6 +2165,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       case 0x19:
         printBeeps(4);
         break;
+      case 0x1A:
+        break;
       case 0x20:
       case 0x21:
         processProgramZones(5);
@@ -2211,10 +2176,17 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
         if ((dsc.panelData[4] & 0x04) == 0x04)
           processProgramZones(5);
         break; // Alarm memory zones 33-64
+      case 0x2B:
+        getEnabledZonesE6(4, 1, dsc.panelData[3]);
+        break;
+      case 0x2C:
+        getEnabledZonesE6(4, 33, dsc.panelData[3]);
+        break;
       };
+
       break;
     case 0xEB:
-    
+
       if (dsc.panelData[7] == 1)
         switch (dsc.panelData[8]) {
         case 0xAE:
@@ -2224,7 +2196,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
           line2DisplayCallback("Walk test beging", activePartition);
           break;
         };
-       processEventBufferEC(true);
+      processEventBufferEC(true);
       break;
     case 0xEC:
       processEventBufferEC();
@@ -2296,6 +2268,50 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
   }
 
+  void processLowBatteryZones() {
+    // if (dsc.panelData[0] == 0x0A && dsc.panelData[3] == 0xBA) { //low battery zones
+    for (byte panelByte = 4; panelByte < 8; panelByte++) {
+      for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+        zone = zoneBit + ((panelByte - 4) * 8);
+        if (zone >= maxZones) continue;
+        if (bitRead(dsc.panelData[panelByte], zoneBit)) {
+          zoneStatus[zone].batteryLow = true;
+        } else
+          zoneStatus[zone].batteryLow = false;
+      }
+    }
+    // }
+  }
+
+  void processRelayCmd() {
+    byte rchan;
+    byte pgm = 2;
+    for (byte relayByte = 2; relayByte < 4; relayByte++) {
+      for (byte x = 0; x < 8; x++) {
+
+        if (relayByte == 3) {
+          if (x < 2)
+            pgm = 0;
+          else if (x == 2 || x == 3)
+            continue;
+          else if (x > 3)
+            pgm = 6;
+
+        }
+        rchan = pgm + x;
+        if (bitRead(dsc.panelData[relayByte], x)) {
+          relayStatus[rchan] = true;
+        } else {
+          relayStatus[rchan] = false;
+        }
+        if (previousRelayStatus[rchan] != relayStatus[rchan])
+          relayChannelChangeCallback(rchan + 1, relayStatus[rchan]);
+        previousRelayStatus[rchan] = relayStatus[rchan];
+      }
+    }
+
+  }
+
   void processProgramZones(byte startByte) {
     byte byteCount = 0;
     byte zoneStart = 0;
@@ -2325,22 +2341,22 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     group1msg.append(group2msg);
     //lightsCallback(group1msg, defaultPartition);
     if (options)
-        dsc.statusChanged=true;
+      dsc.statusChanged = true;
   }
-  
-  void processEventBufferAA(bool showEvent=false) {
+
+  void processEventBufferAA(bool showEvent = false) {
     #ifndef dscClassicSeries
     if (extendedBuffer) return; // Skips 0xAA data when 0xEC extended event buffer data is available
 
-    char eventInfo[45]="";
+    char eventInfo[45] = "";
     char charBuffer[4];
     if (!showEvent) {
-        strcat(eventInfo,"Evnt:");
-        itoa(dsc.panelData[7], charBuffer, 10);
-        if (dsc.panelData[7] < 10) strcat(eventInfo, "00");
-        else if (dsc.panelData[7] < 100) strcat(eventInfo, "0");
-        strcat(eventInfo, charBuffer);
-        strcat(eventInfo, " ");
+      strcat(eventInfo, "E:");
+      itoa(dsc.panelData[7], charBuffer, 10);
+      if (dsc.panelData[7] < 10) strcat(eventInfo, "00");
+      else if (dsc.panelData[7] < 100) strcat(eventInfo, "0");
+      strcat(eventInfo, charBuffer);
+      strcat(eventInfo, " ");
     }
     byte dscYear3 = dsc.panelData[2] >> 4;
     byte dscYear4 = dsc.panelData[2] & 0x0F;
@@ -2375,54 +2391,53 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (dscMinute < 10) strcat(eventInfo, "0");
     itoa(dscMinute, charBuffer, 10);
     strcat(eventInfo, charBuffer);
-    
+
     byte partition = dsc.panelData[3] >> 6;
-    strcat(eventInfo, " Part:");
+    strcat(eventInfo, " P:");
     itoa(partition, charBuffer, 10);
     strcat(eventInfo, charBuffer);
-    strcat(eventInfo, " ");    
-   
-    
-    if (showEvent) 
-        eventStatusMsg=eventInfo;
+    strcat(eventInfo, " ");
+
+    if (showEvent)
+      eventStatusMsg = eventInfo;
     else
-        line1DisplayCallback(eventInfo, activePartition);
-    
+      line1DisplayCallback(eventInfo, activePartition);
+
     switch (dsc.panelData[5] & 0x03) {
     case 0x00:
-      printPanelStatus0(6, activePartition,showEvent);
+      printPanelStatus0(6, activePartition, showEvent);
       break;
     case 0x01:
-      printPanelStatus1(6, activePartition,showEvent);
+      printPanelStatus1(6, activePartition, showEvent);
       break;
     case 0x02:
-      printPanelStatus2(6, activePartition,showEvent);
+      printPanelStatus2(6, activePartition, showEvent);
       break;
     case 0x03:
-      printPanelStatus3(6, activePartition,showEvent);
+      printPanelStatus3(6, activePartition, showEvent);
       break;
     }
-    if (showEvent && eventStatusMsg!="") {
-        eventInfoCallback(eventStatusMsg);
-        eventTime=millis();
+    if (showEvent && eventStatusMsg != "") {
+      eventInfoCallback(eventStatusMsg);
+      eventTime = millis();
     }
     #endif
   }
 
-  void processEventBufferEC(bool showEvent=false) {
+  void processEventBufferEC(bool showEvent = false) {
     #ifndef dscClassicSeries
     if (!extendedBuffer) extendedBuffer = true;
 
     char eventInfo[45] = "";
     char charBuffer[4];
     if (!showEvent) {
-        strcat(eventInfo,"Evnt:");        
-        int eventNumber = dsc.panelData[9] + ((dsc.panelData[4] >> 6) * 256);
-        itoa(eventNumber, charBuffer, 10);
-        if (eventNumber < 10) strcat(eventInfo, "00");
-        else if (eventNumber < 100) strcat(eventInfo, "0");
-        strcat(eventInfo, charBuffer);
-        strcat(eventInfo, " ");
+      strcat(eventInfo, "E:");
+      int eventNumber = dsc.panelData[9] + ((dsc.panelData[4] >> 6) * 256);
+      itoa(eventNumber, charBuffer, 10);
+      if (eventNumber < 10) strcat(eventInfo, "00");
+      else if (eventNumber < 100) strcat(eventInfo, "0");
+      strcat(eventInfo, charBuffer);
+      strcat(eventInfo, " ");
     }
     byte dscYear3 = dsc.panelData[3] >> 4;
     byte dscYear4 = dsc.panelData[3] & 0x0F;
@@ -2459,7 +2474,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     strcat(eventInfo, charBuffer);
 
     if (dsc.panelData[2] != 0) {
-      strcat(eventInfo, " Part:");
+      strcat(eventInfo, " P:");
 
       byte bitCount = 0;
       for (byte bit = 0; bit <= 7; bit++) {
@@ -2470,57 +2485,56 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       }
       strcat(eventInfo, charBuffer);
     }
-       strcat(eventInfo, " ");    
-       
+    strcat(eventInfo, " ");
+
     if (showEvent)
-       eventStatusMsg=eventInfo; 
+      eventStatusMsg = eventInfo;
     else
-        line1DisplayCallback(eventInfo, activePartition);
-   
+      line1DisplayCallback(eventInfo, activePartition);
 
     switch (dsc.panelData[7]) {
     case 0x00:
-      printPanelStatus0(8, activePartition,showEvent);
+      printPanelStatus0(8, activePartition, showEvent);
       break;
     case 0x01:
-      printPanelStatus1(8, activePartition,showEvent);
+      printPanelStatus1(8, activePartition, showEvent);
       break;
     case 0x02:
-      printPanelStatus2(8, activePartition,showEvent);
+      printPanelStatus2(8, activePartition, showEvent);
       break;
     case 0x03:
-      printPanelStatus3(8, activePartition,showEvent);
+      printPanelStatus3(8, activePartition, showEvent);
       break;
     case 0x04:
-      printPanelStatus4(8, activePartition,showEvent);
+      printPanelStatus4(8, activePartition, showEvent);
       break;
     case 0x05:
-      printPanelStatus5(8, activePartition,showEvent);
+      printPanelStatus5(8, activePartition, showEvent);
       break;
     case 0x14:
-      printPanelStatus14(8, activePartition,showEvent);
+      printPanelStatus14(8, activePartition, showEvent);
       break;
     case 0x16:
-      printPanelStatus16(8, activePartition,showEvent);
+      printPanelStatus16(8, activePartition, showEvent);
       break;
     case 0x17:
-      printPanelStatus17(8, activePartition,showEvent);
+      printPanelStatus17(8, activePartition, showEvent);
       break;
     case 0x18:
-      printPanelStatus18(8, activePartition,showEvent);
+      printPanelStatus18(8, activePartition, showEvent);
       break;
     case 0x1B:
-      printPanelStatus1B(8, activePartition,showEvent);
+      printPanelStatus1B(8, activePartition, showEvent);
       break;
     }
-    if (showEvent && eventStatusMsg!="") {
-        eventInfoCallback(eventStatusMsg);
-        eventTime=millis();
+    if (showEvent && eventStatusMsg != "") {
+      eventInfoCallback(eventStatusMsg);
+      eventTime = millis();
     }
     #endif
   }
 
-  void printPanelStatus0(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus0(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
 
     std::string lcdLine1;
@@ -2578,13 +2592,13 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Aux input";
       lcdLine2 = "alarm rest";
       break;
-    // 0x56 - 0x75: Zone tamper, zones 1-32
-    // 0x76 - 0x95: Zone tamper restored, zones 1-32      
+      // 0x56 - 0x75: Zone tamper, zones 1-32
+      // 0x76 - 0x95: Zone tamper restored, zones 1-32      
     case 0x98:
       lcdLine1 = "Keypad";
       lcdLine2 = "lockout";
       break;
-    // 0x99 - 0xBD: Armed: Access codes 1-34, 40-42      
+      // 0x99 - 0xBD: Armed: Access codes 1-34, 40-42      
     case 0xBE:
       lcdLine1 = "Armed:";
       lcdLine2 = "Partial";
@@ -2593,7 +2607,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Armed:";
       lcdLine2 = "Special";
       break;
-    // 0xC0 - 0xE4: Disarmed: Access codes 1-34, 40-42      
+      // 0xC0 - 0xE4: Disarmed: Access codes 1-34, 40-42      
     case 0xE5:
       lcdLine1 = "Auto-arm";
       lcdLine2 = "canc";
@@ -2686,10 +2700,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     char charBuffer[4];
 
     if (dsc.panelData[panelByte] >= 0x09 && dsc.panelData[panelByte] <= 0x28) {
-      strcpy(lcdMessage, "Zone alarm: ");
-      byte zone=dsc.panelData[panelByte] - 8;      
-      if (zone > 0 && zone < maxZones) 
-         zoneStatus[zone-1].alarm=true;      
+      strcpy(lcdMessage, "Zone alarm:");
+      byte zone = dsc.panelData[panelByte] - 8;
+      if (zone > 0 && zone < maxZones)
+        zoneStatus[zone - 1].alarm = true;
       itoa(dsc.panelData[panelByte] - 8, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -2699,10 +2713,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] >= 0x29 && dsc.panelData[panelByte] <= 0x48) {
       lcdLine1 = "Zone alarm";
-      strcpy(lcdMessage, "restored: ");
-      byte zone=dsc.panelData[panelByte] - 40;      
-     // if (zone > 0 && zone < maxZones) 
-        // zoneStatus[zone-1].alarm=false;      
+      strcpy(lcdMessage, " restored:");
+      byte zone = dsc.panelData[panelByte] - 40;
+      // if (zone > 0 && zone < maxZones) 
+      // zoneStatus[zone-1].alarm=false;      
       itoa(dsc.panelData[panelByte] - 40, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -2710,10 +2724,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (dsc.panelData[panelByte] >= 0x56 && dsc.panelData[panelByte] <= 0x75) {
-      strcpy(lcdMessage, "Zone tamper: ");
-      byte zone=dsc.panelData[panelByte] - 85;
-      if (zone > 0 && zone < maxZones) 
-         zoneStatus[zone-1].tamper=true;
+      strcpy(lcdMessage, "Zone tamper:");
+      byte zone = dsc.panelData[panelByte] - 85;
+      if (zone > 0 && zone < maxZones)
+        zoneStatus[zone - 1].tamper = true;
       itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -2723,10 +2737,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] >= 0x76 && dsc.panelData[panelByte] <= 0x95) {
       lcdLine1 = "Zone tamper";
-      strcpy(lcdMessage, "restored: ");
-      byte zone=dsc.panelData[panelByte] - 117;      
-      if (zone > 0 && zone < maxZones) 
-         zoneStatus[zone-1].tamper=false;
+      strcpy(lcdMessage, " restored: ");
+      byte zone = dsc.panelData[panelByte] - 117;
+      if (zone > 0 && zone < maxZones)
+        zoneStatus[zone - 1].tamper = false;
       itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -2737,8 +2751,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Armed:";
       byte dscCode = dsc.panelData[panelByte] - 0x98;
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-      else strcpy(lcdMessage, "Access code ");
+      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
+      else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -2749,8 +2763,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Disarmed:";
       byte dscCode = dsc.panelData[panelByte] - 0xBF;
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-      else strcpy(lcdMessage, "Access code ");
+      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
+      else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -2763,13 +2777,13 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
     else
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus1(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus1(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -2786,7 +2800,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Late to close";
       lcdLine2 = " ";
       break;
-    // 0x24 - 0x28: Access codes 33-34, 40-42      
+      // 0x24 - 0x28: Access codes 33-34, 40-42      
     case 0x29:
       lcdLine1 = "Download";
       lcdLine2 = "forced ans";
@@ -2795,10 +2809,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Armed:";
       lcdLine2 = "Auto-arm";
       break;
-    // 0x2C - 0x4B: Zone battery restored, zones 1-32
-    // 0x4C - 0x6B: Zone battery low, zones 1-32
-    // 0x6C - 0x8B: Zone fault restored, zones 1-32
-    // 0x8C - 0xAB: Zone fault, zones 1-32      
+      // 0x2C - 0x4B: Zone battery restored, zones 1-32
+      // 0x4C - 0x6B: Zone battery low, zones 1-32
+      // 0x6C - 0x8B: Zone fault restored, zones 1-32
+      // 0x8C - 0xAB: Zone fault, zones 1-32      
     case 0xAC:
       lcdLine1 = "Exit inst";
       lcdLine2 = "prog";
@@ -2815,7 +2829,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Walk test";
       lcdLine2 = "begin";
       break;
-    // 0xB0 - 0xCF: Zones bypassed, zones 1-32      
+      // 0xB0 - 0xCF: Zones bypassed, zones 1-32      
     case 0xD0:
       lcdLine1 = "Command";
       lcdLine2 = "output 4";
@@ -2841,8 +2855,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (dsc.panelData[panelByte] >= 0x24 && dsc.panelData[panelByte] <= 0x28) {
       byte dscCode = dsc.panelData[panelByte] - 0x03;
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-      else strcpy(lcdMessage, "Access code ");
+      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
+      else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -2852,57 +2866,57 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] >= 0x2C && dsc.panelData[panelByte] <= 0x4B) {
       lcdLine1 = "Zone bat";
-      strcpy(lcdMessage, "rest: ");
-      zoneStatus[dsc.panelData[panelByte] - 42].batteryLow=false;
+      strcpy(lcdMessage, "rest:");
+      zoneStatus[dsc.panelData[panelByte] - 42].batteryLow = false;
       itoa(dsc.panelData[panelByte] - 43, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
-      dsc.statusChanged=true;      
+      dsc.statusChanged = true;
     }
 
     if (dsc.panelData[panelByte] >= 0x4C && dsc.panelData[panelByte] <= 0x6B) {
       lcdLine1 = "Zone bat";
-      strcpy(lcdMessage, "low: ");
-      zoneStatus[dsc.panelData[panelByte] - 74].batteryLow=true;
+      strcpy(lcdMessage, "low:");
+      zoneStatus[dsc.panelData[panelByte] - 74].batteryLow = true;
       itoa(dsc.panelData[panelByte] - 75, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
-      dsc.statusChanged=true;      
+      dsc.statusChanged = true;
     }
 
     if (dsc.panelData[panelByte] >= 0x6C && dsc.panelData[panelByte] <= 0x8B) {
       lcdLine1 = "Zone fault";
-      strcpy(lcdMessage, "rest: ");
-     // zoneStatus[dsc.panelData[panelByte] - 106].open=false;
+      strcpy(lcdMessage, "rest:");
+      // zoneStatus[dsc.panelData[panelByte] - 106].open=false;
       itoa(dsc.panelData[panelByte] - 107, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
-      dsc.statusChanged=true;      
+      dsc.statusChanged = true;
     }
 
     if (dsc.panelData[panelByte] >= 0x8C && dsc.panelData[panelByte] <= 0xAB) {
-      strcpy(lcdMessage, "Zone fault: ");
+      strcpy(lcdMessage, "Zone fault:");
       itoa(dsc.panelData[panelByte] - 139, charBuffer, 10);
       //zoneStatus[dsc.panelData[panelByte] - 138].open=true;
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
       decoded = true;
-      dsc.statusChanged=true;
+      dsc.statusChanged = true;
     }
 
     if (dsc.panelData[panelByte] >= 0xB0 && dsc.panelData[panelByte] <= 0xCF) {
-      strcpy(lcdMessage, "Zone bypass: ");
+      strcpy(lcdMessage, "Zone bypass:");
       itoa(dsc.panelData[panelByte] - 175, charBuffer, 10);
-     // zoneStatus[dsc.panelData[panelByte] - 174].bypassed=true;
+      // zoneStatus[dsc.panelData[panelByte] - 174].bypassed=true;
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
       decoded = true;
-      dsc.statusChanged=true;
+      dsc.statusChanged = true;
     }
 
     if (!decoded) {
@@ -2911,13 +2925,13 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
     else
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus2(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus2(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -2998,16 +3012,16 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Armed:";
       lcdLine2 = "No ent del";
       break;
-    // 0x9E - 0xC2: *1: Access codes 1-34, 40-42
-    // 0xC3 - 0xC5: *5: Access codes 40-42
-    // 0xC6 - 0xE5: Access codes 1-34, 40-42
-    // 0xE6 - 0xE8: *6: Access codes 40-42
-    // 0xE9 - 0xF0: Keypad restored: Slots 1-8
-    // 0xF1 - 0xF8: Keypad trouble: Slots 1-8
-    // 0xF9 - 0xFE: Zone expander restored: 1-6      
+      // 0x9E - 0xC2: *1: Access codes 1-34, 40-42
+      // 0xC3 - 0xC5: *5: Access codes 40-42
+      // 0xC6 - 0xE5: Access codes 1-34, 40-42
+      // 0xE6 - 0xE8: *6: Access codes 40-42
+      // 0xE9 - 0xF0: Keypad restored: Slots 1-8
+      // 0xF1 - 0xF8: Keypad trouble: Slots 1-8
+      // 0xF9 - 0xFE: Zone expander restored: 1-6      
     case 0xFF:
       lcdLine1 = "Zone exp";
-      lcdLine2 = "trble: 1";
+      lcdLine2 = "trble:1";
       break;
     default:
       decoded = false;
@@ -3015,20 +3029,21 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     char lcdMessage[20];
     char charBuffer[4];
-  if (dsc.panelData[panelByte] >= 0x67 && dsc.panelData[panelByte] <= 0x69) {
-     lcdLine1="Command output: ";
-     // itoa(dscCode, charBuffer, 10);
-     // strcat(lcdMessage, charBuffer);
-     // lcdLine2 = lcdMessage;
+    if (dsc.panelData[panelByte] >= 0x67 && dsc.panelData[panelByte] <= 0x69) {
+      strcpy(lcdMessage, "Cmd O/P:");
+      itoa(dsc.panelData[panelByte] - 0x66, charBuffer, 10);
+      strcat(lcdMessage, charBuffer);
+      lcdLine1 = lcdMessage;
+      lcdLine2 = " ";
       decoded = true;
-  }
+    }
 
     if (dsc.panelData[panelByte] >= 0x9E && dsc.panelData[panelByte] <= 0xC2) {
       byte dscCode = dsc.panelData[panelByte] - 0x9D;
       lcdLine1 = "*1: ";
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-      else strcpy(lcdMessage, "Access code ");
+      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
+      else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3039,8 +3054,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] - 0xA0;
       lcdLine1 = "*5: ";
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-      else strcpy(lcdMessage, "Access code ");
+      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
+      else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3050,8 +3065,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (dsc.panelData[panelByte] >= 0xC6 && dsc.panelData[panelByte] <= 0xE5) {
       byte dscCode = dsc.panelData[panelByte] - 0xC5;
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-      else strcpy(lcdMessage, "Access code ");
+      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
+      else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -3063,8 +3078,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] - 0xC3;
       lcdLine1 = "";
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-      else strcpy(lcdMessage, "Access code ");
+      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
+      else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3072,8 +3087,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (dsc.panelData[panelByte] >= 0xE9 && dsc.panelData[panelByte] <= 0xF0) {
-      lcdLine1 = "Keypad rest:";
-      strcpy(lcdMessage, "Slot ");
+      lcdLine1 = "Keypad rest";
+      strcpy(lcdMessage, " slot:");
       itoa(dsc.panelData[panelByte] - 232, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3081,8 +3096,8 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (dsc.panelData[panelByte] >= 0xF1 && dsc.panelData[panelByte] <= 0xF8) {
-      lcdLine1 = "Keypad trble:";
-      strcpy(lcdMessage, "Slot ");
+      lcdLine1 = "Keypad trble ";
+      strcpy(lcdMessage, "slot: ");
       itoa(dsc.panelData[panelByte] - 240, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3090,11 +3105,11 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (dsc.panelData[panelByte] >= 0xF9 && dsc.panelData[panelByte] <= 0xFE) {
-      strcpy(lcdMessage, "Zone exp ");
+      strcpy(lcdMessage, "Zone exp:");
       itoa(dsc.panelData[panelByte] - 248, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = "rest";
+      lcdLine2 = " rest";
       decoded = true;
     }
 
@@ -3104,12 +3119,12 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
-    else    
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+    else
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
   }
 
-  void printPanelStatus3(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus3(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3138,10 +3153,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Zone exp 7";
       lcdLine2 = "trble";
       break;
-    // 0x25 - 0x2C: Keypad tamper restored, slots 1-8
-    // 0x2D - 0x34: Keypad tamper, slots 1-8
-    // 0x35 - 0x3A: Module tamper restored, slots 9-14
-    // 0x3B - 0x40: Module tamper, slots 9-14      
+      // 0x25 - 0x2C: Keypad tamper restored, slots 1-8
+      // 0x2D - 0x34: Keypad tamper, slots 1-8
+      // 0x35 - 0x3A: Module tamper restored, slots 9-14
+      // 0x3B - 0x40: Module tamper, slots 9-14      
     case 0x41:
       lcdLine1 = "PC/RF5132:";
       lcdLine2 = "Tamper rest";
@@ -3215,18 +3230,24 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = "trouble";
-      return;
+      decoded = true;
     }
-  if (dsc.panelData[panelByte] >= 0x25 && dsc.panelData[panelByte] <= 0x2C) {
-    lcdLine1="Keypad tamper restored: ";
-   // printNumberOffset(panelByte, -0x24);
-  }
-  if (dsc.panelData[panelByte] >= 0x2D && dsc.panelData[panelByte] <= 0x34) {
-    //stream->print(F("Keypad tamper: "));
-    //printNumberOffset(panelByte, -0x2C);
-
-  }  
-      
+    if (dsc.panelData[panelByte] >= 0x25 && dsc.panelData[panelByte] <= 0x2C) {
+      strcpy(lcdMessage, "keypad ");
+      itoa(dsc.panelData[panelByte] - 0x24, charBuffer, 10);
+      strcat(lcdMessage, charBuffer);
+      lcdLine1 = lcdMessage;
+      lcdLine2 = "tamper rest";
+      decoded = true;
+    }
+    if (dsc.panelData[panelByte] >= 0x2D && dsc.panelData[panelByte] <= 0x34) {
+      strcpy(lcdMessage, "keypad ");
+      itoa(dsc.panelData[panelByte] - 0x2c, charBuffer, 10);
+      strcat(lcdMessage, charBuffer);
+      lcdLine1 = lcdMessage;
+      lcdLine2 = "tamper";
+      decoded = true;
+    }
 
     if (dsc.panelData[panelByte] >= 0x35 && dsc.panelData[panelByte] <= 0x3A) {
       strcpy(lcdMessage, "Zone expander ");
@@ -3234,9 +3255,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = "tamper rest";
-   // stream->print(F("Zone expander tamper restored: "));
-    //printNumberOffset(panelByte, -52);      
-      return;
+      decoded = true;
     }
 
     if (dsc.panelData[panelByte] >= 0x3B && dsc.panelData[panelByte] <= 0x40) {
@@ -3245,7 +3264,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = "tamper";
-      return;
+      decoded = true;
     }
 
     if (!decoded) {
@@ -3254,13 +3273,13 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
-    else    
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+    else
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus4(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus4(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3286,9 +3305,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] <= 0x1F) {
       strcpy(lcdMessage, "Zone alarm: ");
-      byte zone=dsc.panelData[panelByte] - 33;      
-      if (zone > 0 && zone < maxZones) 
-         zoneStatus[zone-1].alarm=true;
+      byte zone = dsc.panelData[panelByte] - 33;
+      if (zone > 0 && zone < maxZones)
+        zoneStatus[zone - 1].alarm = true;
       itoa(dsc.panelData[panelByte] + 33, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -3296,19 +3315,19 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x20 && dsc.panelData[panelByte] <= 0x3F) {
       lcdLine1 = "Zone alarm";
-      strcpy(lcdMessage, "rest: ");
-      byte zone=dsc.panelData[panelByte] + 1;      
-   //   if (zone > 0 && zone < maxZones) 
-     //    zoneStatus[zone-1].alarm=false;      
+      strcpy(lcdMessage, " rest: ");
+      byte zone = dsc.panelData[panelByte] + 1;
+      //   if (zone > 0 && zone < maxZones) 
+      //    zoneStatus[zone-1].alarm=false;      
       itoa(dsc.panelData[panelByte] + 1, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x40 && dsc.panelData[panelByte] <= 0x5F) {
-      strcpy(lcdMessage, "Zone tamper: ");
-      byte zone=dsc.panelData[panelByte] - 31;      
-      if (zone > 0 && zone < maxZones) 
-         zoneStatus[zone-1].tamper=true;
+      strcpy(lcdMessage, "Zone tamper:");
+      byte zone = dsc.panelData[panelByte] - 31;
+      if (zone > 0 && zone < maxZones)
+        zoneStatus[zone - 1].tamper = true;
       itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -3316,10 +3335,10 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x60 && dsc.panelData[panelByte] <= 0x7F) {
       lcdLine1 = "Zone tamper";
-      strcpy(lcdMessage, "rest: ");
-      byte zone=dsc.panelData[panelByte] - 63;      
-      if (zone > 0 && zone < maxZones) 
-         zoneStatus[zone-1].tamper=false;      
+      strcpy(lcdMessage, " rest:");
+      byte zone = dsc.panelData[panelByte] - 63;
+      if (zone > 0 && zone < maxZones)
+        zoneStatus[zone - 1].tamper = false;
       itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3332,13 +3351,13 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
-    else    
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+    else
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus5(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus5(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
 
     std::string lcdLine1;
@@ -3348,9 +3367,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] <= 0x39) {
       byte dscCode = dsc.panelData[panelByte] + 0x23;
-      lcdLine1 = "Armed: ";
+      lcdLine1 = "Armed:";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3359,9 +3378,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
 
     if (dsc.panelData[panelByte] >= 0x3A && dsc.panelData[panelByte] <= 0x73) {
       byte dscCode = dsc.panelData[panelByte] - 0x17;
-      lcdLine1 = "Disarmed: ";
+      lcdLine1 = "Disarmed:";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3374,13 +3393,13 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
-    else    
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+    else
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus14(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus14(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
 
     std::string lcdLine1;
@@ -3410,15 +3429,15 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = " ";
     }
-   
+
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
-    else    
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+    else
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus16(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus16(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3444,15 +3463,15 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = "";
     }
- 
+
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
     else
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus17(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus17(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
@@ -3463,7 +3482,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] - 0x27;
       lcdLine1 = "*1: ";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3474,7 +3493,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] + 1;
       lcdLine1 = "*2: ";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3485,7 +3504,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] - 0x61;
       lcdLine1 = "*2: ";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3496,7 +3515,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] - 0x24;
       lcdLine1 = "*3: ";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3507,7 +3526,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] - 0x9B;
       lcdLine1 = "*3: ";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3518,15 +3537,15 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = "";
     }
-   
+
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
     else
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus18(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus18(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
 
     char lcdMessage[20];
@@ -3536,7 +3555,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     if (dsc.panelData[panelByte] <= 0x39) {
       byte dscCode = dsc.panelData[panelByte] + 0x23;
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
@@ -3548,7 +3567,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] - 0x39;
       lcdLine1 = "*5: ";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3559,7 +3578,7 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       byte dscCode = dsc.panelData[panelByte] - 0x95;
       lcdLine1 = "*6: ";
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code ");
+      strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3570,21 +3589,21 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
       lcdLine1 = "Unknown data";
       lcdLine2 = "";
     }
-    
+
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
-    else    
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+    else
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
 
   }
 
-  void printPanelStatus1B(byte panelByte, byte partition,bool showEvent=false) {
+  void printPanelStatus1B(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
     std::string lcdLine1;
     std::string lcdLine2;
     switch (dsc.panelData[panelByte]) {
     case 0xF1:
-      lcdLine1 = "System reset";
+      lcdLine1 = "System reset ";
       lcdLine2 = "trans";
       break;
     default:
@@ -3597,9 +3616,9 @@ class DSCkeybushome: public CustomAPIDevice,public RealTimeClock {
     }
 
     if (showEvent)
-       eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));  
+      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
     else
-       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
   }
 
 };

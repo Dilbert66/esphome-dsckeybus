@@ -107,13 +107,6 @@ custom_component:
          case 2: id(p2).publish_state(statusCode); break;
       } // if you only have one partition, remove the case 2 and corresponding p2 sensor. You can also add more partitions if needed
     });
-     DSCkeybus->onPartitionMsgChange([&](std::string msg,int partition) {
-       switch(partition) {
-         case 1: id(m1).publish_state(msg); break;
-         case 2: id(m2).publish_state(msg); break;
-      } // if you only have one partition, remove the case 2 statement  and corresponding p2 sensor. You can also add more partitions if needed
-    });
-   
     DSCkeybus->onTroubleStatusChange([&](troubleStatus ts,bool open,int partition) {
       switch (partition) {
         case 1:
@@ -144,11 +137,6 @@ custom_component:
     DSCkeybus->onEventInfo([&](std::string msg) {
             id(event1).publish_state(msg);
     });  
-    DSCkeybus->onLights([&](std::string msg,int partition) {
-        switch(partition) {    
-            case 1: id(lights).publish_state(msg);break;
-        }
-    });   
     DSCkeybus->onBeeps([&](std::string beep,int partition) {
         switch(partition) {    
             case 1: id(beeps).publish_state(beep);break;
@@ -254,7 +242,6 @@ binary_sensor:
     id: tr
     name: "$systemName Trouble Status"
     device_class: problem
-    #panel trouble status on/off
     
   - platform: template
     id: rdy
@@ -335,11 +322,13 @@ text_sensor:
     id: system_status
     name: "$systemName System Status"
     icon: "mdi:shield"
-    #battery level status for wireless channels, tamper , in alarm, etc for individual zones
+    
+    #battery level status for wireless channels, tamper ,  alarm, bypass for individual zones
   - platform: template
     id: zone_status
     name: "$systemName zone status "
     icon: "mdi:shield"  
+    
     # partition status ie read/unavailable, in alarm, etc
   - platform: template
     id: p1
@@ -349,17 +338,7 @@ text_sensor:
     id: p2
     name: "$systemName Partition 2 Status " # uncomment to show in home assistant.  
     icon: "mdi:shield"  
-    # more verbose message regarding the partition status. ie zones open, bypassed, etc
-
-  - platform: template
-    id: m1
-    name: "$systemName Partition 1 Msg "
-    icon: "mdi:alert-box"
-  - platform: template
-    id: m2
-    name: "$systemName Partition 2 Msg " # uncomment to show in home assistant
-    icon: "mdi:alert-box"
-   
+    
   - platform: template
     id: line1
     name: "$systemName line1"
@@ -368,22 +347,20 @@ text_sensor:
     id: line2
     name: "$systemName line2"
     icon: "mdi:alert-box"  
+    
   - platform: template
     id: event1
     name: "$systemName event1"
     icon: "mdi:alert-box"  
-  - platform: template
-    id: lights
-    #name: "$systemName lights"
-    icon: "mdi:alert-box"
+    
   - platform: template
     id: beeps
     name: "$systemName beeps"
     icon: "mdi:alert-box"  
-   
+    
   - platform: template
     id: tr_msg
-    name: "$systemName Trouble Msg " # uncomment to show in home assistant
+    name: "$systemName Trouble Msg " 
     icon: "mdi:alert-box"
         
 switch:

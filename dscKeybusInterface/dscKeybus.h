@@ -50,7 +50,7 @@ const byte writeQueueSize=5; //write pending queue size
 const byte maxModules = 4;
 const byte writeQueueSize=20; //zone pending update queue
 
-const byte partitionToBits[9]={9,9,17,57,65,9,17,57,65};
+const byte partitionToBits[9]={0,9,17,57,65,9,17,57,65};
 
 
     struct zoneMaskType {
@@ -403,7 +403,8 @@ class dscKeybusInterface {
     static byte panelBitCount, panelByteCount;
     static volatile bool writeKeyPending;
     static volatile bool writeAlarm;
-    static volatile bool starKeyCheck, starKeyWait[dscPartitions];
+    static volatile bool starKeyCheck;
+//    starKeyWait[dscPartitions];
     static volatile bool moduleDataDetected, moduleDataCaptured;
     static volatile unsigned long clockHighTime, keybusTime;
     static volatile byte panelBufferLength;
@@ -449,8 +450,9 @@ class dscKeybusInterface {
     volatile static byte writeBufferLength,writeBufferIdx;
     volatile static bool writeDataPending;
     static writeQueueType writeQueue[writeQueueSize];
-    static void writeCharsToQueue(byte* keys,byte bit,byte partition=0,byte len=1,bool alarm=false,bool star=false);
+    static void writeCharsToQueue(byte* keys,byte partition=1,byte len=1,bool alarm=false,bool star=false);
     byte getWriteBitFromPartition(byte partition);
+    unsigned long starWaitTime;
     //end new command handling    
  
 };
