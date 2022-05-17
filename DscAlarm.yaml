@@ -1,6 +1,5 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
-
-      
+     
 substitutions:
   # change the name to suit your needs. This is what esphome will use as the friendly name for your component.
   # also used as a prefix for all fields
@@ -9,8 +8,8 @@ substitutions:
   #Only comes into effect if a password prompt occurs when arming eg. night mode
   accessCode: !secret access_code 
   
-   #0/1  set flag to ignore first new 05 cmd as valid to filter out intermittent short duration bogus commands that some panels send. default = 1
-  cmdWaitTime: "1"
+   # milliseconds.  set how long to delay before accepting a new 05 cmd as valid to filter out intermittent short duration bogus commands that some panels send. default = 0
+  cmdWaitTime: "0"
   
   #used to select the default partition associated with the alarm panel messages
   defaultPartition: "1" 
@@ -36,7 +35,7 @@ substitutions:
   #dscReadPin: "4"
   #dscWritePin: "15"  
   
-  maxZones: "32" # maximum amount of zones your system supports  
+  maxZones: "32" # maximum amount of zones your system supports
   
 esphome:
   name: $systemName
@@ -44,7 +43,7 @@ esphome:
   board: nodemcu-32s
   #platform: ESP8266
   #board: nodemcuv2
-  
+
   includes:
     # subdirectory path where custom component *.h and *.cpp files are located
     - dscKeybusInterface/
@@ -57,7 +56,6 @@ wifi:
     ssid: "$systemName"
     password: !secret wifi_password
 
-
 logger:
   baud_rate: 115200
   level: DEBUG
@@ -65,7 +63,8 @@ logger:
 api:
    password: !secret api_password  
    #encryption:
-     #key: !secret encryption_key   
+     #key: !secret encryption_key
+   
 
 web_server:
    
@@ -74,7 +73,7 @@ ota:
    safe_mode: True
    on_begin:
     then:
-      - switch.turn_off: connection_status_switch
+      - switch.turn_off: connection_status_switch   
    
 status_led:
   pin:
@@ -83,73 +82,95 @@ status_led:
     
 time:
  - platform: sntp
-   id: sntp_time 
+   id: sntp_time
 
 custom_component:
-- lambda: |-
-    
+ - lambda: |-
     auto DSCkeybus = new DSCkeybushome($dscClockPin,$dscReadPin,$dscWritePin);
     DSCkeybus->accessCode="$accessCode";
     DSCkeybus->cmdWaitTime=$cmdWaitTime;
-    DSCkeybus->maxZones=$maxZones;    
+    DSCkeybus->maxZones=$maxZones;
     DSCkeybus->defaultPartition=$defaultPartition;
     DSCkeybus->debug=2; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
     DSCkeybus->expanderAddr1=$expanderAddr1; //zone expander
     DSCkeybus->expanderAddr2=$expanderAddr2;
-    
     DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
        id(system_status).publish_state(statusCode);
     });
     
+    // if you only have one partition, remove the case 2 and corresponding p2 sensor. You can also add more partitions if needed
     DSCkeybus->onPartitionStatusChange([&](std::string statusCode, int partition) {
        switch(partition) {
          case 1: id(p1).publish_state(statusCode); break;
          case 2: id(p2).publish_state(statusCode); break;
-      } // if you only have one partition, remove the case 2 and corresponding p2 sensor. You can also add more partitions if needed
+      } 
     });
-    DSCkeybus->onTroubleStatusChange([&](troubleStatus ts,bool open,int partition) {
+
+    DSCkeybus->onPanelStatusChange([&](panelStatus ps,bool open,int partition) {
       switch (partition) {
-        case 1:
-        switch(ts) {
-            case rdyStatus: id(rdy).publish_state(open);break;
-            case armStatus: id(arm1).publish_state(open);break;                    
+        case 0: // all partitions hardware statuses
+          switch(ps) {
             case trStatus: id(tr).publish_state(open);break;
             case batStatus: id(bat).publish_state(open);break;
             case acStatus: id(ac).publish_state(open);break;
             case panicStatus: id(panic).publish_state(open);break;
             default: break;
-        };break;
-      }
+          };break;  
+        case 1: //partition 1 armed/ready
+          switch(ps) {
+            case rdyStatus: id(rdy).publish_state(open);break;
+            case armStatus: id(arm).publish_state(open);break;
+            default: break;
+          };break;
+        case 2: //partition 2 armed/ready
+          switch(ps) {        
+            case rdyStatus: id(rdy_2).publish_state(open);break;
+            case armStatus: id(arm_2).publish_state(open);break;
+            default: break;
+          };break;
+
+      };
     });
+    
     DSCkeybus->onZoneMsgStatus([&](std::string msg) {
             id(zone_status).publish_state(msg);
     });
+    
     DSCkeybus->onLine1Display([&](std::string msg,int partition) {
         switch(partition) {
             case 1: id(line1).publish_state(msg);break;
+            case 2: id(line1_2).publish_state(msg);break;            
         }
     });
+    
     DSCkeybus->onLine2Display([&](std::string msg,int partition) {
         switch(partition) {    
            case 1: id(line2).publish_state(msg);break;
+           case 2: id(line2_2).publish_state(msg);break;           
         }            
     });
     DSCkeybus->onEventInfo([&](std::string msg) {
-            id(event1).publish_state(msg);
+            id(event).publish_state(msg);
     });  
+    
     DSCkeybus->onBeeps([&](std::string beep,int partition) {
         switch(partition) {    
-            case 1: id(beeps).publish_state(beep);break;
+            case 1: id(beeps).publish_state(beep);break; 
+            case 2: id(beeps_2).publish_state(beep);break;            
         }
     });    
+    
     DSCkeybus->onFireStatusChange([&](bool open,int partition) {
       switch (partition) {
           case 1: id(f1).publish_state(open); break;
+          case 2: id(f2).publish_state(open); break;          
       }
     }); 
+    
     DSCkeybus->onTroubleMsgStatus([&](std::string msg) {
-            id(tr_msg).publish_state(msg);
+            id(tr_msg).publish_state(msg); //non partition specific trouble messages
     });
+    
     DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
       switch (zone) {
         case 1: id(z1).publish_state(open); break;
@@ -166,7 +187,8 @@ custom_component:
         case 17: id(z17).publish_state(open); break;
       } // add or delete any zone you need above. Add the coresponding sensor id in the binary_sensor section
     });
-        DSCkeybus->onRelayChannelChange([&](uint8_t channel, bool state) {
+    
+    DSCkeybus->onRelayChannelChange([&](uint8_t channel, bool state) {
       switch (channel) {
         case 1: id(r1).publish_state(state); break;
         case 2: id(r2).publish_state(state); break;
@@ -178,6 +200,7 @@ custom_component:
         case 8: id(r8).publish_state(state); break;
       }
     });
+    
     return {DSCkeybus};
     
  
@@ -237,25 +260,32 @@ binary_sensor:
     name: "$systemName Test sensor"
     device_class: motion    
     
+  - platform: template
+    id: rdy
+    name: "$systemName Partition 1 Ready"
+
+  - platform: template
+    id: arm
+    name: "$systemName Partition 1 Armed"
+    
+  - platform: template
+    id: rdy_2
+    name: "$systemName Partition 2 Ready"
+
+  - platform: template
+    id: arm_2
+    name: "$systemName Partition 2 Armed"    
+
     #panel trouble status on/off
   - platform: template
     id: tr
     name: "$systemName Trouble Status"
     device_class: problem
     
-  - platform: template
-    id: rdy
-    name: "$systemName Partition $defaultPartition Ready"
-
-  - platform: template
-    id: arm1
-    name: "$systemName Partition $defaultPartition Armed"
-
-    
     #battery status ok/low
   - platform: template
     id: bat
-    #name: "$systemName Battery Status"
+    name: "$systemName Battery Status"
     device_class: problem
 
     #AC power status ok/no power
@@ -263,16 +293,24 @@ binary_sensor:
     id: ac
     name: "$systemName AC Status"
     device_class: plug
+    
     #panic alarm on/off
   - platform: template
     id: panic
     name: "$systemName Panic Status"
     device_class: safety
+    
     #fire alarm on/off
   - platform: template
     id: f1
     device_class: safety
-    name: "$systemName Fire Status"
+    name: "$systemName Fire partition 1 Status"
+    
+    #fire alarm on/off
+  - platform: template
+    id: f2
+    device_class: safety
+    name: "$systemName Fire partition 2 Status"    
     
 #relay PGM channels. Will show the state of the activate relay channel on/off
 #uncomment the name: field if you wish to see it in home assistant
@@ -322,13 +360,11 @@ text_sensor:
     id: system_status
     name: "$systemName System Status"
     icon: "mdi:shield"
-    
-    #battery level status for wireless channels, tamper ,  alarm, bypass for individual zones
+    #battery level status for wireless channels, tamper , in alarm, etc for individual zones
   - platform: template
     id: zone_status
     name: "$systemName zone status "
     icon: "mdi:shield"  
-    
     # partition status ie read/unavailable, in alarm, etc
   - platform: template
     id: p1
@@ -338,7 +374,17 @@ text_sensor:
     id: p2
     name: "$systemName Partition 2 Status " # uncomment to show in home assistant.  
     icon: "mdi:shield"  
-    
+    # more verbose message regarding the partition status. ie zones open, bypassed, etc
+
+  - platform: template
+    id: m1
+    name: "$systemName Partition 1 Msg "
+    icon: "mdi:alert-box"
+  - platform: template
+    id: m2
+    name: "$systemName Partition 2 Msg " # uncomment to show in home assistant
+    icon: "mdi:alert-box"
+   
   - platform: template
     id: line1
     name: "$systemName line1"
@@ -347,20 +393,32 @@ text_sensor:
     id: line2
     name: "$systemName line2"
     icon: "mdi:alert-box"  
+  - platform: template
+    id: line1_2
+    name: "$systemName line1 partition 2"
+    icon: "mdi:alert-box"
+  - platform: template
+    id: line2_2
+    name: "$systemName line2 partition 2"
+    icon: "mdi:alert-box" 
     
   - platform: template
-    id: event1
-    name: "$systemName event1"
+    id: event
+    name: "$systemName event"
     icon: "mdi:alert-box"  
     
   - platform: template
     id: beeps
     name: "$systemName beeps"
-    icon: "mdi:alert-box"  
+    icon: "mdi:alert-box" 
+  - platform: template
+    id: beeps_2
+    name: "$systemName partition 2 beeps"
+    icon: "mdi:alert-box"   
     
   - platform: template
     id: tr_msg
-    name: "$systemName Trouble Msg " 
+    name: "$systemName Trouble Msg " # uncomment to show in home assistant
     icon: "mdi:alert-box"
         
 switch:
