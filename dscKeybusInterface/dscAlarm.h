@@ -25,9 +25,6 @@ using namespace esphome;
 
 #define maxZonesDefault 32 //set to 64 if your system supports it
 
-
-
-
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
 bool forceDisconnect;
 
@@ -48,95 +45,140 @@ enum panelStatus {
   armStatus
 };
 
-       const char mm0[] PROGMEM ="Press # to exit";
-    const char mm1[] PROGMEM ="Zone Bypass";
-      const char mm2[] PROGMEM ="System Troubles";
-     const char mm3[] PROGMEM ="Alarm Memory";
-    const char mm4[] PROGMEM ="Door Chime";
-     const char mm5[] PROGMEM ="Access Codes";
-     const char mm6[] PROGMEM ="User Functions";
-       const char mm7[] PROGMEM ="Output Contact";
-      const char mm8[] PROGMEM =" ";
-      const char mm9[] PROGMEM ="No-Entry Arm";
-       const char mm10[] PROGMEM ="Quick Arming";
-       
-     const char om0[] PROGMEM ="Press # to exit";
-     const char om1[] PROGMEM ="O/P 1";
-     const char om2[] PROGMEM ="O/P 2";
-     
+const char mm0[] PROGMEM = "Press # to exit";
+const char mm1[] PROGMEM = "Zone Bypass";
+const char mm2[] PROGMEM = "System Troubles";
+const char mm3[] PROGMEM = "Alarm Memory";
+const char mm4[] PROGMEM = "Door Chime";
+const char mm5[] PROGMEM = "Access Codes";
+const char mm6[] PROGMEM = "User Functions";
+const char mm7[] PROGMEM = "Output Contact";
+const char mm8[] PROGMEM = " ";
+const char mm9[] PROGMEM = "No-Entry Arm";
+const char mm10[] PROGMEM = "Quick Arming";
 
+const char om0[] PROGMEM = "Press # to exit";
+const char om1[] PROGMEM = "O/P 1";
+const char om2[] PROGMEM = "O/P 2";
 
-  
-     const char tm0[] PROGMEM ="Press # to exit";
-     const char tm1[] PROGMEM ="Service Required *";
-     const char tm2[] PROGMEM ="AC Failure";
-     const char tm3[] PROGMEM ="Tel Line Trouble";
-     const char tm4[] PROGMEM ="Comm Failure";
-     const char tm5[] PROGMEM ="Zone Fault *";
-     const char tm6[] PROGMEM ="Zone Tamper *";
-     const char tm7[] PROGMEM ="Low Battery *";
-     const char tm8[] PROGMEM ="System Time";
-     
+const char tm0[] PROGMEM = "Press # to exit";
+const char tm1[] PROGMEM = "Service Required *";
+const char tm2[] PROGMEM = "AC Failure";
+const char tm3[] PROGMEM = "Tel Line Trouble";
+const char tm4[] PROGMEM = "Comm Failure";
+const char tm5[] PROGMEM = "Zone Fault *";
+const char tm6[] PROGMEM = "Zone Tamper *";
+const char tm7[] PROGMEM = "Low Battery *";
+const char tm8[] PROGMEM = "System Time";
 
+const char sm0[] PROGMEM = "Press # to exit";
+const char sm1[] PROGMEM = "Low Battery";
+const char sm2[] PROGMEM = "Bell Circuit";
+const char sm3[] PROGMEM = "System Trouble";
+const char sm4[] PROGMEM = "System Tamper";
+const char sm5[] PROGMEM = "Mod Supervision";
+const char sm6[] PROGMEM = "RF Jam detected";
+const char sm7[] PROGMEM = "PC5204 Low Battery";
+const char sm8[] PROGMEM = "PC5204 AC Fail";
 
+const char um0[] PROGMEM = "Press # to exit";
+const char um1[] PROGMEM = "Time and Date";
+const char um2[] PROGMEM = "Auto Arm/Disarm";
+const char um3[] PROGMEM = "Auto Arm Time";
+const char um4[] PROGMEM = "System Test";
+const char um5[] PROGMEM = "System Serv/DLS";
+const char um6[] PROGMEM = "Event Buffer";
 
-     const char sm0[] PROGMEM ="Press # to exit";
-     const char sm1[] PROGMEM ="Low Battery";
-     const char sm2[] PROGMEM ="Bell Circuit";
-     const char sm3[] PROGMEM ="System Trouble";
-     const char sm4[] PROGMEM ="System Tamper";
-     const char sm5[] PROGMEM ="Mod Supervision";
-     const char sm6[] PROGMEM ="RF Jam detected";
-     const char sm7[] PROGMEM ="PC5204 Low Battery";
-     const char sm8[] PROGMEM ="PC5204 AC Fail";
-     
+const char am0[] PROGMEM = " ";
+const char am1[] PROGMEM = " ";
+const char am2[] PROGMEM = "System Trouble:(*2) to view";
+const char am3[] PROGMEM = "Bypass Active:(*1) to view";
+const char am4[] PROGMEM = "Alarm Memory: (*3) to view";
+const char am5[] PROGMEM = "Open Zones:Scroll to view <>";
 
+const char ml0[] PROGMEM = "System is Ready:Ready to Arm <>";
+const char ml1[] PROGMEM = "Secure System:Before Arming <>";
 
-     const char um0[] PROGMEM ="Press # to exit";
-     const char um1[] PROGMEM ="Time and Date";
-     const char um2[] PROGMEM ="Auto Arm/Disarm";
-     const char um3[] PROGMEM ="Auto Arm Time";
-     const char um4[] PROGMEM ="System Test";
-     const char um5[] PROGMEM ="System Serv/DLS";
-     const char um6[] PROGMEM ="Event Buffer";
-     
+const char *
+  const mainMenu[] PROGMEM = {
+    mm0,
+    mm1,
+    mm2,
+    mm3,
+    mm4,
+    mm5,
+    mm6,
+    mm7,
+    mm8,
+    mm9,
+    mm10
+  };
+const char *
+  const outputMenu[] PROGMEM = {
+    om0,
+    om1,
+    om2
+  };
+const char *
+  const troubleMenu[] PROGMEM = {
+    tm0,
+    tm1,
+    tm2,
+    tm3,
+    tm4,
+    tm5,
+    tm6,
+    tm7,
+    tm8
+  };
+const char *
+  const serviceMenu[] PROGMEM = {
+    sm0,
+    sm1,
+    sm2,
+    sm3,
+    sm4,
+    sm5,
+    sm6,
+    sm7,
+    sm8
+  };
+const char *
+  const userMenu[] PROGMEM = {
+    um0,
+    um1,
+    um2,
+    um3,
+    um4,
+    um5,
+    um6
+  };
+const char *
+  const statusMenu[] PROGMEM = {
+    am0,
+    am1,
+    am2,
+    am3,
+    am4,
+    am5
+  };
+const char *
+  const statusMenuLabels[] PROGMEM = {
+    ml0,
+    ml1
+  };
 
+const char STATUS_PENDING[] PROGMEM = "pending";
+const char STATUS_ARM[] PROGMEM = "armed_away";
+const char STATUS_STAY[] PROGMEM = "armed_home";
+const char STATUS_NIGHT[] PROGMEM = "armed_night";
+const char STATUS_OFF[] PROGMEM = "disarmed";
+const char STATUS_ONLINE[] PROGMEM = "online";
+const char STATUS_OFFLINE[] PROGMEM = "offline";
+const char STATUS_TRIGGERED[] PROGMEM = "triggered";
+const char STATUS_READY[] PROGMEM = "ready";
+const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
 
-     const char am0[] PROGMEM =" ";
-     const char am1[] PROGMEM =" ";
-     const char am2[] PROGMEM ="System Trouble:(*2) to view";
-     const char am3[] PROGMEM ="Bypass Active:(*1) to view";
-     const char am4[] PROGMEM ="Alarm Memory: (*3) to view";
-     const char am5[] PROGMEM ="Open Zones:Scroll to view <>";
-     
-
-
-     const char ml0[] PROGMEM ="System is Ready:Ready to Arm <>";
-     const char ml1[] PROGMEM ="Secure System:Before Arming <>";
-
-   const char * const mainMenu[] PROGMEM = {mm0,mm1,mm2,mm3,mm4,mm5,mm6,mm7,mm8,mm9,mm10};  
-const char * const outputMenu[] PROGMEM ={om0,om1,om2};
-const char * const troubleMenu[] PROGMEM={tm0,tm1,tm2,tm3,tm4,tm5,tm6,tm7,tm8};
-const char * const serviceMenu[] PROGMEM={sm0,sm1,sm2,sm3,sm4,sm5,sm6,sm7,sm8};
-const char * const userMenu[] PROGMEM={um0,um1,um2,um3,um4,um5,um6};
-const char * const statusMenu[] PROGMEM={am0,am1,am2,am3,am4,am5};
-const char * const statusMenuLabels[] PROGMEM={ml0,ml1};
-
-
-  const char STATUS_PENDING[] PROGMEM=  "pending";
-  const char STATUS_ARM[] PROGMEM=  "armed_away";
-  const char STATUS_STAY[] PROGMEM=  "armed_home";
-  const char STATUS_NIGHT[] PROGMEM=  "armed_night";
-  const char STATUS_OFF[] PROGMEM=  "disarmed";
-  const char STATUS_ONLINE[] PROGMEM=  "online";
-  const char STATUS_OFFLINE[] PROGMEM=  "offline";
-  const char STATUS_TRIGGERED[] PROGMEM=  "triggered";
-  const char STATUS_READY[] PROGMEM=  "ready";
-  const char STATUS_NOT_READY[] PROGMEM=  "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
-
-
- 
-       
 class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
   public: DSCkeybushome(byte dscClockPin = 0, byte dscReadPin = 0, byte dscWritePin = 0): dscClockPin(dscClockPin),
   dscReadPin(dscReadPin),
@@ -155,7 +197,6 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
   std:: function < void(std::string) > eventInfoCallback;
   std:: function < void(std::string, int) > lightsCallback;
   std:: function < void(std::string, int) > beepsCallback;
-
 
   void onZoneStatusChange(std:: function < void(uint8_t zone, bool isOpen) > callback) {
     zoneStatusChangeCallback = callback;
@@ -315,7 +356,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     });
 
     firstrun = true;
-    systemStatusChangeCallback(&String(FPSTR(STATUS_OFFLINE))[0]);
+    systemStatusChangeCallback(String(FPSTR(STATUS_OFFLINE)).c_str());
     forceDisconnect = false;
     dsc.debounce05 = (cmdWaitTime > 0);
     #ifdef EXPANDER
@@ -415,7 +456,8 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
     if (partitionStatus[partition - 1].digits > 0) { //program mode data input 
 
-      std::string tpl = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+      std::string tpl;
+      tpl = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
       if (dsc.status[partition - 1] == 0xAA) { //time entry
         tpl = "XXXX    XXXXXX  XXXXXXXXXXXXXXXX";
       }
@@ -508,18 +550,17 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       setStatus(partition - 1, true);
 
     } else if (dsc.status[partition - 1] == 0x9E) { // * mainmenu
-     // strcpy_P(menuBuffer, (char*)pgm_read_dword(&(mainMenu[ * currentSelection])));    
-      s=&String(FPSTR(mainMenu[*currentSelection]))[0];
-        if (key == '<') {
+       s = String(FPSTR(mainMenu[ * currentSelection])).c_str();
+      if (key == '<') {
         * currentSelection = * currentSelection >= 11 ? 10 : ( * currentSelection > 0 ? * currentSelection - 1 : 10);
         * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
-        s=&(String(FPSTR(mainMenu[*currentSelection])))[0];    
+        s = String(FPSTR(mainMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 11)
           line2DisplayCallback(s, partition);
       } else if (key == '>') {
         * currentSelection = * currentSelection >= 10 ? 0 : * currentSelection + 1;
-        * currentSelection =s != "" ? * currentSelection : * currentSelection + 1;
-      s=&(String(FPSTR(mainMenu[*currentSelection])))[0];   
+        * currentSelection = s != "" ? * currentSelection : * currentSelection + 1;
+        s = String(FPSTR(mainMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 11)
           line2DisplayCallback(s, partition);
       } else if (key == '*' && * currentSelection > 0) {
@@ -534,7 +575,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         * currentSelection = 0xFF;
       }
     } else if (dsc.status[partition - 1] == 0xA1) { //trouble
-      s=&(String(FPSTR(troubleMenu[*currentSelection])))[0];
+      s = String(FPSTR(troubleMenu[ * currentSelection])).c_str();;
       if (key == '*' && * currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", * currentSelection);
@@ -543,12 +584,12 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         dsc.write(out, partition);
       } else if (key == '>') {
         * currentSelection = getNextOption( * currentSelection);
-      s=&(String(FPSTR(troubleMenu[*currentSelection])))[0];           
+        s = String(FPSTR(troubleMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 9)
           line2DisplayCallback(s, partition);
       } else if (key == '<') {
         * currentSelection = getPreviousOption( * currentSelection);
-      s=&(String(FPSTR(troubleMenu[*currentSelection])))[0];       
+        s = String(FPSTR(troubleMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 9)
           line2DisplayCallback(s, partition);
       } else {
@@ -556,7 +597,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         dsc.write(key, partition);
       }
     } else if (dsc.status[partition - 1] == 0xC8) { //service
-      s=&(String(FPSTR(serviceMenu[*currentSelection])))[0];      
+      s = String(FPSTR(serviceMenu[ * currentSelection])).c_str();;
       if (key == '*' && * currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", * currentSelection);
@@ -565,12 +606,12 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         dsc.write(out, partition);
       } else if (key == '>') {
         * currentSelection = getNextOption( * currentSelection);
-      s=&(String(FPSTR(serviceMenu[*currentSelection])))[0];             
+        s = String(FPSTR(serviceMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 9)
           line2DisplayCallback(s, partition);
       } else if (key == '<') {
         * currentSelection = getPreviousOption( * currentSelection);
-      s=&(String(FPSTR(serviceMenu[*currentSelection])))[0];           
+        s = String(FPSTR(serviceMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 9)
           line2DisplayCallback(s, partition);
       } else {
@@ -579,17 +620,17 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       }
 
     } else if (dsc.status[partition - 1] == 0xA9 && !partitionStatus[partition - 1].eventViewer) { // * user functions
-      s=&(String(FPSTR(userMenu[*currentSelection])))[0];      
+      s = String(FPSTR(userMenu[ * currentSelection])).c_str();;
       if (key == '<') {
         * currentSelection = * currentSelection >= 7 ? 6 : ( * currentSelection > 0 ? * currentSelection - 1 : 6);
         * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
-      s=&(String(FPSTR(userMenu[*currentSelection])))[0]; ;            
+        s = String(FPSTR(userMenu[ * currentSelection])).c_str();;;
         if ( * currentSelection < 7)
           line2DisplayCallback(s, partition);
       } else if (key == '>') {
         * currentSelection = * currentSelection >= 6 ? 0 : * currentSelection + 1;
         * currentSelection = s != "" ? * currentSelection : * currentSelection + 1;
-      s=&(String(FPSTR(userMenu[*currentSelection])))[0];            
+        s = String(FPSTR(userMenu[ * currentSelection])).c_str();
         if ( * currentSelection < 7)
           line2DisplayCallback(s, partition);
       } else if (key == '*' && * currentSelection > 0) {
@@ -666,18 +707,18 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xB2) { //output control
-      s=&(String(FPSTR(outputMenu[*currentSelection])))[0];      
+      s = String(FPSTR(outputMenu[ * currentSelection])).c_str();
       if (key == '<') {
         * currentSelection = * currentSelection >= 3 ? 2 : ( * currentSelection > 0 ? * currentSelection - 1 : 2);
         * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
-      s=&(String(FPSTR(outputMenu[*currentSelection])))[0];            
+        s = String(FPSTR(outputMenu[ * currentSelection])).c_str();
         if ( * currentSelection < 3)
           line2DisplayCallback(s, partition);
         dsc.write(key, partition);
       } else if (key == '>') {
         * currentSelection = * currentSelection >= 2 ? 0 : * currentSelection + 1;
         * currentSelection = s != "" ? * currentSelection : * currentSelection + 1;
-      s=&(String(FPSTR(outputMenu[*currentSelection])))[0];   
+        s = String(FPSTR(outputMenu[ * currentSelection])).c_str();
         if ( * currentSelection < 3)
           line2DisplayCallback(s, partition);
         dsc.write(key, partition);
@@ -788,7 +829,8 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     ESPTime rtc = now();
     char s1[4];
     char s2[25];
-    std::string s = "";
+    std::string s;
+    s = "";
     sprintf(s2, "%02d-%02d-%02d %02d:%02d ", rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
     for (int c = 0; c < len; c++) {
       sprintf(s1, "%02X ", cbuf[c]);
@@ -1109,7 +1151,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
     }
     if (millis() - eventTime > 30000) {
-       eventInfoCallback("");
+      eventInfoCallback("");
       eventTime = millis();
     }
 
@@ -1178,8 +1220,8 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       if (dsc.keybusChanged) {
         dsc.keybusChanged = false; // Resets the Keybus data status flag
         if (dsc.keybusConnected) {
-          systemStatusChangeCallback(&String(FPSTR(STATUS_ONLINE))[0]);
-        } else systemStatusChangeCallback(&String(FPSTR(STATUS_OFFLINE))[0]);
+          systemStatusChangeCallback( String(FPSTR(STATUS_ONLINE)).c_str());
+        } else systemStatusChangeCallback( String(FPSTR(STATUS_OFFLINE)).c_str());
       }
 
       if (dsc.powerChanged) {
@@ -1233,7 +1275,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
           if (dsc.alarm[partition]) {
             dsc.readyChanged[partition] = false; //if we are triggered no need to trigger a ready state change
             dsc.armedChanged[partition] = false; // no need to display armed changed
-            partitionStatusChangeCallback(&String(FPSTR(STATUS_TRIGGERED))[0], partition + 1);
+            partitionStatusChangeCallback( String(FPSTR(STATUS_TRIGGERED)).c_str(), partition + 1);
           }
         }
 
@@ -1242,22 +1284,22 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
           dsc.armedChanged[partition] = false; // Resets the partition armed status flag
           if (dsc.armed[partition]) {
             panelStatusChangeCallback(armStatus, true, partition + 1);
-            if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(&String(FPSTR(STATUS_NIGHT))[0], partition + 1);
+            if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) partitionStatusChangeCallback( String(FPSTR(STATUS_NIGHT)).c_str(), partition + 1);
             else if (dsc.armedStay[partition])
-              partitionStatusChangeCallback(&String(FPSTR(STATUS_STAY))[0], partition + 1);
-            else partitionStatusChangeCallback(&String(FPSTR(STATUS_ARM))[0], partition + 1);
+              partitionStatusChangeCallback( String(FPSTR(STATUS_STAY)).c_str(), partition + 1);
+            else partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
             clearZoneAlarms(partition + 1);
           } else {
             clearZoneBypass(partition + 1);
-            partitionStatusChangeCallback(&String(FPSTR(STATUS_OFF))[0], partition + 1);
+            partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
             panelStatusChangeCallback(armStatus, false, partition + 1);
           }
         }
         // Publishes exit delay status
         if (dsc.exitDelayChanged[partition]) {
           dsc.exitDelayChanged[partition] = false; // Resets the exit delay status flag
-          if (dsc.exitDelay[partition]) partitionStatusChangeCallback(&String(FPSTR(STATUS_PENDING))[0], partition + 1);
-          else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) partitionStatusChangeCallback(&String(FPSTR(STATUS_OFF))[0], partition + 1);
+          if (dsc.exitDelay[partition]) partitionStatusChangeCallback( String(FPSTR(STATUS_PENDING)).c_str(), partition + 1);
+          else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
         }
 
         // Publishes ready status
@@ -1266,10 +1308,10 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
           dsc.readyChanged[partition] = false; // Resets the partition alarm status flag
           if (dsc.ready[partition] && !dsc.armed[partition]) {
-            partitionStatusChangeCallback(&(String(FPSTR(STATUS_OFF)))[0], partition + 1);
+            partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
             panelStatusChangeCallback(rdyStatus, true, partition + 1);
           } else {
-            if (!dsc.armed[partition]) partitionStatusChangeCallback(&String(FPSTR(STATUS_NOT_READY))[0], partition + 1);
+            if (!dsc.armed[partition]) partitionStatusChangeCallback( String(FPSTR(STATUS_NOT_READY)).c_str(), partition + 1);
             panelStatusChangeCallback(rdyStatus, false, partition + 1);
           }
 
@@ -1374,7 +1416,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       if (zoneStatusMsg == "")
         zoneStatusMsg = "OK";
 
-      if (zoneStatusMsg != previousZoneStatusMsg )
+      if (zoneStatusMsg != previousZoneStatusMsg)
         zoneMsgStatusCallback(zoneStatusMsg);
 
       previousZoneStatusMsg = zoneStatusMsg;
@@ -1445,7 +1487,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       }
       if (systemMsg == "") systemMsg = "OK";
 
-      if (previousSystemMsg != systemMsg )
+      if (previousSystemMsg != systemMsg)
         troubleMsgStatusCallback(systemMsg);
       previousSystemMsg = systemMsg;
 
@@ -1497,17 +1539,17 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     byte * currentSelection = & partitionStatus[partition].currentSelection;
 
     std::string lcdLine1;
-    std::string  lcdLine2;
+    std::string lcdLine2;
 
     options = false;
     partitionStatus[partition].digits = 0;
     partitionStatus[partition].hex = false;
     partitionStatus[partition].decimalInput = false;
 
-    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1,skip);
+    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip);
     switch (dsc.status[partition]) {
     case 0x01:
-      lcdLine1 ="Partition ready";
+      lcdLine1 = "Partition ready";
       lcdLine2 = " ";
       break;
     case 0x02:
@@ -1895,7 +1937,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
     if (!skip) {
 
-       // ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, *currentSelection);
+      // ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, *currentSelection);
 
       //if multi digit field, setup for 6E request to panel
       if (dsc.status[partition] != partitionStatus[partition].lastStatus && !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
@@ -1932,7 +1974,8 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
             c = decimalInputBuffer[x] - 48;
           else
             c = x % 2 ? dsc.pgmBuffer.data[y] & 0x0F : (dsc.pgmBuffer.data[y] & 0xF0) >> 4;
-          std::string tpl = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+          std::string tpl;
+          tpl = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
           if (dsc.status[partition] == 0xAA) {
             tpl = "XXXX    XXXXXX  XXXXXXXXXXXXXXXX";
@@ -1959,18 +2002,18 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         lcdLine1 = "";
         lcdLine2 = "";
       }
-      
+
       if (dsc.status[partition] < 0x04) {
         if ( * currentSelection > 1 && * currentSelection < 6) {
-      s=&String(FPSTR(statusMenu[*currentSelection]))[0];          
+          s = String(FPSTR(statusMenu[ * currentSelection])).c_str();
           int pos = s.find(":");
           lcdLine1 = (s.substr(0, pos));
-          lcdLine2 =(s.substr(pos + 1));
+          lcdLine2 = (s.substr(pos + 1));
         } else {
           byte c = dsc.ready[partition] ? 0 : 1;
-         s=&String(FPSTR(statusMenuLabels[c]))[0];           
+          s = String(FPSTR(statusMenuLabels[c])).c_str();
           int pos = s.find(":");
-          lcdLine1 =(s.substr(0, pos));
+          lcdLine1 = (s.substr(0, pos));
           lcdLine2 = (s.substr(pos + 1));
           * currentSelection = 1;
         }
@@ -1978,14 +2021,15 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         if (partitionStatus[partition].selectedZone && partitionStatus[partition].selectedZone < maxZones) {
           char s[16];
           sprintf(s, "Zone %02d  <>", partitionStatus[partition].selectedZone);
-          lcdLine2 =  s;
+          lcdLine2 = s;
         }
 
       } else if (dsc.status[partition] == 0xA0) { //bypass
         if ( * currentSelection == 0xFF || * currentSelection == 0 || dsc.status[partition] != partitionStatus[partition].lastStatus)
-          *currentSelection = getNextEnabledZone(0xFF, partition + 1);
+          *
+          currentSelection = getNextEnabledZone(0xFF, partition + 1);
         if ( * currentSelection < maxZones && * currentSelection > 0) {
-           char s[16];
+          char s[16];
           char bypassStatus = ' ';
           if (zoneStatus[ * currentSelection - 1].bypassed)
             bypassStatus = 'B';
@@ -2026,22 +2070,21 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           * currentSelection = 1;
         }
-       lcdLine2=&String(FPSTR(mainMenu[*currentSelection]))[0];              
+        lcdLine2 = String(FPSTR(mainMenu[ * currentSelection])).c_str();
 
       } else if (dsc.status[partition] == 0xB2) { // output menu
 
         if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           * currentSelection = 1;
         }
-      lcdLine2=&String(FPSTR(mainMenu[*currentSelection]))[0];
-      
+        lcdLine2 = String(FPSTR(mainMenu[ * currentSelection])).c_str();
 
       } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
 
         if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           * currentSelection = 1;
         }
-        lcdLine2=&String(FPSTR(userMenu[*currentSelection]))[0];
+        lcdLine2 = String(FPSTR(userMenu[ * currentSelection])).c_str();
 
       } else if (dsc.status[partition] == 0xA1) { //trouble
 
@@ -2049,16 +2092,17 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
           * currentSelection = getNextOption(0xFF);
         }
         if ( * currentSelection < 9) {
-      lcdLine2=&String(FPSTR(troubleMenu[*currentSelection]))[0];              
+          lcdLine2 = String(FPSTR(troubleMenu[ * currentSelection])).c_str();
 
         }
 
       } else if (dsc.status[partition] == 0xC8) { //service
 
         if ( * currentSelection == 0xFF)
-          *currentSelection = getNextOption(0xFF);
+          *
+          currentSelection = getNextOption(0xFF);
         if ( * currentSelection < 9) {
-        lcdLine2=&String(FPSTR(serviceMenu[*currentSelection]))[0]; 
+          lcdLine2 = String(FPSTR(serviceMenu[ * currentSelection])).c_str();
 
         }
 
@@ -2081,7 +2125,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       }
 
     }
-    
+
     if (lcdLine1 != "") line1DisplayCallback(lcdLine1, partition + 1);
     if (lcdLine2 != "") line2DisplayCallback(lcdLine2, partition + 1);
 
