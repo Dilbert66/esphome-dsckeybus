@@ -284,11 +284,11 @@ bool dscKeybusInterface::loop() {
     if (dscPartitions > 2) processPanel_0xEB();
     break; // Date, time, system status messages - partitions 1-8    
   }
-  if (millis() - starWaitTime > 5000 && starKeyCheck && writeDataPending) { // timeout after no response from * write
+  //if (millis() - starWaitTime > 5000 && starKeyCheck && writeDataPending) { // timeout after no response from * write
       // starKeyWait[partition-1] = false;
        //starKeyCheck = false;
      //  writeDataPending = false;
-	}
+	//}
 
   return true;
 }
@@ -657,7 +657,6 @@ dscKeybusInterface::dscClockInterrupt() {
 
           if (writeBufferIdx == writeBufferLength) { //all bits written
             writeStart = false;
-          //  if (!starKeyCheck ) 
               writeDataPending = false;
             if (writeAlarm) {
               writeAlarm = false;

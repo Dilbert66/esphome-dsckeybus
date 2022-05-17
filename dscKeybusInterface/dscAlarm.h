@@ -1504,7 +1504,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     partitionStatus[partition].hex = false;
     partitionStatus[partition].decimalInput = false;
 
-    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1);
+    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1,skip);
     switch (dsc.status[partition]) {
     case 0x01:
       lcdLine1 ="Partition ready";
@@ -1876,7 +1876,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
     if (partitionStatus[partition].digits == 0) partitionStatus[partition].newData = false;
 
-    if (millis() - partitionStatus[partition].keyPressTime > 1000 && dsc.status[partition] > 0x8B) {
+    if (millis() - partitionStatus[partition].keyPressTime > 3000 && dsc.status[partition] > 0x8B) {
       if (!partitionStatus[partition].inprogram) {
         partitionStatus[partition].locked = true;
         partitionStatus[partition].lastStatus = dsc.status[partition];
@@ -1895,7 +1895,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
     if (!skip) {
 
-      //  ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, *currentSelection);
+       // ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, *currentSelection);
 
       //if multi digit field, setup for 6E request to panel
       if (dsc.status[partition] != partitionStatus[partition].lastStatus && !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
@@ -1947,14 +1947,11 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
           if (partitionStatus[partition].digits < 17)
             lcdLine2.append(s);
-        //lcdLine2+=s;
           else {
             if (x < 16)
               lcdLine1.append(s);
-         //lcdLine1+=s;
             else
               lcdLine2.append(s);
-              //lcdLine2+=s;
           }
         }
 
@@ -1962,6 +1959,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         lcdLine1 = "";
         lcdLine2 = "";
       }
+      
       if (dsc.status[partition] < 0x04) {
         if ( * currentSelection > 1 && * currentSelection < 6) {
       s=&String(FPSTR(statusMenu[*currentSelection]))[0];          
@@ -1985,10 +1983,9 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
       } else if (dsc.status[partition] == 0xA0) { //bypass
         if ( * currentSelection == 0xFF || * currentSelection == 0 || dsc.status[partition] != partitionStatus[partition].lastStatus)
-          *
-          currentSelection = getNextEnabledZone(0xFF, partition + 1);
+          *currentSelection = getNextEnabledZone(0xFF, partition + 1);
         if ( * currentSelection < maxZones && * currentSelection > 0) {
-          char s[16];
+           char s[16];
           char bypassStatus = ' ';
           if (zoneStatus[ * currentSelection - 1].bypassed)
             bypassStatus = 'B';
