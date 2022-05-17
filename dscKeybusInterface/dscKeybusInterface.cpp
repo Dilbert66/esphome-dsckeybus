@@ -286,8 +286,8 @@ bool dscKeybusInterface::loop() {
   }
   if (millis() - starWaitTime > 5000 && starKeyCheck && writeDataPending) { // timeout after no response from * write
       // starKeyWait[partition-1] = false;
-       starKeyCheck = false;
-       writeDataPending = false;
+       //starKeyCheck = false;
+     //  writeDataPending = false;
 	}
 
   return true;
@@ -657,7 +657,7 @@ dscKeybusInterface::dscClockInterrupt() {
 
           if (writeBufferIdx == writeBufferLength) { //all bits written
             writeStart = false;
-            if (!starKeyCheck ) 
+          //  if (!starKeyCheck ) 
               writeDataPending = false;
             if (writeAlarm) {
               writeAlarm = false;
