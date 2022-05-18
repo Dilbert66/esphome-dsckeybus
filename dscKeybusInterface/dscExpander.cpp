@@ -205,24 +205,11 @@ IRAM_ATTR
 #endif 
 dscKeybusInterface::processCmd70() {
 
-
   if (!pgmBuffer.pending70) return;
-  int dataSum = 0;
   pgmBuffer.pending70 = false;
-  if (pgmBuffer.idx + 4 > pgmBuffer.len) return;
-  writeBufferLength = 5;
-  writeDataBit = 9;
-  writeBufferIdx = 0;
-  memset((void * ) writeBuffer, 0, 5);
-  for (byte x = 0; x < 4; x++) {
-    writeBuffer[x] = pgmBuffer.data[pgmBuffer.idx + x];
-    dataSum += writeBuffer[x];
-  }
-
-  pgmBuffer.idx += 4;
-  writeBuffer[4] = dataSum % 256;
-  writeDataPending = true;
-
+  if (pgmBuffer.idx + 5 > pgmBuffer.len) return;
+  updateWriteBuffer((byte*) &pgmBuffer.data[pgmBuffer.idx], 9,1,5);
+  pgmBuffer.idx += 5;    
   byte key = 0;
   if (pgmBuffer.sendhash) key=0x2D; //'#' // setup to send final # cmd to complete write update to panel
   if (pgmBuffer.idx < pgmBuffer.len) {
@@ -236,8 +223,9 @@ dscKeybusInterface::processCmd70() {
 void dscKeybusInterface::setLCDReceive(byte digits,byte partition) {
   if (!partition) partition=currentDefaultPartition;
   pgmBuffer.idx = 0;
-  byte b = (digits / 2) + (digits % 2);
-  b += b % 4 ? 4 - b % 4 : 0; //round up to next 4 bytes as thats the size of cmds70/6e
+  byte b = (digits / 2) + (digits % 2); //full bytes
+  b+=b/4;//checksum bytes
+  b += b % 5 ? 5 - b % 5 : 0; //round up to next 5 bytes as thats the size of cmds70/6e including chksum
   pgmBuffer.len = b;
   pgmBuffer.partition=partition;
   pgmBuffer.pending6E=true;
@@ -248,11 +236,21 @@ void dscKeybusInterface::setLCDReceive(byte digits,byte partition) {
 
 void dscKeybusInterface::setLCDSend(byte partition,bool sendhash) {
   if (!partition) partition=currentDefaultPartition;
+  int dataSum;
   pgmBuffer.idx = 0;
   pgmBuffer.pending70 = true;
   byte key = 0xAA;
   pgmBuffer.sendhash=sendhash;
   pgmBuffer.dataPending=false;
+  
+  for (int y=0;y<pgmBuffer.len;y=y+5) { //calculate checksums for all groups of 4 bytes
+    dataSum = 0;        
+    for (int x = 0; x < 4; x++) {
+        dataSum += pgmBuffer.data[x+y];
+    }
+    pgmBuffer.data[y+4]=dataSum%256;
+  }
+
   writeCharsToQueue( & key, partition);
 
 }

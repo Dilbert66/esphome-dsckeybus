@@ -438,7 +438,8 @@ class dscKeybusInterface {
      //start new command handling 
 
     volatile static  byte writePartition;    
-    volatile static byte writeBuffer[6]; 
+   // volatile static byte writeBuffer[6]; 
+    static byte * writeBuffer;
     static byte cmdD0buffer[6];  
     static bool pendingD0;    
     volatile static byte outIdx,inIdx;     

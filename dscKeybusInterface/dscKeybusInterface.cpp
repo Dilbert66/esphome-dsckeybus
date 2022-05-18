@@ -657,7 +657,7 @@ dscKeybusInterface::dscClockInterrupt() {
 
           if (writeBufferIdx == writeBufferLength) { //all bits written
             writeStart = false;
-              writeDataPending = false;
+            writeDataPending = false;
             if (writeAlarm) {
               writeAlarm = false;
               writeBufferIdx = 0; //reset byte counter to resend
@@ -796,7 +796,7 @@ dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int bit,by
   writeAlarm = alarm;
   starKeyCheck = false;
   writePartition=partition;
-  for (byte x = 0; x < len; x++) writeBuffer[x] = src[x];
+  writeBuffer=src;
   writeDataPending = true; //set flag to send it  
 }
 

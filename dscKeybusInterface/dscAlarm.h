@@ -491,7 +491,8 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
           dsc.pgmBuffer.data[0] = num;
           //convert data to int and store it to data[0];
         } else {
-          byte y = partitionStatus[partition - 1].editIdx / 2;
+            //skip every 5th byte since it's a checksum
+          byte y = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx/8);
           char k = key - 48;
           if (partitionStatus[partition - 1].hexMode) {
             if (k < 6)
@@ -499,6 +500,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
             else
               return;
           }
+          
           if (partitionStatus[partition - 1].editIdx % 2)
             dsc.pgmBuffer.data[y] = (dsc.pgmBuffer.data[y] & 0xF0) | k;
           else
@@ -744,7 +746,10 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     int count = 0;
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx > 0 ? partitionStatus[partition - 1].editIdx - 1 : partitionStatus[partition - 1].digits - 1;
-    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits);
+      count++;
+       byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
+      //if ((b%4)) continue;       
+    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count <= partitionStatus[partition - 1].digits);
 
   }
 
@@ -752,7 +757,10 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     int count = 0;
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx + 1 < partitionStatus[partition - 1].digits ? partitionStatus[partition - 1].editIdx + 1 : partitionStatus[partition - 1].editIdx = 0;
-    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count++ < partitionStatus[partition - 1].digits);
+      count++;
+       byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
+      //if ((b%4)) continue;        
+    } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count <= partitionStatus[partition - 1].digits);
 
   }
 
@@ -1968,8 +1976,9 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
           else
             sprintf(decimalInputBuffer, "%03d", dsc.pgmBuffer.data[0]);
         }
-        for (int x = 0; x < partitionStatus[partition].digits; x++) {
-          y = x / 2;
+   
+        for (int x = 0; x < partitionStatus[partition].digits ; x++) { 
+          y = (x / 2)  + (x/8); //skip every 5th byte since it's a checksum
           if (partitionStatus[partition].decimalInput)
             c = decimalInputBuffer[x] - 48;
           else
