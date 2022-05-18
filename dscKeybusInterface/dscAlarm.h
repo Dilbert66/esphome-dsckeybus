@@ -244,12 +244,10 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
   expanderAddr3;
   byte debug;
   const char * accessCode;
-  bool enable05Messages = true;
   unsigned long cmdWaitTime,
   beepTime,
   eventTime;
-  bool extendedBuffer,
-  partitionChanged;
+  bool extendedBuffer;
   int defaultPartition = 1;
   int activePartition = 1;
   byte maxZones = maxZonesDefault;
@@ -266,7 +264,6 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     unsigned long keyPressTime;
     byte lastStatus;
     byte status;
-    byte lights;
     bool inprogram;
     byte digits;
     bool newData;
@@ -1145,9 +1142,15 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
     
  
-    
+    static unsigned long refreshTime;
+    if (!firstrun && millis() - refreshTime > 60000 ) {
+              refreshTime=millis();
+              forceRefresh=true;
+             
+    }
 
-    if (!forceDisconnect && dsc.loop()) { //Processes data only when a valid Keybus command has been read
+
+    if ((!forceDisconnect && dsc.loop()) || forceRefresh) { //Processes data only when a valid Keybus command has been read
       if (firstrun) {
         #ifdef EXPANDER
         dsc.clearZoneRanges(); // start with clear expanded zones
@@ -1155,12 +1158,6 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       }
       
       
-       static unsigned long refreshTime;
-       if (!firstrun && millis() - refreshTime > 60000 ) {
-              refreshTime=millis();
-              forceRefresh=true;
-             
-      }
 
       static bool delayedStart = true;
       static unsigned long startWait = millis();
@@ -1199,7 +1196,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
     }
 
-    if ((!forceDisconnect && dsc.statusChanged) || forceRefresh) { // Processes data only when a valid Keybus command has been read and statuses were changed
+    if (!forceDisconnect && ( dsc.statusChanged || forceRefresh)) { // Processes data only when a valid Keybus command has been read and statuses were changed
       dsc.statusChanged = false; // Reset the status tracking flag
 
       if (debug == 1)
@@ -1331,9 +1328,10 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       //   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
       //   ...
       //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
-      if (dsc.openZonesStatusChanged || forceRefresh) {
+      
+   
+      if (dsc.openZonesStatusChanged) {
         char s1[4];
-        dsc.openZonesStatusChanged = false; // Resets the open zones status flag
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
           for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
             if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) { // Checks an individual open zone status flag
@@ -1341,17 +1339,16 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
               zone = zoneBit + (zoneGroup * 8);
               if (zone >= maxZones) continue;
               if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
-                zoneStatusChangeCallback(zone + 1, true); // Zone open
+                zoneStatusChangeCallback(zone+1,true);                  
                 zoneStatus[zone].open = true;
               } else {
-                zoneStatusChangeCallback(zone + 1, false); // Zone closed
                 zoneStatus[zone].open = false;
+                zoneStatusChangeCallback(zone+1,false);                 
               }
             }
           }
         }
-
-      }
+       }
 
       // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
       //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
@@ -1359,7 +1356,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       //   ...
       //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64	
       // ESP_LOGD("test","alarmzonestatuschanged=%d",dsc.alarmZonesStatusChanged);
-      if (dsc.alarmZonesStatusChanged || forceRefresh) {
+      if (dsc.alarmZonesStatusChanged ) {
         dsc.alarmZonesStatusChanged = false; // Resets the alarm zones status flag
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
           for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
@@ -1368,7 +1365,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
               bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0); // Resets the individual alarm zone status flag
               zone = zoneBit + (zoneGroup * 8);
 
-              if (zone >= maxZones) continue;
+              if (zone >= maxZones ) continue;
               if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
                 zoneStatus[zone].alarm = true;
                 // } else {
@@ -1383,7 +1380,8 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       char s1[7];
       for (int x = 0; x < maxZones; x++) {
         if (!zoneStatus[x].enabled) continue;
-
+        if (forceRefresh) 
+            zoneStatusChangeCallback(x+1,zoneStatus[x].open);
         if (zoneStatus[x].open) {
           sprintf(s1, "OP:%d", x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
