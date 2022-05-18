@@ -2078,7 +2078,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           * currentSelection = 1;
         }
-        lcdLine2 = String(FPSTR(mainMenu[ * currentSelection])).c_str();
+        lcdLine2 = String(FPSTR(outputMenu[ * currentSelection])).c_str();
 
       } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
 
