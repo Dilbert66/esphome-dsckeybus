@@ -303,7 +303,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
   eventStatusMsg;
   bool relayStatus[16],
   previousRelayStatus[16];
-  bool sendCmd;
+  bool sendCmd,forceRefresh;
   byte system0,
   system1,
   previousSystem0,
@@ -315,7 +315,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
   byte beeps,
   previousBeeps;
   bool refresh;
-  std::string s;
+
 
   void setup() override {
 
@@ -446,7 +446,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     if (partition < 1) partition = defaultPartition;
     byte * currentSelection = & partitionStatus[partition - 1].currentSelection;
 
-    ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], * currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
+   // ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], * currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
 
     if (partitionStatus[partition - 1].locked) {
       line1DisplayCallback("System", partition);
@@ -537,7 +537,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (dsc.status[partition - 1] < 0x04) {
-      if (dsc.keybusVersion1) { //older version don't support top level navigation 
+      if (dsc.keybusVersion1) { //older versions don't support top level navigation 
         if (key == '<' || key == '>') return;
       } else {
 
@@ -552,19 +552,16 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       setStatus(partition - 1, true);
 
     } else if (dsc.status[partition - 1] == 0x9E) { // * mainmenu
-       s = String(FPSTR(mainMenu[ * currentSelection])).c_str();
       if (key == '<') {
         * currentSelection = * currentSelection >= 11 ? 10 : ( * currentSelection > 0 ? * currentSelection - 1 : 10);
-        * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
-        s = String(FPSTR(mainMenu[ * currentSelection])).c_str();;
+        if (*currentSelection == 8) *currentSelection-=1; //skip empty item
         if ( * currentSelection < 11)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(mainMenu[ * currentSelection])).c_str(), partition);
       } else if (key == '>') {
         * currentSelection = * currentSelection >= 10 ? 0 : * currentSelection + 1;
-        * currentSelection = s != "" ? * currentSelection : * currentSelection + 1;
-        s = String(FPSTR(mainMenu[ * currentSelection])).c_str();;
+        if (*currentSelection == 8) *currentSelection+=1;
         if ( * currentSelection < 11)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(mainMenu[ * currentSelection])).c_str(), partition);
       } else if (key == '*' && * currentSelection > 0) {
         dsc.write(key, partition);
         char s[5];
@@ -577,7 +574,6 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         * currentSelection = 0xFF;
       }
     } else if (dsc.status[partition - 1] == 0xA1) { //trouble
-      s = String(FPSTR(troubleMenu[ * currentSelection])).c_str();;
       if (key == '*' && * currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", * currentSelection);
@@ -586,20 +582,17 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         dsc.write(out, partition);
       } else if (key == '>') {
         * currentSelection = getNextOption( * currentSelection);
-        s = String(FPSTR(troubleMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 9)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(troubleMenu[ * currentSelection])).c_str(), partition);
       } else if (key == '<') {
         * currentSelection = getPreviousOption( * currentSelection);
-        s = String(FPSTR(troubleMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 9)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(troubleMenu[ * currentSelection])).c_str(), partition);
       } else {
         * currentSelection = 0xFF;
         dsc.write(key, partition);
       }
     } else if (dsc.status[partition - 1] == 0xC8) { //service
-      s = String(FPSTR(serviceMenu[ * currentSelection])).c_str();;
       if (key == '*' && * currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", * currentSelection);
@@ -608,33 +601,26 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         dsc.write(out, partition);
       } else if (key == '>') {
         * currentSelection = getNextOption( * currentSelection);
-        s = String(FPSTR(serviceMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 9)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(serviceMenu[ * currentSelection])).c_str(), partition);
       } else if (key == '<') {
         * currentSelection = getPreviousOption( * currentSelection);
-        s = String(FPSTR(serviceMenu[ * currentSelection])).c_str();;
         if ( * currentSelection < 9)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(serviceMenu[ * currentSelection])).c_str(), partition);
       } else {
         * currentSelection = 0xFF;
         dsc.write(key, partition);
       }
 
     } else if (dsc.status[partition - 1] == 0xA9 && !partitionStatus[partition - 1].eventViewer) { // * user functions
-      s = String(FPSTR(userMenu[ * currentSelection])).c_str();;
       if (key == '<') {
         * currentSelection = * currentSelection >= 7 ? 6 : ( * currentSelection > 0 ? * currentSelection - 1 : 6);
-        * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
-        s = String(FPSTR(userMenu[ * currentSelection])).c_str();;;
         if ( * currentSelection < 7)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(userMenu[ * currentSelection])).c_str(), partition);
       } else if (key == '>') {
         * currentSelection = * currentSelection >= 6 ? 0 : * currentSelection + 1;
-        * currentSelection = s != "" ? * currentSelection : * currentSelection + 1;
-        s = String(FPSTR(userMenu[ * currentSelection])).c_str();
         if ( * currentSelection < 7)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(userMenu[ * currentSelection])).c_str(), partition);
       } else if (key == '*' && * currentSelection > 0) {
         char s[5];
         if ( * currentSelection == 6) { //event viewer. 
@@ -709,20 +695,15 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       }
       setStatus(partition - 1, true);
     } else if (dsc.status[partition - 1] == 0xB2) { //output control
-      s = String(FPSTR(outputMenu[ * currentSelection])).c_str();
       if (key == '<') {
         * currentSelection = * currentSelection >= 3 ? 2 : ( * currentSelection > 0 ? * currentSelection - 1 : 2);
-        * currentSelection = s != "" ? * currentSelection : * currentSelection - 1;
-        s = String(FPSTR(outputMenu[ * currentSelection])).c_str();
         if ( * currentSelection < 3)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(outputMenu[ * currentSelection])).c_str(), partition);
         dsc.write(key, partition);
       } else if (key == '>') {
         * currentSelection = * currentSelection >= 2 ? 0 : * currentSelection + 1;
-        * currentSelection = s != "" ? * currentSelection : * currentSelection + 1;
-        s = String(FPSTR(outputMenu[ * currentSelection])).c_str();
         if ( * currentSelection < 3)
-          line2DisplayCallback(s, partition);
+          line2DisplayCallback(String(FPSTR(outputMenu[ * currentSelection])).c_str(), partition);
         dsc.write(key, partition);
       } else if (key == '*' && * currentSelection > 0) {
         char s[5];
@@ -1162,12 +1143,23 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       eventInfoCallback("");
       eventTime = millis();
     }
+    
+ 
+    
 
     if (!forceDisconnect && dsc.loop()) { //Processes data only when a valid Keybus command has been read
       if (firstrun) {
         #ifdef EXPANDER
         dsc.clearZoneRanges(); // start with clear expanded zones
         #endif
+      }
+      
+      
+       static unsigned long refreshTime;
+       if (!firstrun && millis() - refreshTime > 60000 ) {
+              refreshTime=millis();
+              forceRefresh=true;
+             
       }
 
       static bool delayedStart = true;
@@ -1207,7 +1199,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
     }
 
-    if (!forceDisconnect && dsc.statusChanged) { // Processes data only when a valid Keybus command has been read and statuses were changed
+    if ((!forceDisconnect && dsc.statusChanged) || forceRefresh) { // Processes data only when a valid Keybus command has been read and statuses were changed
       dsc.statusChanged = false; // Reset the status tracking flag
 
       if (debug == 1)
@@ -1225,14 +1217,14 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       dsc.bufferOverflow = false;
 
       // Checks if the interface is connected to the Keybus
-      if (dsc.keybusChanged) {
+      if (dsc.keybusChanged || forceRefresh) {
         dsc.keybusChanged = false; // Resets the Keybus data status flag
         if (dsc.keybusConnected) {
           systemStatusChangeCallback( String(FPSTR(STATUS_ONLINE)).c_str());
         } else systemStatusChangeCallback( String(FPSTR(STATUS_OFFLINE)).c_str());
       }
 
-      if (dsc.powerChanged) {
+      if (dsc.powerChanged || forceRefresh) {
         dsc.powerChanged = false;
         if (dsc.powerTrouble) {
           panelStatusChangeCallback(acStatus, false, 0); //no ac
@@ -1240,7 +1232,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
       }
 
-      if (dsc.batteryChanged) {
+      if (dsc.batteryChanged || forceRefresh) {
         dsc.batteryChanged = false;
         if (dsc.batteryTrouble) {
           panelStatusChangeCallback(batStatus, true, 0);
@@ -1258,7 +1250,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       }
 
       // Publishes trouble status
-      if (dsc.troubleChanged) {
+      if (dsc.troubleChanged || forceRefresh) {
         dsc.troubleChanged = false; // Resets the trouble status flag
         if (dsc.trouble) panelStatusChangeCallback(trStatus, true, 0); // Trouble alarm tripped
         else panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
@@ -1277,7 +1269,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         }
 
         // Publishes alarm status
-        if (dsc.alarmChanged[partition]) {
+        if (dsc.alarmChanged[partition] || forceRefresh) {
           //ESP_LOGD("test","dsc alarm=%d",dsc.alarm[partition]);
           dsc.alarmChanged[partition] = false; // Resets the partition alarm status flag
           if (dsc.alarm[partition]) {
@@ -1288,7 +1280,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         }
 
         // Publishes armed/disarmed status
-        if (dsc.armedChanged[partition]) {
+        if (dsc.armedChanged[partition] || forceRefresh) {
           dsc.armedChanged[partition] = false; // Resets the partition armed status flag
           if (dsc.armed[partition]) {
             panelStatusChangeCallback(armStatus, true, partition + 1);
@@ -1312,7 +1304,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
         // Publishes ready status
 
-        if (dsc.readyChanged[partition]) {
+        if (dsc.readyChanged[partition] || forceRefresh) {
 
           dsc.readyChanged[partition] = false; // Resets the partition alarm status flag
           if (dsc.ready[partition] && !dsc.armed[partition]) {
@@ -1326,7 +1318,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
         }
 
         // Publishes fire alarm status
-        if (dsc.fireChanged[partition]) {
+        if (dsc.fireChanged[partition] || forceRefresh) {
           dsc.fireChanged[partition] = false; // Resets the fire status flag
           if (dsc.fire[partition]) fireStatusChangeCallback(partition + 1, true); // Fire alarm tripped
           else fireStatusChangeCallback(partition + 1, false); // Fire alarm restored
@@ -1339,7 +1331,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       //   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
       //   ...
       //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
-      if (dsc.openZonesStatusChanged) {
+      if (dsc.openZonesStatusChanged || forceRefresh) {
         char s1[4];
         dsc.openZonesStatusChanged = false; // Resets the open zones status flag
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
@@ -1367,7 +1359,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       //   ...
       //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64	
       // ESP_LOGD("test","alarmzonestatuschanged=%d",dsc.alarmZonesStatusChanged);
-      if (dsc.alarmZonesStatusChanged) {
+      if (dsc.alarmZonesStatusChanged || forceRefresh) {
         dsc.alarmZonesStatusChanged = false; // Resets the alarm zones status flag
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
           for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
@@ -1424,7 +1416,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       if (zoneStatusMsg == "")
         zoneStatusMsg = "OK";
 
-      if (zoneStatusMsg != previousZoneStatusMsg)
+      if (zoneStatusMsg != previousZoneStatusMsg || forceRefresh)
         zoneMsgStatusCallback(zoneStatusMsg);
 
       previousZoneStatusMsg = zoneStatusMsg;
@@ -1495,7 +1487,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       }
       if (systemMsg == "") systemMsg = "OK";
 
-      if (previousSystemMsg != systemMsg)
+      if (previousSystemMsg != systemMsg || forceRefresh)
         troubleMsgStatusCallback(systemMsg);
       previousSystemMsg = systemMsg;
 
@@ -1535,7 +1527,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       #endif
 
     }
-
+    forceRefresh=false;
     firstrun = false;
 
   }
@@ -2014,13 +2006,13 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
       if (dsc.status[partition] < 0x04) {
         if ( * currentSelection > 1 && * currentSelection < 6) {
-          s = String(FPSTR(statusMenu[ * currentSelection])).c_str();
+          std::string s = String(FPSTR(statusMenu[ * currentSelection])).c_str();
           int pos = s.find(":");
           lcdLine1 = (s.substr(0, pos));
           lcdLine2 = (s.substr(pos + 1));
         } else {
           byte c = dsc.ready[partition] ? 0 : 1;
-          s = String(FPSTR(statusMenuLabels[c])).c_str();
+          std::string s = String(FPSTR(statusMenuLabels[c])).c_str();
           int pos = s.find(":");
           lcdLine1 = (s.substr(0, pos));
           lcdLine2 = (s.substr(pos + 1));
@@ -2168,15 +2160,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       break;
 
     case 0xA5:
-      if ((dsc.panelData[5] & 0x03) == 1)
-        switch (dsc.panelData[6]) {
-        case 0xAD:
-          //ESP_LOGD("test", "A5 enter programming mode");
-          break;
-        case 0xAC:
-          //ESP_LOGD("test", "A5 leave programming mode");
-          break;
-        }
+
       processEventBufferAA(true);
       break;
     case 0xAA:
@@ -2441,6 +2425,11 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     if (dscMinute < 10) strcat(eventInfo, "0");
     itoa(dscMinute, charBuffer, 10);
     strcat(eventInfo, charBuffer);
+    
+     if (dsc.panelData[6] == 0 && dsc.panelData[7] == 0) {
+      //timestamp
+      return;
+    }   
 
     byte partition = dsc.panelData[3] >> 6;
     strcat(eventInfo, " P:");
@@ -2489,6 +2478,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       strcat(eventInfo, charBuffer);
       strcat(eventInfo, " ");
     }
+    
     byte dscYear3 = dsc.panelData[3] >> 4;
     byte dscYear4 = dsc.panelData[3] & 0x0F;
     byte dscMonth = dsc.panelData[4] << 2;
@@ -2822,7 +2812,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data0";
       lcdLine2 = " ";
     }
 
@@ -2970,7 +2960,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data1";
       lcdLine2 = " ";
     }
 
@@ -3164,7 +3154,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data2";
       lcdLine2 = " ";
     }
 
@@ -3318,7 +3308,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data3";
       lcdLine2 = " ";
     }
 
@@ -3396,7 +3386,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data4";
       lcdLine2 = " ";
     }
 
@@ -3438,7 +3428,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data5";
       lcdLine2 = " ";
     }
 
@@ -3476,7 +3466,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data14";
       lcdLine2 = " ";
     }
 
@@ -3510,7 +3500,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data16";
       lcdLine2 = "";
     }
 
@@ -3584,7 +3574,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data17";
       lcdLine2 = "";
     }
 
@@ -3636,7 +3626,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data18";
       lcdLine2 = "";
     }
 
@@ -3661,7 +3651,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data";
+      lcdLine1 = "Unknown data1b";
       lcdLine2 = "";
     }
 
