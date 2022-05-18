@@ -1286,7 +1286,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
               partitionStatusChangeCallback( String(FPSTR(STATUS_STAY)).c_str(), partition + 1);
             else partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
             clearZoneAlarms(partition + 1);
-          } else {
+          } else if (!forceRefresh) {
             clearZoneBypass(partition + 1);
             partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
             panelStatusChangeCallback(armStatus, false, partition + 1);
@@ -1379,9 +1379,13 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       zoneStatusMsg = "";
       char s1[7];
       for (int x = 0; x < maxZones; x++) {
-        if (!zoneStatus[x].enabled) continue;
-        if (forceRefresh) 
+
+
+        if (!zoneStatus[x].enabled) continue;   
+        
+        if (forceRefresh ) 
             zoneStatusChangeCallback(x+1,zoneStatus[x].open);
+            
         if (zoneStatus[x].open) {
           sprintf(s1, "OP:%d", x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
