@@ -179,7 +179,11 @@ const char STATUS_TRIGGERED[] PROGMEM = "triggered";
 const char STATUS_READY[] PROGMEM = "ready";
 const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
 
+#ifdef ESP32
 class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
+#else
+class DSCkeybushome: public CustomAPIDevice, public PollingComponent {    
+#endif
   public: DSCkeybushome(byte dscClockPin = 0, byte dscReadPin = 0, byte dscWritePin = 0): dscClockPin(dscClockPin),
   dscReadPin(dscReadPin),
   dscWritePin(dscWritePin) {}
@@ -329,7 +333,13 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     register_service( & DSCkeybushome::alarm_disarm, "alarm_disarm", {
       "code"
     });
+#ifdef ESP32
     register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {});
+#else
+    register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {
+     "year","month","day","hour","minute"
+    });
+#endif
     register_service( & DSCkeybushome::alarm_arm_home, "alarm_arm_home");
     register_service( & DSCkeybushome::alarm_arm_night, "alarm_arm_night", {
       "code"
@@ -741,12 +751,18 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count <= partitionStatus[partition - 1].digits);
 
   }
-
+#ifdef ESP32
   void set_panel_time() {
+
     ESPTime rtc = now();
     dsc.setDateTime(rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
+  
   }
-
+  #else
+  void set_panel_time(int year,int month,int day,int hour,int minute) {
+  dsc.setDateTime(year, month, day, hour, minute);
+  }  
+#endif 
   void alarm_keypress(std::string keystring) {
     alarm_keypress_partition(keystring, defaultPartition);
   }
@@ -812,6 +828,7 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 
   void printPacket(const char * label, char cmd, volatile byte cbuf[], int len) {
 
+#ifdef ESP32
     ESPTime rtc = now();
     char s1[4];
     char s2[25];
@@ -822,8 +839,17 @@ class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
       sprintf(s1, "%02X ", cbuf[c]);
       s = s.append(s1);
     }
-
     ESP_LOGI(label, "%s %02X: %s", s2, cmd, s.c_str());
+#else
+    char s1[4];
+    std::string s;
+    s = "";
+    for (int c = 0; c < len; c++) {
+      sprintf(s1, "%02X ", cbuf[c]);
+      s = s.append(s1);
+    }
+    ESP_LOGI(label, "%02X: %s", cmd, s.c_str());
+#endif    
 
   }
 

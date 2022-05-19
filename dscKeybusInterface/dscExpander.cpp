@@ -204,9 +204,8 @@ ICACHE_RAM_ATTR
 IRAM_ATTR 
 #endif 
 dscKeybusInterface::processCmd70() {
-
   if (!pgmBuffer.pending70) return;
-  pgmBuffer.pending70 = false;
+  pgmBuffer.pending70=false;  
   if (pgmBuffer.idx + 5 > pgmBuffer.len) return;
   updateWriteBuffer((byte*) &pgmBuffer.data[pgmBuffer.idx], 9,1,5);
   pgmBuffer.idx += 5;    
@@ -216,6 +215,7 @@ dscKeybusInterface::processCmd70() {
     pgmBuffer.pending70 = true;
     key = 0xAA; //more data available so set up also for next group send request
   }
+
   if (key) writeCharsToQueue( & key, pgmBuffer.partition);
 
 }

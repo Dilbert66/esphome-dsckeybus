@@ -184,7 +184,8 @@ bool dscKeybusInterface::loop() {
   // Copies data from the buffer to panelData[]
   static byte panelBufferIndex = 1;
   byte dataIndex = panelBufferIndex - 1;
-  for (byte i = 0; i < dscReadSize; i++) panelData[i] = panelBuffer[dataIndex][i];
+  //for (byte i = 0; i < dscReadSize; i++) panelData[i] = panelBuffer[dataIndex][i];
+  memcpy((void*) panelData,(void*) &panelBuffer[dataIndex],dscReadSize);
   panelBitCount = panelBufferBitCount[dataIndex];
   panelByteCount = panelBufferByteCount[dataIndex];
   panelBufferIndex++;
@@ -504,14 +505,11 @@ dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte current
   for (byte i = 0; i < checkedBytes; i++) {
     if (previousCmd[i] != currentCmd[i]) {
       redundantData = false;
+      memcpy((void*)previousCmd,(void*)currentCmd,dscReadSize);      
       break;
     }
   }
-  if (redundantData) return true;
-  else {
-    for (byte i = 0; i < dscReadSize; i++) previousCmd[i] = currentCmd[i];
-    return false;
-  }
+  return redundantData;
 }
 
 bool dscKeybusInterface::validCRC() {
@@ -613,7 +611,8 @@ dscKeybusInterface::dscClockInterrupt() {
       // Stores new panel data in the panel buffer
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
-        for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
+        //for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
+        memcpy((void*)&panelBuffer[panelBufferLength],(void*)isrPanelData,dscReadSize);       
         panelBufferBitCount[panelBufferLength] = isrPanelBitTotal;
         panelBufferByteCount[panelBufferLength] = isrPanelByteCount;
         panelBufferLength++;
@@ -627,17 +626,20 @@ dscKeybusInterface::dscClockInterrupt() {
           moduleSubCmd = isrPanelData[2];
           moduleDataDetected = false;
           moduleDataCaptured = true; // Sets a flag for handleModule()
-          for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
+         // for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
+          memcpy((void*)moduleData,(void*)isrModuleData,dscReadSize);
           moduleBitCount = isrPanelBitTotal;
           moduleByteCount = isrPanelByteCount;
         }
 
         // Resets the keypad and module capture data
-        for (byte i = 0; i < dscReadSize; i++) isrModuleData[i] = 0;
+        //for (byte i = 0; i < dscReadSize; i++) isrModuleData[i] = 0;
+        memset((void*)isrModuleData,0,dscReadSize);       
       }
 
       // Resets the panel capture data and counters
-      for (byte i = 0; i < dscReadSize; i++) isrPanelData[i] = 0;
+      //for (byte i = 0; i < dscReadSize; i++) isrPanelData[i] = 0;
+      memset((void*)isrPanelData,0,dscReadSize);
       isrPanelBitTotal = 0;
       isrPanelBitCount = 0;
       isrPanelByteCount = 0;
@@ -707,11 +709,11 @@ dscKeybusInterface::dscDataInterrupt() {
       if (isrPanelBitTotal == 7) {
         processPendingResponses(isrPanelData[0]);
 
-      }
+      }  else
 
       if (isrPanelBitTotal == 15 && isrPanelData[0] == 0xE6) {
         processPendingResponses_0xE6(isrPanelData[2]); //check subcommand
-      }
+      } 
 
       // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with panelData[] bytes
       if (isrPanelBitTotal == 8) {
@@ -772,7 +774,7 @@ IRAM_ATTR
 dscKeybusInterface::writeCharsToQueue(byte * keys,byte partition, byte len, bool alarm, bool star) {
   writeQueueType req;
   req.len = len;
-  for (byte x = 0; x < len; x++) req.data[x] = keys[x];
+  memcpy(req.data,keys,len);
   req.alarm = alarm;
   req.writeBit = partitionToBits[partition];
   req.partition=partition;
