@@ -251,7 +251,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   unsigned long cmdWaitTime,
   beepTime,
   eventTime;
-  bool extendedBuffer;
+  bool extendedBufferFlag=false;
   int defaultPartition = 1;
   int activePartition = 1;
   byte maxZones = maxZonesDefault;
@@ -264,11 +264,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   bool options;
 
   struct partitionType {
-    bool locked;
+    bool locked=false;
     unsigned long keyPressTime;
     byte lastStatus;
     byte status;
-    bool inprogram;
+    bool inprogram=false;
     byte digits;
     bool newData;
     bool hexMode;
@@ -776,7 +776,9 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
-    } else if (!partitionStatus[partition].locked) dsc.write(keys, partition);
+    } else {
+        if (!partitionStatus[partition].locked) dsc.write(keys, partition);
+    }
   }
 
   bool isInt(std::string s, int base) {
@@ -2408,7 +2410,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
   void processEventBufferAA(bool showEvent = false) {
     #ifndef dscClassicSeries
-    if (extendedBuffer) return; // Skips 0xAA data when 0xEC extended event buffer data is available
+    if (extendedBufferFlag) return; // Skips 0xAA data when 0xEC extended event buffer data is available
 
     char eventInfo[45] = "";
     char charBuffer[4];
@@ -2493,7 +2495,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
   void processEventBufferEC(bool showEvent = false) {
     #ifndef dscClassicSeries
-    if (!extendedBuffer) extendedBuffer = true;
+    if (!extendedBufferFlag) extendedBufferFlag = true;
 
     char eventInfo[45] = "";
     char charBuffer[4];
