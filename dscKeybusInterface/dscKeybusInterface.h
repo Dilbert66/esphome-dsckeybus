@@ -203,22 +203,19 @@ volatile byte dscKeybusInterface::moduleSubCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
 
-#ifdef EXPANDER
 //start expander
-bool dscKeybusInterface::debounce05;
 byte dscKeybusInterface::moduleSlots[6];
 writeQueueType dscKeybusInterface::writeQueue[writeQueueSize];
-//volatile byte dscKeybusInterface::writeBuffer[6];
+moduleType dscKeybusInterface::modules[maxModules];
+byte dscKeybusInterface::moduleIdx;
+Stream* dscKeybusInterface::stream;
+//end expander
+
 byte * dscKeybusInterface::writeBuffer;
 byte dscKeybusInterface::cmdD0buffer[6];
 bool dscKeybusInterface::pendingD0;
-moduleType dscKeybusInterface::modules[maxModules];
-byte dscKeybusInterface::moduleIdx;
-volatile byte dscKeybusInterface::inIdx;
-volatile byte dscKeybusInterface::outIdx;
-byte dscKeybusInterface::maxFields05; 
-byte dscKeybusInterface::maxFields11;
-byte dscKeybusInterface::maxZones;
+bool dscKeybusInterface::pending70;
+bool dscKeybusInterface::pending6E;
 bool dscKeybusInterface::enableModuleSupervision;
 volatile byte dscKeybusInterface::writePartition;
 volatile byte dscKeybusInterface::writeBufferIdx;
@@ -226,9 +223,12 @@ volatile byte dscKeybusInterface::writeBufferLength;
 volatile bool dscKeybusInterface::writeDataPending;
 byte dscKeybusInterface::writeDataBit;
 volatile pgmBufferType dscKeybusInterface::pgmBuffer;
-Stream* dscKeybusInterface::stream;
-//end expander
-#endif
+volatile byte dscKeybusInterface::inIdx;
+volatile byte dscKeybusInterface::outIdx;
+byte dscKeybusInterface::maxFields05; 
+byte dscKeybusInterface::maxFields11;
+byte dscKeybusInterface::maxZones;
+
 byte dscKeybusInterface::panelVersion;
 // Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
 // dscDataInterrupt() to read the data line

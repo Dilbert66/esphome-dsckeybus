@@ -46,7 +46,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   processModuleData = false;
   currentDefaultPartition=1;
   pauseStatus = false;
-  #ifdef EXPANDER
+
   // start expander
   maxFields05 = 4;
   maxFields11 = 4;
@@ -58,7 +58,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   }
 
   //end expander
-  #endif
+
 
 }
 
@@ -103,7 +103,7 @@ void dscKeybusInterface::begin(Stream & _stream,byte setClockPin, byte setReadPi
   #endif // ESP32
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino/AVR
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
-  #ifdef EXPANDER
+
   if (maxZones > 32) {
     maxFields05 = 6;
     maxFields11 = 6;
@@ -111,7 +111,7 @@ void dscKeybusInterface::begin(Stream & _stream,byte setClockPin, byte setReadPi
     maxFields05 = 4;
     maxFields11 = 4;
   }
-  #endif
+
 }
 
 void dscKeybusInterface::stop() {
@@ -215,11 +215,10 @@ bool dscKeybusInterface::loop() {
     else if (panelData[0] == 0x05 || panelData[0] == 0x1B) {
       if (panelByteCount == 6) keybusVersion1 = true;
       startupCycle = false;
-      #ifdef EXPANDER
+
       //start expander
       updateModules();
       //end expander
-      #endif
 
     } else if (!validCRC()) return false;
   }
@@ -567,10 +566,8 @@ dscKeybusInterface::dscClockInterrupt() {
   // Keypads and modules send data while the clock is low
   else {
     clockHighTime = micros() - previousClockHighTime; // Tracks the clock high time to find the reset between commands
-    #ifdef EXPANDER
-    //start expander
+    #ifdef DEBOUNCE
     static bool skipFirst = false;
-    // end expander
     #endif
     // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
     if (clockHighTime > 1000) {
@@ -582,27 +579,25 @@ dscKeybusInterface::dscClockInterrupt() {
       else switch (isrPanelData[0]) {
         static byte previousCmd05[dscReadSize];
         static byte previousCmd1B[dscReadSize];
-        #ifdef EXPANDER
-        //start expander
+        #ifdef DEBOUNCE
       case 0x05: // Status: partitions 1-4
         if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) {
           if (skipFirst) {
             skipData = false;
             skipFirst = false;
           } else skipData = true;
-        } else if (debounce05) { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported on a pc5005
+        } else { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported on a pc5005
           skipData = true;
           skipFirst = true;
         }
 
         break;
-        //end expander
         #else
       case 0x05: // Status: partitions 1-4
         if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) skipData = true;
         break;
-        #endif
 
+        #endif
       case 0x1B: // Status: partitions 5-8
         if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)) skipData = true;
         break;
@@ -818,7 +813,7 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
   case 0x05:
     processPendingQueue(cmd);
     return;
-#ifdef EXPANDER
+
   case 0x11:
     if (!enableModuleSupervision) return;
     updateWriteBuffer((byte * ) moduleSlots, 9,1,maxFields11 );
@@ -833,12 +828,18 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
     prepareModuleResponse(11, 9);
     return;
   case 0x70:
-    processCmd70();
+    if (pending70) {
+        pending70=false;
+        processCmd70();
+    }
     return; // installer program mode data write
   case 0xD0:
-    prepareModuleResponse(0xff,9); //it-100 set date
+    if (pendingD0) {
+        pendingD0=false;
+        updateWriteBuffer((byte *) cmdD0buffer,9,1,6);
+    }
     return;
-#endif
+
   default:
     return;
   }
@@ -870,7 +871,7 @@ dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
   
   byte address = 0;
   switch (subcmd) {
-#ifdef EXPANDER
+
   case 0x08:
     prepareModuleResponse(12, 17);
     break;
@@ -883,7 +884,7 @@ dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
   case 0x0E:
     prepareModuleResponse(16, 17);;
     break;
-#endif
+
   default:
     return;
   }

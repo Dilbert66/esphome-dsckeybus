@@ -365,15 +365,12 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     firstrun = true;
     systemStatusChangeCallback(String(FPSTR(STATUS_OFFLINE)).c_str());
     forceDisconnect = false;
-    dsc.debounce05 = (cmdWaitTime > 0);
-    #ifdef EXPANDER
     #ifdef MODULESUPERVISION
     dsc.enableModuleSupervision = 1;
     #endif
     dsc.addModule(expanderAddr1);
     dsc.addModule(expanderAddr2);
     dsc.maxZones = maxZones;
-    #endif
     dsc.resetStatus();
     dsc.processModuleData = true;
 
@@ -390,7 +387,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       zoneStatus[x].enabled = false;
       zoneStatus[x].partition = 0;
       zoneStatus[x].bypassed = false;
-    }
+    } 
 
     system1 = 0;
     system0 = 0;
@@ -406,9 +403,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
   void set_zone_fault(int zone, bool fault) {
     ESP_LOGD("Debug", "Setting Zone Fault: %d,%d", zone, fault);
-    #ifdef EXPANDER
     dsc.setZoneFault(zone, fault);
-    #endif
 
   }
 
@@ -773,10 +768,10 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     const char * keys = strcpy(new char[keystring.length() + 1], keystring.c_str());
     if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d", keystring.c_str(), partition);
     partitionStatus[partition - 1].keyPressTime = millis();
-
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
     } else {
+        ESP_LOGD("info","partition is %d",partitionStatus[partition].locked);
         if (!partitionStatus[partition].locked) dsc.write(keys, partition);
     }
   }
@@ -1180,9 +1175,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if ((!forceDisconnect && dsc.loop()) || forceRefresh) { //Processes data only when a valid Keybus command has been read
       if (firstrun) {
-        #ifdef EXPANDER
         dsc.clearZoneRanges(); // start with clear expanded zones
-        #endif
       }
       
       

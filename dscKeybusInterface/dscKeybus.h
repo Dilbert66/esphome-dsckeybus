@@ -16,9 +16,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define EXPANDER
-//#define SERIALDEBUGCOMMANDS  //enable to use debug print to serial port
-
+//#define SERIALDEBUGCOMMANDS  //enable to use debug cmd decoding  to serial port
+//#define DEBOUNCE  //for older panels that send bogus cmd05's during switchovers
 #ifndef dscKeybus_h
 #define dscKeybus_h
 
@@ -75,8 +74,6 @@ struct pgmBufferType {
     byte len;
     byte idx;
     int partition;
-    bool pending6E;
-    bool pending70;
     bool dataPending;
     bool sendhash;
 } ;
@@ -205,7 +202,6 @@ class dscKeybusInterface {
     bool processRedundantData;  // Controls if repeated periodic commands are processed and displayed (default: false)
     static volatile byte moduleCmd, moduleSubCmd;    
     
-#ifdef EXPANDER    
     //start expander
     void setZoneFault(byte zone,bool fault) ;
     void setDateTime(unsigned int year,byte month,byte day,byte hour, byte minute);
@@ -221,7 +217,6 @@ class dscKeybusInterface {
     static bool enableModuleSupervision;    
 
     //end expander
-#endif 
     static bool debounce05;
     static volatile pgmBufferType pgmBuffer;
     bool keybusVersion1;    
@@ -415,7 +410,6 @@ class dscKeybusInterface {
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize];
     
-#ifdef EXPANDER    
     //start expander
     const byte zoneOpen=3; //fault 
     const byte zoneClosed=2;// Normal 
@@ -425,15 +419,13 @@ class dscKeybusInterface {
     void removeModule(byte address);
     static void setPendingZoneUpdate();
     void setSupervisorySlot(byte slot,bool set);
-    static void processCmd70(),processCmd6E();    
+    static void processCmd70();    
     zoneMaskType getUpdateMask(byte address);    
     static byte maxFields05; 
     static byte maxFields11;
-    //volatile static byte pendingZoneStatus[6];
     static moduleType modules[maxModules];
     static byte moduleSlots[6];
      //end expander
-#endif    
 
      //start new command handling 
 
@@ -441,7 +433,7 @@ class dscKeybusInterface {
    // volatile static byte writeBuffer[6]; 
     static byte * writeBuffer;
     static byte cmdD0buffer[6];  
-    static bool pendingD0;    
+    static bool pendingD0,pending70,pending6E;    
     volatile static byte outIdx,inIdx;     
     static void processPendingResponses(byte cmd);
     static void processPendingResponses_0xE6(byte cmd);  

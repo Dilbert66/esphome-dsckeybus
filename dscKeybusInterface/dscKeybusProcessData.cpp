@@ -438,8 +438,8 @@ void dscKeybusInterface::processPanel_0x3E() {
 
 void dscKeybusInterface::processPanel_0x6E() {
 
-      if (!pgmBuffer.pending6E) return;
-      pgmBuffer.pending6E=false;       
+      if (!pending6E) return;
+      pending6E=false;       
       if (pgmBuffer.idx+5>pgmBuffer.len) return;
       for(byte x=0;x<5;x++) {
           pgmBuffer.data[pgmBuffer.idx+x]=panelData[2+x];
@@ -447,7 +447,7 @@ void dscKeybusInterface::processPanel_0x6E() {
      pgmBuffer.idx+=5;
      byte key=0;
      if (pgmBuffer.idx < pgmBuffer.len) {
-        pgmBuffer.pending6E=true;
+        pending6E=true;
         key=0xA5; //more data available so set up also for next group send request
         writeCharsToQueue(&key,pgmBuffer.partition);        
      }  else pgmBuffer.dataPending=true;
