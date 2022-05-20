@@ -1175,9 +1175,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
 
     if ((!forceDisconnect && dsc.loop()) || forceRefresh) { //Processes data only when a valid Keybus command has been read
-      if (firstrun) {
-        dsc.clearZoneRanges(); // start with clear expanded zones
-      }
+     
       
       
 
@@ -1192,7 +1190,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           if (dsc.disabled[partition - 1]) continue;
           beepsCallback("0", partition);
         }
-
+        dsc.clearZoneRanges(); // start with clear expanded zones
+ 
       }
 
       if (debug > 1)
@@ -1402,7 +1401,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       char s1[7];
       for (int x = 0; x < maxZones; x++) {
 
-        if (!zoneStatus[x].enabled) continue;   
+        //if (!zoneStatus[x].enabled) continue;   
         
         if (forceRefresh ) 
             zoneStatusChangeCallback(x+1,zoneStatus[x].open);
