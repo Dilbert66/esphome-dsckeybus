@@ -962,7 +962,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   bool checkUserCode(byte code) {
     byte option, optionGroup;
 
-    for (optionGroup = 0; optionGroup < 4; optionGroup++) {
+    for (optionGroup = 0; optionGroup < dscZones; optionGroup++) {
       for (byte optionBit = 0; optionBit < 8; optionBit++) {
         option = optionBit + 1 + (optionGroup * 8);
         if (bitRead(programZones[optionGroup], optionBit) && option == code) {
@@ -2428,6 +2428,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       byteCount++;
     }
     group1msg.append(group2msg);
+    ESP_LOGD("info","procesprogramzones: %02X, %s",startByte,group1msg.c_str());
     //lightsCallback(group1msg, defaultPartition);
     if (options)
       dsc.statusChanged = true;
