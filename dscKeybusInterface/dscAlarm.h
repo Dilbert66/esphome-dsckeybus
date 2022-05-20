@@ -316,6 +316,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   byte beeps,
   previousBeeps;
   bool refresh;
+  
 
 
   void setup() override {
@@ -392,7 +393,31 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     system1 = 0;
     system0 = 0;
   }
+  
+ std::string getUserName(char * code) {
+  std::string name = code;
+  if (userCodes -> value() != "") {
+    std::string s = userCodes -> value();
+    std::string token1, token2, token3;
+    size_t pos, pos1;
+    char buf[4];
+    s.append(",");
+    while ((pos = s.find(',')) != std::string::npos) {
+      token1 = s.substr(0, pos); // store the substring   
+      pos1 = token1.find(':');
 
+      token2 = token1.substr(0, pos1);
+      token3 = token1.substr(pos1 + 1);
+      if (token2 == code) {
+        name = token3;
+        break;
+      }
+      s.erase(0, pos + 1); /* erase() function store the current positon and move to next token. */
+    }
+    //ESP_LOGD("info", "token=%s,token2=%s,token3=%s,name=%s,code=%s", token1.c_str(), token2.c_str(), token3.c_str(), name.c_str(), code);
+  }
+  return name;
+}
   void set_default_partition(int partition) {
     if (partition > 0 && partition < dscPartitions) {
       defaultPartition = partition;
@@ -408,7 +433,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   }
 
   void alarm_disarm(std::string code) {
-
+      
     set_alarm_state("D", code, defaultPartition);
 
   }
@@ -2139,7 +2164,12 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           sprintf(s, "%02d   %c", * currentSelection, programmed);
           lcdLine2 = s;
         }
-      }
+      } else                 // Sends the access code when needed by the panel for arming
+        if (dsc.status[partition] == 0x9F && dsc.accessCodePrompt && isInt(accessCode, 10)) {
+        dsc.accessCodePrompt = false;
+        dsc.write(accessCode, partition + 1);
+        if (debug > 0) ESP_LOGD("Debug", "got access code prompt for partition %d", partition + 1);
+      }  
 
       if (options) {
         lcdLine2 = getOptionsString();
@@ -2148,12 +2178,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     
 
     }
-            // Sends the access code when needed by the panel for arming
-    if (dsc.status[partition] == 0x9F && dsc.accessCodePrompt && isInt(accessCode, 10)) {
-        dsc.accessCodePrompt = false;
-        dsc.write(accessCode, partition + 1);
-        if (debug > 0) ESP_LOGD("Debug", "got access code prompt for partition %d", partition + 1);
-    }      
+    
 
     if (lcdLine1 != "") line1DisplayCallback(lcdLine1, partition + 1);
     if (lcdLine2 != "") line2DisplayCallback(lcdLine2, partition + 1);
@@ -2823,7 +2848,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode == 40) strcpy(lcdMessage, "Master code:");
       else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -2835,7 +2861,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode == 40) strcpy(lcdMessage, "Master code:");
       else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -2927,7 +2954,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode == 40) strcpy(lcdMessage, "Master code:");
       else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
       decoded = true;
@@ -3114,7 +3142,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode == 40) strcpy(lcdMessage, "Master code:");
       else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3126,7 +3155,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode == 40) strcpy(lcdMessage, "Master code:");
       else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3137,7 +3167,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode == 40) strcpy(lcdMessage, "Master code:");
       else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
       decoded = true;
@@ -3150,7 +3181,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode == 40) strcpy(lcdMessage, "Master code:");
       else strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3440,7 +3472,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3451,7 +3484,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3553,7 +3587,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3564,7 +3599,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3575,7 +3611,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3586,7 +3623,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3597,7 +3635,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3626,7 +3665,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
       decoded = true;
@@ -3638,7 +3678,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
@@ -3649,7 +3690,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dscCode >= 40) dscCode += 3;
       strcpy(lcdMessage, "Access code:");
       itoa(dscCode, charBuffer, 10);
-      strcat(lcdMessage, charBuffer);
+      std::string c=getUserName(charBuffer);
+      strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }

@@ -1,5 +1,13 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
-     
+
+
+#you can enter a list of user codes mapped to their names for display in armed/disarmed event messages
+ globals: 
+  - id: userCodes
+    type: std::string
+    restore_value: no
+    initial_value: '"1:John,2:Sally,3:Bob"'   
+    
 substitutions:
   # change the name to suit your needs. This is what esphome will use as the friendly name for your component.
   # also used as a prefix for all fields
@@ -7,9 +15,6 @@ substitutions:
   
   #Only comes into effect if a password prompt occurs when arming eg. night mode
   accessCode: !secret access_code 
-  
-   # milliseconds.  set how long to delay before accepting a new 05 cmd as valid to filter out intermittent short duration bogus commands that some panels send. default = 0
-  cmdWaitTime: "0"
   
   #used to select the default partition associated with the alarm panel messages
   defaultPartition: "1" 
@@ -29,7 +34,7 @@ substitutions:
   dscClockPin: "22"
   dscReadPin: "21"
   dscWritePin: "18"
-  
+
   #ESP8266 Pins
   #dscClockPin: "5"
   #dscReadPin: "4"
@@ -88,7 +93,6 @@ custom_component:
  - lambda: |-
     auto DSCkeybus = new DSCkeybushome($dscClockPin,$dscReadPin,$dscWritePin);
     DSCkeybus->accessCode="$accessCode";
-    DSCkeybus->cmdWaitTime=$cmdWaitTime;
     DSCkeybus->maxZones=$maxZones;
     DSCkeybus->defaultPartition=$defaultPartition;
     DSCkeybus->debug=2; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
@@ -213,51 +217,51 @@ binary_sensor:
     #zone status open/close for each zone 
   - platform: template
     id: z1
-    name: "$systemName Front door"
+    name: "$systemName Front door(z1)"
     device_class: door
   - platform: template
     id: z2
-    name: "$systemName Garage door"
+    name: "$systemName Garage door(z2)"
     device_class: door
   - platform: template
     id: z3
-    name: "$systemName Back door"
+    name: "$systemName Back door(z3)"
     device_class: door
   - platform: template
     id: z4
-    name: "$systemName Living room window"
+    name: "$systemName Living room window(z4)"
     device_class: window
   - platform: template
     id: z5
-    name: "$systemName Dining room window"
+    name: "$systemName Dining room window(z5)"
     device_class: window
   - platform: template
     id: z6
-    name: "$systemName Family room window LF"
+    name: "$systemName Family room window LF(z6)"
     device_class: window
   - platform: template
     id: z7
-    name: "$systemName Family room window RF"
+    name: "$systemName Family room window RF(z7)"
     device_class: window
   - platform: template
     id: z8
-    name: "$systemName Basement windows"
+    name: "$systemName Basement windows(z8)"
     device_class: window
   - platform: template
     id: z9
-    name: "$systemName Upstairs motion"
+    name: "$systemName Upstairs motion(z9)"
     device_class: motion
   - platform: template
     id: z10
-    name: "$systemName Basement motion"
+    name: "$systemName Basement motion(z10)"
     device_class: motion
   - platform: template
     id: z11
-    name: "$systemName Main floor motion"
+    name: "$systemName Main floor motion(z11)"
     device_class: motion
   - platform: template
     id: z17
-    name: "$systemName Test sensor"
+    name: "$systemName Test sensor(z17)"
     device_class: motion    
     
   - platform: template
