@@ -2,11 +2,11 @@
 
 
 #you can enter a list of user codes mapped to their names for display in armed/disarmed event messages
- globals: 
+globals: 
   - id: userCodes
     type: std::string
     restore_value: no
-    initial_value: '"1:John,2:Sally,3:Bob"'   
+    initial_value: '"1:John,2:Sally,3:Bob"' 
     
 substitutions:
   # change the name to suit your needs. This is what esphome will use as the friendly name for your component.
