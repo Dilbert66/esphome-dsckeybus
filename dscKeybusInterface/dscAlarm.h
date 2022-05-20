@@ -1209,7 +1209,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       static unsigned long startWait = millis();
       if (millis() - startWait > 10000 && delayedStart) {
         delayedStart = false;
-        if (!dsc.disabled[defaultPartition] && !partitionStatus[defaultPartition].locked) {
+        if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
+          partitionStatus[defaultPartition-1].keyPressTime = millis();
           dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery
         }
         for (byte partition = 1; partition <= dscPartitions; partition++) {
