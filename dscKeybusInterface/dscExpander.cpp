@@ -255,22 +255,18 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
 
   memset(modules[idx].faultBuffer, 0xFF, 5);
 
-  if (modules[idx].fields[0] != modules[idx].fields[1]) { //see if our current low channels changed from previous. 
+  if ( channel < 4) { //update fault buffer low channels
     modules[idx].faultBuffer[0] = modules[idx].fields[0]; //populate faultbuffer with response data for low channel
     modules[idx].faultBuffer[1] = modules[idx].fields[1];
     modules[idx].faultBuffer[4] = (chk1 << 4) | 0x0F;
     modules[idx].fields[1] = modules[idx].fields[0]; //copy current channel values to previous
-    change = true;
-  }
-  if (modules[idx].fields[2] != modules[idx].fields[3]) { //check high channels
+  } else {  //update fault buffer with high channels
     modules[idx].faultBuffer[2] = modules[idx].fields[2];
     modules[idx].faultBuffer[3] = modules[idx].fields[3];
     modules[idx].faultBuffer[4] = (modules[idx].faultBuffer[4] & 0xf0) | chk2;
     modules[idx].fields[3] = modules[idx].fields[2]; //copy current channel values to previous
-    change = true;
   }
 
-  if (!change) return; //nothing changed in our zones so return
   byte zoneupdate[maxFields05];
   memset(zoneupdate, 0xFF, maxFields05); //set update slots to 1's. Only zero bits indicate a request
   if (modules[idx].zoneStatusByte) {
