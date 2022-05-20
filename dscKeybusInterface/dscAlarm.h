@@ -871,12 +871,13 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           zone = (zoneBit + startZone) + ((panelByte - inputByte) * 8) - 1;
           if (zone >= maxZones) continue;
-          zoneStatus[zone].partition = partition;
           if (bitRead(dsc.panelData[panelByte], zoneBit)) {
+            zoneStatus[zone].partition = partition;               
             zoneStatus[zone].enabled = true;
-          } else {
-            zoneStatus[zone].enabled = false;
+          } else if (zoneStatus[zone].partition==partition) {
+                zoneStatus[zone].enabled = false;
           }
+         
         }
       }
     }
@@ -893,11 +894,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           zone = (zoneBit + startZone) + ((panelByte - inputByte) * 8) - 1;
           if (zone >= maxZones) continue;
-          zoneStatus[zone].partition = partition;
           if (bitRead(dsc.panelData[panelByte], zoneBit)) {
+            zoneStatus[zone].partition = partition;               
             zoneStatus[zone].enabled = true;
-          } else {
-            zoneStatus[zone].enabled = false;
+          } else if (zoneStatus[zone].partition==partition) {
+                zoneStatus[zone].enabled = false;
           }
         }
       }
@@ -1400,7 +1401,6 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       zoneStatusMsg = "";
       char s1[7];
       for (int x = 0; x < maxZones; x++) {
-
 
         if (!zoneStatus[x].enabled) continue;   
         
