@@ -260,8 +260,8 @@ bool dscKeybusInterface::loop() {
     processPanel_0x27();
     break; // Panel status and zones 1-8 status
   case 0x2D:
-    break; // Panel status and zones 9-16 status
     processPanel_0x2D();
+    break; // Panel status and zones 9-16 status    
   case 0x34:
     processPanel_0x34();
     break; // Panel status and zones 17-24 status
@@ -813,7 +813,6 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
   case 0x05:
     processPendingQueue(cmd);
     return;
-
   case 0x11:
     if (!enableModuleSupervision) return;
     updateWriteBuffer((byte * ) moduleSlots, 9,1,maxFields11 );
@@ -832,7 +831,7 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
         pending70=false;
         processCmd70();
     }
-    return; // installer program mode data write
+    return; 
   case 0xD0:
     if (pendingD0) {
         pendingD0=false;
@@ -869,7 +868,6 @@ dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
 
   if (writeDataPending) return;
   
-  byte address = 0;
   switch (subcmd) {
 
   case 0x08:
