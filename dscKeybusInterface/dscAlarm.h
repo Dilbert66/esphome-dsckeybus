@@ -783,7 +783,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     return ( * p == 0);
   }
 
-  void set_alarm_state(std::string state, std::string code = "", int partition = -1) {
+  void set_alarm_state(std::string state, std::string code = "", int partition = 0) {
 
     if (code.length() != 4 || !isInt(code, 10)) code = ""; // ensure we get a numeric 4 digit code
     const char * alarmCode = strcpy(new char[code.length() + 1], code.c_str());
@@ -816,11 +816,12 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       dsc.write('p', partition); // Virtual keypad arm away
     }
     // Disarm
-    else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
+    else if (state.compare("D") == 0 && (dsc.armed[partition-1] || dsc.exitDelay[partition-1])) {
       if (code.length() == 4) { // ensure we get 4 digit code
         dsc.write(alarmCode, partition);
       }
     }
+    partitionStatus[partition-1].keyPressTime = millis();    
   }
 
   void printPacket(const char * label, char cmd, volatile byte cbuf[], int len) {
@@ -1279,12 +1280,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
         if (dsc.disabled[partition] || partitionStatus[partition].locked) continue;
 
-        // Sends the access code when needed by the panel for arming
-        if (dsc.status[partition] == 0x9F && dsc.writeAccessCode[partition] && isInt(accessCode, 10)) {
-          dsc.accessCodePrompt = false;
-          dsc.write(accessCode, partition + 1);
-          if (debug > 0) ESP_LOGD("Debug", "got access code prompt for partition %d", partition + 1);
-        }
+
 
         // Publishes alarm status
         if (dsc.alarmChanged[partition] || forceRefresh) {
@@ -1956,6 +1952,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       partitionStatus[partition].inprogram = false;
       activePartition = 1;
     }
+    
+
 
     if (!skip) {
 
@@ -2146,13 +2144,22 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (options) {
         lcdLine2 = getOptionsString();
       }
+      
+    
 
     }
+            // Sends the access code when needed by the panel for arming
+    if (dsc.status[partition] == 0x9F && dsc.accessCodePrompt && isInt(accessCode, 10)) {
+        dsc.accessCodePrompt = false;
+        dsc.write(accessCode, partition + 1);
+        if (debug > 0) ESP_LOGD("Debug", "got access code prompt for partition %d", partition + 1);
+    }      
 
     if (lcdLine1 != "") line1DisplayCallback(lcdLine1, partition + 1);
     if (lcdLine2 != "") line2DisplayCallback(lcdLine2, partition + 1);
 
     partitionStatus[partition].lastStatus = dsc.status[partition];
+    
   }
 
   // Processes status data not natively handled within the library
