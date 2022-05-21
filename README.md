@@ -1,6 +1,8 @@
 # DSCKeyBus ESPHOME custom component to interface to a DSC POWERSERIES alarm system.
 
-This is an implementation of an ESPHOME custom component to interface directly to a DSC POWERSERIES alarm system using the keybus interface and  very inexpensive ESP8266/ESP32 modules .  Using a heavily modified DSC keybus interface library from https://github.com/taligentx/dscKeybusInterface, it provides full read and write control of the alarm system. The idea and yaml code is based on the DIY example at: https://github.com/Margriko/Paradox-ESPHome.
+This is an implementation of an ESPHOME custom component to interface directly to a DSC POWERSERIES alarm system using the keybus interface and  very inexpensive ESP8266/ESP32 modules . NOTE: I strongly suggest using an ESP32 for it's increased capabilities. 
+
+Using a heavily modified DSC keybus interface library from https://github.com/taligentx/dscKeybusInterface, it provides full read and write control of the alarm system. The idea and yaml code is based on the DIY example at: https://github.com/Margriko/Paradox-ESPHome.
 
 To install just copy both the dscalarm.yaml file and the subdirectory "dscKeybusInterface" (including all the contained dsckeybus*.cpp files) into your main esphome directory on home assistant and compile using the esphome application.
 
