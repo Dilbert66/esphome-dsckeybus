@@ -29,9 +29,9 @@ const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per gr
 const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
 const byte dscReadSize = 16;    // Maximum bytes of a Keybus command
 #elif defined(ESP8266)
-const byte dscPartitions = 8;
+const byte dscPartitions = 4;
 const byte dscZones = 8;
-const byte dscBufferSize = 50;
+const byte dscBufferSize = 10;
 const byte dscReadSize = 16;
 #elif defined(ESP32)
 const byte dscPartitions = 8;
@@ -41,13 +41,17 @@ const DRAM_ATTR byte dscReadSize = 16;
 #endif
 
 
-//start expander
+
 #if defined(__AVR__)
 const byte maxModules = 4;
 const byte writeQueueSize=5; //write pending queue size
-#elif defined(ESP8266) || defined(ESP32)
+#elif defined(ESP8266)
+const byte maxModules = 4;
+const byte writeQueueSize=10; //zone pending update queue
+#elif defined(ESP32)
 const byte maxModules = 4;
 const byte writeQueueSize=20; //zone pending update queue
+#endif
 
 const byte partitionToBits[9]={0,9,17,57,65,9,17,57,65};
 
@@ -66,8 +70,7 @@ const byte partitionToBits[9]={0,9,17,57,65,9,17,57,65};
     };
     
 
-//end expander
-#endif
+
 
 struct pgmBufferType {
     char data[32];

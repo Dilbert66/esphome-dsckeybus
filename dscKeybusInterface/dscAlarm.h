@@ -389,6 +389,10 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       zoneStatus[x].partition = 0;
       zoneStatus[x].bypassed = false;
     } 
+    for (int p = 0; p<dscPartitions;p++) {
+        partitionStatus[p].editIdx=0;
+        partitionStatus[p].digits=0;
+    }
 
     system1 = 0;
     system0 = 0;
@@ -2169,7 +2173,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         if (dsc.status[partition] == 0x9F && dsc.accessCodePrompt && isInt(accessCode, 10)) {
         dsc.accessCodePrompt = false;
         dsc.write(accessCode, partition + 1);
-        if (debug > 0) ESP_LOGD("Debug", "got access code prompt for partition %d", partition + 1);
+        //if (debug > 0) ESP_LOGD("Debug", "got access code prompt for partition %d", partition + 1);
       }  
 
       if (options) {
