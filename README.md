@@ -1,6 +1,6 @@
 # DSCKeyBus ESPHOME custom component to interface to a DSC POWERSERIES alarm system.
 
-This is an implementation of an ESPHOME custom component to interface directly to a DSC POWERSERIES alarm system using the keybus interface and  very inexpensive ESP8266 modules (or arduino) .  Using a slightly modified DSC keybus interface library from https://github.com/taligentx/dscKeybusInterface, it provides full read and write control of the alarm system. The idea and yaml code is based on the DIY example at: https://github.com/Margriko/Paradox-ESPHome.
+This is an implementation of an ESPHOME custom component to interface directly to a DSC POWERSERIES alarm system using the keybus interface and  very inexpensive ESP8266/ESP32 modules .  Using a heavily modified DSC keybus interface library from https://github.com/taligentx/dscKeybusInterface, it provides full read and write control of the alarm system. The idea and yaml code is based on the DIY example at: https://github.com/Margriko/Paradox-ESPHome.
 
 To install just copy both the dscalarm.yaml file and the subdirectory "dscKeybusInterface" (including all the contained dsckeybus*.cpp files) into your main esphome directory on home assistant and compile using the esphome application.
 
@@ -42,6 +42,8 @@ Relay module support is also added.   This will give your panel the ability to t
 
 This version now also adds the ability to display the low battery warning status of any wireless zones.  These will be showng in the "zone status" field of the yaml.   Also in that field, you will see the alarm status, open and bypass statuses of any zones
 The display format for a low battery is BL:zz and alarm status will be shown as AL:zz  where zz is the zone number.  Bypass is BY:xx and open is OP:xx.
+
+I've also added a custom alarm panel card with new  functions from the library that provides similar functions as available from an LCD keypad.  This includes the display menus and the ability to fully program your system using full text display of all fields.
 	
 ## Example in Home Assistant
 ![Image of HASS example](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dsckeybusinterface.png)
