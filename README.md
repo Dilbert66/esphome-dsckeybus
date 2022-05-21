@@ -317,7 +317,7 @@ view_bottom: true
   Note: You can use a Wemos D1 Mini PRO (ESP32) with the same foot print as an original esp8266 based d1 mini. In that case use pins GPIO22,GPIO21 and GPIO5
 	
 * Write access to the Keybus requires an NPN transistor and a resistor.  Most small signal NPN transistors should be suitable.
-* When powering the ESP from an external power supply such as USB (recommended) ensure you still connect the ground to the DSC panel.
+* When powering the ESP from an external power supply such as USB (recommended) ensure you still connect the ground to the DSC panel if you are not using the isolated circuit version.
 	
 ## OTA updates
 In order to make OTA updates with an ESP8266, the connection switch in frontend must be switched to OFF since the DSC library is using interrupts. This is not normally necessary with an ESP32.
