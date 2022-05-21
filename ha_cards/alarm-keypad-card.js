@@ -260,6 +260,7 @@ class AlarmKeypadCard extends Polymer.Element {
                       </button>
                       </template>                      
                     </div>
+                    
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
@@ -298,9 +299,6 @@ class AlarmKeypadCard extends Polymer.Element {
                   </div>
                   
                 </template>
-
-               
-
                 <audio id="exitsound1" loop>
                   <source src="/local/1_beep.mp3" type="audio/mpeg">
                 </audio>
