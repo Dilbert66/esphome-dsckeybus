@@ -69,10 +69,7 @@ api:
    password: !secret api_password  
    #encryption:
      #key: !secret encryption_key
-   
-
-web_server:
-   
+  
 ota:
    password: !secret ota_password
    safe_mode: True
