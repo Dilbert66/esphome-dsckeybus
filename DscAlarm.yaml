@@ -106,6 +106,13 @@ custom_component:
          case 2: id(p2).publish_state(statusCode); break;
       } 
     });
+    
+    DSCkeybus->onPartitionMsgChange([&](std::string msg,uint8_t partition) {
+       switch(partition) {
+         case 1: id(m1).publish_state(msg); break;
+         case 2: id(m2).publish_state(msg); break;
+      } // if you only have one partition, remove the case 2 statement  and corresponding p2 sensor. You can also add more partitions if needed
+    });    
 
     DSCkeybus->onPanelStatusChange([&](panelStatus ps,bool open,int partition) {
       switch (partition) {

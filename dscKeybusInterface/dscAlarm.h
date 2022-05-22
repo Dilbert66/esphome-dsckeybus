@@ -45,6 +45,8 @@ enum panelStatus {
   armStatus
 };
 
+
+
 const char mm0[] PROGMEM = "Press # to exit";
 const char mm1[] PROGMEM = "Zone Bypass";
 const char mm2[] PROGMEM = "System Troubles";
@@ -192,7 +194,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   std:: function < void(std::string) > systemStatusChangeCallback;
   std:: function < void(panelStatus, bool, int) > panelStatusChangeCallback;
   std:: function < void(bool, int) > fireStatusChangeCallback;
-  std:: function < void(std::string, int) > partitionStatusChangeCallback;
+  std::function<void (std::string,int)> partitionStatusChangeCallback;   
+  std:: function < void(std::string, int) > partitionMsgChangeCallback;
   std:: function < void(std::string) > zoneMsgStatusCallback;
   std:: function < void(std::string) > troubleMsgStatusCallback;
   std:: function < void(uint8_t, bool) > relayChannelChangeCallback;
@@ -217,6 +220,9 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   void onPartitionStatusChange(std:: function < void(std::string status, int partition) > callback) {
     partitionStatusChangeCallback = callback;
   }
+  void onPartitionMsgChange(std::function<void (std::string msg,uint8_t partition)> callback) {
+    partitionMsgChangeCallback = callback; 
+  }  
   void onZoneMsgStatus(std:: function < void(std::string msg) > callback) {
     zoneMsgStatusCallback = callback;
   }
@@ -279,7 +285,6 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     bool submitted;
     byte currentSelection;
     byte selectedZone;
-
   };
 
   struct zoneType {
@@ -292,9 +297,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     bool bypassed;
 
   };
-
+  
   zoneType * zoneStatus;
   partitionType partitionStatus[dscPartitions];
+  
+  byte lastStatus[dscPartitions];
   std::string zoneStatusMsg,
   previousZoneStatusMsg,
   systemMsg,
@@ -1277,7 +1284,9 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         dsc.powerChanged = false;
         if (dsc.powerTrouble) {
           panelStatusChangeCallback(acStatus, false, 0); //no ac
-        } else panelStatusChangeCallback(acStatus, true, 0);
+        } else {
+            panelStatusChangeCallback(acStatus, true, 0);
+        }
 
       }
 
@@ -1285,24 +1294,30 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         dsc.batteryChanged = false;
         if (dsc.batteryTrouble) {
           panelStatusChangeCallback(batStatus, true, 0);
-        } else panelStatusChangeCallback(batStatus, false, 0);
+        } else {
+            panelStatusChangeCallback(batStatus, false, 0);
+        }
       }
 
       if (dsc.keypadFireAlarm) {
         dsc.keypadFireAlarm = false;
-        //panelStatusChangeCallback(fireStatus, true,0); //needs status reset
+        partitionMsgChangeCallback("Keypad Fire Alarm",defaultPartition);
       }
 
       if (dsc.keypadPanicAlarm) {
         dsc.keypadPanicAlarm = false;
-        //panelStatusChangeCallback(panicStatus, true,0);
+        partitionMsgChangeCallback("Keypad Panic Alarm",defaultPartition);
       }
 
       // Publishes trouble status
       if (dsc.troubleChanged || forceRefresh) {
         dsc.troubleChanged = false; // Resets the trouble status flag
-        if (dsc.trouble) panelStatusChangeCallback(trStatus, true, 0); // Trouble alarm tripped
-        else panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
+        if (dsc.trouble) {
+            panelStatusChangeCallback(trStatus, true, 0); // Trouble alarm tripped
+        }
+        else {
+            panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
+        }
       }
 
       // Publishes status per partition
@@ -1310,10 +1325,17 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
         if (dsc.disabled[partition] || partitionStatus[partition].locked) continue;
 
+         if (lastStatus[partition] != dsc.status[partition]  ) {
+				lastStatus[partition]=dsc.status[partition];
+				char msg[50];
+				sprintf(msg,"%02X: %s", dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
+				partitionMsgChangeCallback(msg,partition+1);
 
+        }
+        
 
         // Publishes alarm status
-        if (dsc.alarmChanged[partition] || forceRefresh) {
+        if (dsc.alarmChanged[partition] ) {
           //ESP_LOGD("test","dsc alarm=%d",dsc.alarm[partition]);
           dsc.alarmChanged[partition] = false; // Resets the partition alarm status flag
           if (dsc.alarm[partition]) {
@@ -1324,39 +1346,46 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         }
 
         // Publishes armed/disarmed status
-        if (dsc.armedChanged[partition] || forceRefresh) {
+        if (dsc.armedChanged[partition] || forceRefresh ) {
           dsc.armedChanged[partition] = false; // Resets the partition armed status flag
           if (dsc.armed[partition]) {
             panelStatusChangeCallback(armStatus, true, partition + 1);
-            if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) partitionStatusChangeCallback( String(FPSTR(STATUS_NIGHT)).c_str(), partition + 1);
+            if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) { 
+                partitionStatusChangeCallback( String(FPSTR(STATUS_NIGHT)).c_str(), partition + 1);
+            }
             else if (dsc.armedStay[partition])
               partitionStatusChangeCallback( String(FPSTR(STATUS_STAY)).c_str(), partition + 1);
-            else partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
-            clearZoneAlarms(partition + 1);
-          } else if (!forceRefresh) {
+            else {
+                partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
+                clearZoneAlarms(partition + 1);
+            }
+          } else if (!forceRefresh && !dsc.exitDelay[partition]) {
             clearZoneBypass(partition + 1);
             partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
             panelStatusChangeCallback(armStatus, false, partition + 1);
           }
         }
         // Publishes exit delay status
-        if (dsc.exitDelayChanged[partition]) {
+        if (dsc.exitDelayChanged[partition] || forceRefresh) {
           dsc.exitDelayChanged[partition] = false; // Resets the exit delay status flag
-          if (dsc.exitDelay[partition]) partitionStatusChangeCallback( String(FPSTR(STATUS_PENDING)).c_str(), partition + 1);
-          else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
-        }
+          if (dsc.exitDelay[partition]) {
+              partitionStatusChangeCallback( String(FPSTR(STATUS_PENDING)).c_str(), partition + 1);
+          } 
+        } 
 
         // Publishes ready status
 
-        if (dsc.readyChanged[partition] || forceRefresh) {
-
+    if (dsc.readyChanged[partition]  || forceRefresh) {
           dsc.readyChanged[partition] = false; // Resets the partition alarm status flag
-          if (dsc.ready[partition] && !dsc.armed[partition]) {
+          if (dsc.ready[partition]  && !dsc.exitDelay[partition]) {
             partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
             panelStatusChangeCallback(rdyStatus, true, partition + 1);
-          } else {
-            if (!dsc.armed[partition]) partitionStatusChangeCallback( String(FPSTR(STATUS_NOT_READY)).c_str(), partition + 1);
+          } else if (!dsc.exitDelay[partition]) {
+            if (!dsc.armed[partition] ) {
+                partitionStatusChangeCallback( String(FPSTR(STATUS_NOT_READY)).c_str(), partition + 1);
+            }
             panelStatusChangeCallback(rdyStatus, false, partition + 1);
+          
           }
 
         }
@@ -1367,6 +1396,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           if (dsc.fire[partition]) fireStatusChangeCallback(partition + 1, true); // Fire alarm tripped
           else fireStatusChangeCallback(partition + 1, false); // Fire alarm restored
         }
+
       }
 
       // Publishes zones 1-64 status in a separate topic per zone
@@ -3737,6 +3767,83 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     else
       line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
   }
+  
+  const __FlashStringHelper *statusText(uint8_t statusCode)
+  {
+    switch (statusCode) {
+        case 0x01: return F("Ready");
+        case 0x02: return F("Stay zones open");
+        case 0x03: return F("Zones open");
+        case 0x04: return F("Armed stay");
+        case 0x05: return F("Armed away");
+        case 0x06: return F("No entry delay");
+        case 0x07: return F("Failed to arm");
+        case 0x08: return F("Exit delay");
+        case 0x09: return F("No entry delay");
+        case 0x0B: return F("Quick exit");
+        case 0x0C: return F("Entry delay");
+        case 0x0D: return F("Alarm memory");
+        case 0x10: return F("Keypad lockout");
+        case 0x11: return F("Alarm");
+        case 0x14: return F("Auto-arm");
+        case 0x15: return F("Arm with bypass");
+        case 0x16: return F("No entry delay");
+        case 0x17: return F("Power failure");//??? not sure
+        case 0x22: return F("Alarm memory");
+        case 0x33: return F("Busy");
+        case 0x3D: return F("Disarmed");
+        case 0x3E: return F("Disarmed");
+        case 0x40: return F("Keypad blanked");
+        case 0x8A: return F("Activate zones");
+        case 0x8B: return F("Quick exit");
+        case 0x8E: return F("Invalid option");
+        case 0x8F: return F("Invalid code");
+        case 0x9E: return F("Enter * code");
+        case 0x9F: return F("Access code");
+        case 0xA0: return F("Zone bypass");
+        case 0xA1: return F("Trouble menu");
+        case 0xA2: return F("Alarm memory");
+        case 0xA3: return F("Door chime on");
+        case 0xA4: return F("Door chime off");
+        case 0xA5: return F("Master code");
+        case 0xA6: return F("Access codes");
+        case 0xA7: return F("Enter new code");
+        case 0xA9: return F("User function");
+        case 0xAA: return F("Time and Date");
+        case 0xAB: return F("Auto-arm time");
+        case 0xAC: return F("Auto-arm on");
+        case 0xAD: return F("Auto-arm off");
+        case 0xAF: return F("System test");
+        case 0xB0: return F("Enable DLS");
+        case 0xB2: return F("Command output");
+        case 0xB7: return F("Installer code");
+        case 0xB8: return F("Enter * code");
+        case 0xB9: return F("Zone tamper");
+        case 0xBA: return F("Zones low batt.");
+        case 0xC6: return F("Zone fault menu");
+        case 0xC8: return F("Service required");
+        case 0xD0: return F("Keypads low batt");
+        case 0xD1: return F("Wireless low bat");
+        case 0xE4: return F("Installer menu");
+        case 0xE5: return F("Keypad slot");
+        case 0xE6: return F("Input: 2 digits");
+        case 0xE7: return F("Input: 3 digits");
+        case 0xE8: return F("Input: 4 digits");
+        case 0xEA: return F("Code: 2 digits");
+        case 0xEB: return F("Code: 4 digits");
+        case 0xEC: return F("Input: 6 digits");
+        case 0xED: return F("Input: 32 digits");
+        case 0xEE: return F("Input: option");
+        case 0xF0: return F("Function key 1");
+        case 0xF1: return F("Function key 2");
+        case 0xF2: return F("Function key 3");
+        case 0xF3: return F("Function key 4");
+        case 0xF4: return F("Function key 5");
+        case 0xF8: return F("Keypad program");
+        case 0xFF: return F("Disabled");
+        default: return F("Unknown");
+    }
+  }  
 
 };
 
