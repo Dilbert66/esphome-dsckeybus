@@ -87,7 +87,8 @@ time:
    id: sntp_time
 
 custom_component:
- - lambda: |-
+ - id: dsckeybus
+   lambda: |-
     auto DSCkeybus = new DSCkeybushome($dscClockPin,$dscReadPin,$dscWritePin);
     DSCkeybus->accessCode="$accessCode";
     DSCkeybus->maxZones=$maxZones;
@@ -212,7 +213,12 @@ custom_component:
     return {DSCkeybus};
     
  
- 
+#ESP32 only .  Calls a public function within the custom component above. In this case syncs the time   
+#interval:
+#  - interval: 3600s
+#    then:
+#      - lambda: |-
+#          get_dsckeybus(id(dsckeybus))->set_panel_time();    
 
 # add or remove any zone you need. Please ensure you also add/remove the corresonponding case statement above
 # change the name to match your own zone configurations

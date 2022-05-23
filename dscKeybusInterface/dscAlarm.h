@@ -25,6 +25,8 @@ using namespace esphome;
 
 #define maxZonesDefault 32 //set to 64 if your system supports it
 
+#define get_dsckeybus(constructor) static_cast<DSCkeybushome *>(const_cast<custom_component::CustomComponentConstructor *>(&constructor)->get_component(0))
+
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
 bool forceDisconnect;
 
@@ -248,6 +250,20 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   void onBeeps(std:: function < void(std::string beep, int partition) > callback) {
     beepsCallback = callback;
   }
+  
+#ifdef ESP32
+  void set_panel_time() {
+    ESP_LOGD("info","Setting panel time...");
+    ESPTime rtc = now();
+    dsc.setDateTime(rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
+  
+  }
+  #else
+  void set_panel_time(int year,int month,int day,int hour,int minute) {
+    ESP_LOGD("info","Setting panel time...");      
+    dsc.setDateTime(year, month, day, hour, minute);
+  }  
+#endif   
 
   char expanderAddr1,
   expanderAddr2,
@@ -782,18 +798,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count <= partitionStatus[partition - 1].digits);
 
   }
-#ifdef ESP32
-  void set_panel_time() {
 
-    ESPTime rtc = now();
-    dsc.setDateTime(rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
-  
-  }
-  #else
-  void set_panel_time(int year,int month,int day,int hour,int minute) {
-  dsc.setDateTime(year, month, day, hour, minute);
-  }  
-#endif 
   void alarm_keypress(std::string keystring) {
     alarm_keypress_partition(keystring, defaultPartition);
   }
