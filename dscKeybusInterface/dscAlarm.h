@@ -27,6 +27,7 @@ using namespace esphome;
 
 #define get_dsckeybus(constructor) static_cast<DSCkeybushome *>(const_cast<custom_component::CustomComponentConstructor *>(&constructor)->get_component(0))
 
+
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
 bool forceDisconnect;
 
@@ -193,7 +194,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   dscWritePin(dscWritePin) {}
 
   std:: function < void(uint8_t, bool) > zoneStatusChangeCallback;
-  std:: function < void(std::string) > systemStatusChangeCallback;
+  std:: function < void(std::string ) > systemStatusChangeCallback;
   std:: function < void(panelStatus, bool, int) > panelStatusChangeCallback;
   std:: function < void(bool, int) > fireStatusChangeCallback;
   std::function<void (std::string,int)> partitionStatusChangeCallback;   
@@ -210,7 +211,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   void onZoneStatusChange(std:: function < void(uint8_t zone, bool isOpen) > callback) {
     zoneStatusChangeCallback = callback;
   }
-  void onSystemStatusChange(std:: function < void(std::string status) > callback) {
+  void onSystemStatusChange(std:: function < void(std::string  status) > callback) {
     systemStatusChangeCallback = callback;
   }
   void onFireStatusChange(std:: function < void(bool isOpen, int partition) > callback) {
@@ -315,16 +316,17 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   };
   
   zoneType * zoneStatus;
-  partitionType partitionStatus[dscPartitions];
+  partitionType * partitionStatus;
+  byte  lastStatus[dscPartitions];  
   
-  byte lastStatus[dscPartitions];
-  std::string zoneStatusMsg,
-  previousZoneStatusMsg,
+ /* std::string zoneStatusMsg,
   systemMsg,
-  previousSystemMsg,
   group1msg,
   group2msg,
   eventStatusMsg;
+  */
+  
+  std::string previousZoneStatusMsg,previousSystemMsg,eventStatusMsg;
   bool relayStatus[16],
   previousRelayStatus[16];
   bool sendCmd,forceRefresh;
@@ -343,8 +345,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
 
   void setup() override {
-
+    eventStatusMsg.reserve(64);
+    
     zoneStatus = new zoneType[maxZones];
+    partitionStatus = new partitionType[dscPartitions];  
+    
     if (debug > 2)
       Serial.begin(115200);
     set_update_interval(10);
@@ -392,8 +397,10 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     #ifdef MODULESUPERVISION
     dsc.enableModuleSupervision = 1;
     #endif
+#if defined(EXPANDER)      
     dsc.addModule(expanderAddr1);
     dsc.addModule(expanderAddr2);
+#endif    
     dsc.maxZones = maxZones;
     dsc.resetStatus();
     dsc.processModuleData = true;
@@ -421,7 +428,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     system0 = 0;
   }
   
- std::string getUserName(char * code) {
+std::string getUserName(char * code) {
   std::string name = code;
   if (userCodes -> value() != "") {
     std::string s = userCodes -> value();
@@ -454,9 +461,10 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   }
 
   void set_zone_fault(int zone, bool fault) {
+#if defined(EXPANDER)      
     ESP_LOGD("Debug", "Setting Zone Fault: %d,%d", zone, fault);
     dsc.setZoneFault(zone, fault);
-
+#endif
   }
 
   void alarm_disarm(std::string code) {
@@ -503,17 +511,16 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
    // ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], * currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
 
     if (partitionStatus[partition - 1].locked) {
-      line1DisplayCallback("System", partition);
-      line2DisplayCallback("not available", partition);
+      line1DisplayCallback(String(F("System")).c_str(), partition);
+      line2DisplayCallback(String(F("not available")).c_str(), partition);
       return;
     }
 
     if (partitionStatus[partition - 1].digits > 0) { //program mode data input 
 
-      std::string tpl;
-      tpl = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+      String tpl=F("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
       if (dsc.status[partition - 1] == 0xAA) { //time entry
-        tpl = "XXXX    XXXXXX  XXXXXXXXXXXXXXXX";
+        tpl = F("XXXX    XXXXXX  XXXXXXXXXXXXXXXX");
       }
 
       if (key == '#') {
@@ -526,7 +533,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         return;
 
       } else if (key == '>') {
-        getNextIdx(tpl, partition);
+        getNextIdx(tpl.c_str(), partition);
 
         if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx == 0) {
           dsc.setLCDSend(partition);
@@ -535,7 +542,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         }
 
       } else if (key == '<') {
-        getPrevIdx(tpl, partition);
+        getPrevIdx(tpl.c_str(), partition);
 
       } else if (key != '*') {
         if (partitionStatus[partition - 1].decimalInput) {
@@ -560,7 +567,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           else
             dsc.pgmBuffer.data[y] = (dsc.pgmBuffer.data[y] & 0x0F) | (k << 4);
         }
-        getNextIdx(tpl, partition);
+        getNextIdx(tpl.c_str(), partition);
         if (!partitionStatus[partition - 1].hex && partitionStatus[partition - 1].editIdx == 0) {
           dsc.setLCDSend(partition);
           partitionStatus[partition - 1].newData = false;
@@ -777,7 +784,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
   }
 
-  void getPrevIdx(std::string tpl, byte partition) {
+  void getPrevIdx(const char * tpl, byte partition) {
     int count = 0;
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx > 0 ? partitionStatus[partition - 1].editIdx - 1 : partitionStatus[partition - 1].digits - 1;
@@ -788,10 +795,10 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
   }
 
-  void getNextIdx(std::string tpl, byte partition) {
+  void getNextIdx(const char * tpl, byte partition) {
     int count = 0;
     do {
-      partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx + 1 < partitionStatus[partition - 1].digits ? partitionStatus[partition - 1].editIdx + 1 : partitionStatus[partition - 1].editIdx = 0;
+      partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx + 1 < partitionStatus[partition - 1].digits ? partitionStatus[partition - 1].editIdx + 1 : 0;
       count++;
        byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
       //if ((b%4)) continue;        
@@ -812,7 +819,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
     } else {
-        ESP_LOGD("info","partition is %d",partitionStatus[partition].locked);
+      //  ESP_LOGD("info","partition is %d",partitionStatus[partition].locked);
         if (!partitionStatus[partition].locked) dsc.write(keys, partition);
     }
   }
@@ -872,10 +879,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     char s1[4];
     char s2[25];
     std::string s;
+    s.reserve(100);
     s = "";
-    sprintf(s2, "%02d-%02d-%02d %02d:%02d ", rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
+    sprintf(s2, PSTR("%02d-%02d-%02d %02d:%02d "), rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
     for (int c = 0; c < len; c++) {
-      sprintf(s1, "%02X ", cbuf[c]);
+      sprintf(s1, PSTR("%02X "), cbuf[c]);
       s = s.append(s1);
     }
     ESP_LOGI(label, "%s %02X: %s", s2, cmd, s.c_str());
@@ -884,7 +892,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     std::string s;
     s = "";
     for (int c = 0; c < len; c++) {
-      sprintf(s1, "%02X ", cbuf[c]);
+      sprintf(s1, PSTR("%02X "), cbuf[c]);
       s = s.append(s1);
     }
     ESP_LOGI(label, "%02X: %s", cmd, s.c_str());
@@ -895,13 +903,15 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   byte getPanelBitNumber(byte panelByte, byte startNumber) {
 
     byte bitCount = 0;
+    byte p=defaultPartition;
     for (byte bit = 0; bit <= 7; bit++) {
       if (bitRead(dsc.panelData[panelByte], bit)) {
-        return (startNumber + bitCount);
+        p = startNumber + bitCount;
+        break;
       }
       bitCount++;
     }
-    return defaultPartition;
+    return p;
   }
 
   bool getEnabledZonesB1(byte inputByte, byte startZone, byte partition) {
@@ -958,10 +968,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     Serial.print(F(":"));
   }
 
-  std::string getOptionsString() {
+  String getOptionsString() {
 
     char s1[4];
-    std::string options = " ";
+    std::string options;
+    options = " ";
     byte option;
     for (byte optionGroup = 0; optionGroup < dscZones; optionGroup++) {
       for (byte optionBit = 0; optionBit < 8; optionBit++) {
@@ -972,48 +983,57 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         }
       }
     }
-    return options;
+    return options.c_str();
   }
 
   bool checkUserCode(byte code) {
     byte option, optionGroup;
-
+    bool r=false;
     for (optionGroup = 0; optionGroup < dscZones; optionGroup++) {
       for (byte optionBit = 0; optionBit < 8; optionBit++) {
         option = optionBit + 1 + (optionGroup * 8);
         if (bitRead(programZones[optionGroup], optionBit) && option == code) {
-          return true;
+          r=true;
+          break;
         }
 
       }
     }
-    return false;
+    return r;
   }
 
   byte getNextOption(byte start) {
     byte option, optionGroup, s;
     s = start >= maxZones ? 0 : start;
+    byte r=0;
     for (optionGroup = 0; optionGroup < dscZones; optionGroup++) {
       for (byte optionBit = 0; optionBit < 8; optionBit++) {
         option = optionBit + 1 + (optionGroup * 8);
-        if (bitRead(programZones[optionGroup], optionBit) && option > s) return option;
+        if (bitRead(programZones[optionGroup], optionBit) && option > s) {
+            r= option;
+            break;
+      }
       }
     }
-    return 0;
+    return r;
   }
 
   byte getPreviousOption(byte start) {
     byte s;
     s = start >= maxZones || start == 0 ? maxZones : start;
+    byte r=0;
     for (byte optionGroup = dscZones - 1; optionGroup >= 0 && optionGroup < dscZones; optionGroup--) {
       for (byte optionBit = 7; optionBit >= 0 && optionBit < 8; optionBit--) {
         byte option = optionBit + 1 + (optionGroup * 8);
         if (bitRead(programZones[optionGroup], optionBit)) {
-          if (option < s) return option;
+          if (option < s){
+              r=option;
+              break;
+          }
         }
       }
     }
-    return 0;
+    return r;
   }
 
   byte getNextUserCode(byte start) {
@@ -1086,19 +1106,27 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
   byte getNextOpenZone(byte start, byte partition) {
     if (start >= maxZones) start = 0;
+    byte z=0;
     for (int zone = start; zone < maxZones; zone++) {
-      if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return zone + 1;
+      if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) {
+          z= zone + 1;
+          break;
     }
-    return 0;
+    }
+    return z;
   }
 
   byte getPreviousOpenZone(byte start, byte partition) {
     if (start == 1) return 0;
+    byte z=0;
     if (start == 0 || start > maxZones) start = maxZones;
     for (int zone = start - 2; zone >= 0; zone--) {
-      if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) return zone + 1;
+      if (zoneStatus[zone].enabled && zoneStatus[zone].partition == partition && zoneStatus[zone].open) {
+          z= zone + 1;
+          break;
+      }
     }
-    return 0;
+    return z;
   }
 
   void getNextMainOption(byte partition) {
@@ -1140,35 +1168,51 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
   byte getNextEnabledZone(byte start, byte partition) {
     if (start >= maxZones) start = 0;
+    byte z=0;
     for (int zone = start; zone < maxZones; zone++) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone + 1;
+      if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) {
+         z=zone + 1;
+         break;
+      }
     }
-    return 0;
+    return z;
   }
 
   byte getPreviousEnabledZone(byte start, byte partition) {
 
     if (start < 2 || start > maxZones) start = maxZones;
+    byte z=0;
     for (int zone = start - 2; zone >= 0 && zone < maxZones; zone--) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) return zone + 1;
+      if (zoneStatus[zone].partition == partition && zoneStatus[zone].enabled) {
+         z=zone + 1;
+         break;
+      }
     }
-    return 0;
+    return z;
   }
 
   byte getNextAlarmedZone(byte start, byte partition) {
     if (start >= maxZones) start = 0;
+    byte z=0;
     for (int zone = start; zone < maxZones; zone++) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone + 1;
+      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) {
+         z=zone + 1;
+         break;
+      }
     }
-    return 0;
+    return z;
   }
 
   byte getPreviousAlarmedZone(byte start, byte partition) {
     if (start < 2 || start > maxZones) start = maxZones;
+    byte z=0;
     for (int zone = start - 2; zone >= 0 && zone < maxZones; zone--) {
-      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) return zone + 1;
+      if (zoneStatus[zone].partition == partition && zoneStatus[zone].alarm) {
+         z=zone + 1;
+         break;
+      }
     }
-    return 0;
+    return z;
   }
 
   void getBypassZones(byte partition) {
@@ -1184,11 +1228,6 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       }
     }
     setStatus(partition, true);
-  }
-
-  void rtrim(std::string & s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-      std::not1(std::ptr_fun < int, int > (std::isspace))).base(), s.end());
   }
 
   void update() override {
@@ -1233,8 +1272,9 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           if (dsc.disabled[partition - 1]) continue;
           beepsCallback("0", partition);
         }
+#if defined(EXPANDER)          
         dsc.clearZoneRanges(); // start with clear expanded zones
- 
+#endif
       }
 
       if (debug > 1)
@@ -1273,6 +1313,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         setStatus(partition, true);
 
       }
+
 
       if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
       dsc.bufferOverflow = false;
@@ -1364,9 +1405,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
                 partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
                 clearZoneAlarms(partition + 1);
             }
-          } else if (!forceRefresh && !dsc.exitDelay[partition]) {
-            clearZoneBypass(partition + 1);
-            partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
+          } else if (!dsc.exitDelay[partition]) {
+            if (!forceRefresh) {
+                clearZoneBypass(partition + 1);
+                partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
+            }
             panelStatusChangeCallback(armStatus, false, partition + 1);
           }
         }
@@ -1388,6 +1431,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           } else if (!dsc.exitDelay[partition]) {
             if (!dsc.armed[partition] ) {
                 partitionStatusChangeCallback( String(FPSTR(STATUS_NOT_READY)).c_str(), partition + 1);
+                panelStatusChangeCallback(armStatus, false, partition + 1);                
             }
             panelStatusChangeCallback(rdyStatus, false, partition + 1);
           
@@ -1458,6 +1502,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         }
       }
 
+      std::string zoneStatusMsg;
       zoneStatusMsg = "";
       char s1[7];
       for (int x = 0; x < maxZones; x++) {
@@ -1504,7 +1549,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
       previousZoneStatusMsg = zoneStatusMsg;
 
-      systemMsg = "";
+      std::string systemMsg;
+      systemMsg  = "";
       if (bitRead(system1, 0)) {
         if (systemMsg != "") systemMsg.append(",");
         systemMsg.append("BAT");
@@ -1540,6 +1586,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         systemMsg.append("A4");
       }
 
+      
       if (bitRead(system0, 1)) {
         if (systemMsg != "") systemMsg.append(",");
         systemMsg.append("AC");
@@ -1621,9 +1668,10 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
     byte * currentSelection = & partitionStatus[partition].currentSelection;
 
-    std::string lcdLine1;
-    std::string lcdLine2;
-
+    //std::string lcdLine1;
+    //std::string lcdLine2;
+    String lcdLine1;
+    String lcdLine2;
     options = false;
     partitionStatus[partition].digits = 0;
     partitionStatus[partition].hex = false;
@@ -1632,370 +1680,371 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip);
     switch (dsc.status[partition]) {
     case 0x01:
-      lcdLine1 = "Partition ready";
-      lcdLine2 = " ";
+      lcdLine1 = F("Partition ready");
+      lcdLine2 = F(" ");
       break;
     case 0x02:
-      lcdLine1 = "Stay         ";
-      lcdLine2 = "zones open      ";
+      lcdLine1 = F("Stay         ");
+      lcdLine2 = F("zones open      ");
       break;
     case 0x03:
-      lcdLine1 = "Zones open  <>";
-      lcdLine2 = " ";
+      lcdLine1 = F("Zones open  <>");
+      lcdLine2 = F(" ");
       break;
     case 0x04:
-      lcdLine1 = "Armed:       ";
-      lcdLine2 = "Stay            ";
+      lcdLine1 = F("Armed:       ");
+      lcdLine2 = F("Stay            ");
       break;
     case 0x05:
-      lcdLine1 = "Armed:       ";
-      lcdLine2 = "Away            ";
+      lcdLine1 = F("Armed:       ");
+      lcdLine2 = F("Away            ");
       break;
     case 0x06:
-      lcdLine1 = "Armed: Stay  ";
-      lcdLine2 = "No entry delay  ";
+      lcdLine1 = F("Armed: Stay  ");
+      lcdLine2 = F("No entry delay  ");
       break;
     case 0x07:
-      lcdLine1 = "Failed       ";
-      lcdLine2 = "to arm          ";
+      lcdLine1 = F("Failed       ");
+      lcdLine2 = F("to arm          ");
       break;
     case 0x08:
-      lcdLine1 = "Exit delay   ";
-      lcdLine2 = "in progress     ";
+      lcdLine1 = F("Exit delay   ");
+      lcdLine2 = F("in progress     ");
       break;
     case 0x09:
-      lcdLine1 = "Arming:      ";
-      lcdLine2 = "No entry delay  ";
+      lcdLine1 = F("Arming:      ");
+      lcdLine2 = F("No entry delay  ");
       break;
     case 0x0B:
-      lcdLine1 = "Quick exit   ";
-      lcdLine2 = "in progress     ";
+      lcdLine1 = F("Quick exit   ");
+      lcdLine2 = F("in progress     ");
       break;
     case 0x0C:
-      lcdLine1 = "Entry delay  ";
-      lcdLine2 = "in progress     ";
+      lcdLine1 = F("Entry delay  ");
+      lcdLine2 = F("in progress     ");
       break;
     case 0x0D:
-      lcdLine1 = "Entry delay  ";
-      lcdLine2 = "after alarm     ";
+      lcdLine1 = F("Entry delay  ");
+      lcdLine2 = F("after alarm     ");
       break;
     case 0x0E:
-      lcdLine1 = "Not          ";
-      lcdLine2 = "available       ";
+      lcdLine1 = F("Not          ");
+      lcdLine2 = F("available       ");
       break;
     case 0x10:
-      lcdLine1 = "Keypad       ";
-      lcdLine2 = "lockout         ";
+      lcdLine1 = F("Keypad       ");
+      lcdLine2 = F("lockout         ");
       break;
     case 0x11:
-      lcdLine1 = "Partition in alarm";
-      lcdLine2 = "  ";
+      lcdLine1 = F("Partition in alarm");
+      lcdLine2 = F("  ");
       break;
     case 0x12:
-      lcdLine1 = "Battery check";
-      lcdLine2 = "in progress     ";
+      lcdLine1 = F("Battery check");
+      lcdLine2 = F("in progress     ");
       break;
     case 0x14:
-      lcdLine1 = "Auto-arm     ";
-      lcdLine2 = "in progress     ";
+      lcdLine1 = F("Auto-arm     ");
+      lcdLine2 = F("in progress     ");
       break;
     case 0x15:
-      lcdLine1 = "Arming with  ";
-      lcdLine2 = "bypass zones    ";
+      lcdLine1 = F("Arming with  ");
+      lcdLine2 = F("bypass zones    ");
       break;
     case 0x16:
-      lcdLine1 = "Armed: Away  ";
-      lcdLine2 = "No entry delay  ";
+      lcdLine1 = F("Armed: Away  ");
+      lcdLine2 = F("No entry delay  ");
       break;
     case 0x17:
-      lcdLine1 = "Power saving ";
-      lcdLine2 = "Keypad blanked  ";
+      lcdLine1 = F("Power saving ");
+      lcdLine2 = F("Keypad blanked  ");
       break;
     case 0x19:
-      lcdLine1 = "Alarm        ";
-      lcdLine2 = "occurred        ";
+      lcdLine1 = F("Alarm        ");
+      lcdLine2 = F("occurred        ");
       break;
     case 0x22:
-      lcdLine1 = "Alarms occurred";
-      lcdLine2 = "Press # to exit";
+      lcdLine1 = F("Alarms occurred");
+      lcdLine2 = F("Press # to exit");
       break;
     case 0x2F:
-      lcdLine1 = "Keypad LCD   ";
-      lcdLine2 = "test            ";
+      lcdLine1 = F("Keypad LCD   ");
+      lcdLine2 = F("test            ");
       break;
     case 0x33:
-      lcdLine1 = "Command      ";
-      lcdLine2 = "output active   ";
+      lcdLine1 = F("Command      ");
+      lcdLine2 = F("output active   ");
       break;
     case 0x3D:
-      lcdLine1 = "Alarm        ";
-      lcdLine2 = "occurred        ";
+      lcdLine1 = F("Alarm        ");
+      lcdLine2 = F("occurred        ");
       break;
     case 0x3E:
-      lcdLine1 = "Disarmed     ";
-      lcdLine2 = " ";
+      lcdLine1 = F("Disarmed     ");
+      lcdLine2 = F(" ");
       break;
     case 0x40:
-      lcdLine1 = "Keypad       ";
-      lcdLine2 = "blanked         ";
+      lcdLine1 = F("Keypad       ");
+      lcdLine2 = F("blanked         ");
       break;
     case 0x8A:
-      lcdLine1 = "Activate     ";
-      lcdLine2 = "stay/away zones ";
+      lcdLine1 = F("Activate     ");
+      lcdLine2 = F("stay/away zones ");
       break;
     case 0x8B:
-      lcdLine1 = "Quick exit   ";
-      lcdLine2 = " ";
+      lcdLine1 = F("Quick exit   ");
+      lcdLine2 = F(" ");
       break;
     case 0x8E:
-      lcdLine1 = "Invalid      ";
-      lcdLine2 = "option          ";
+      lcdLine1 = F("Invalid      ");
+      lcdLine2 = F("option          ");
       break;
     case 0x8F:
-      lcdLine1 = "Invalid      ";
-      lcdLine2 = "access code     ";
+      lcdLine1 = F("Invalid      ");
+      lcdLine2 = F("access code     ");
       break;
     case 0x9E:
-      lcdLine1 = "Press (*) for <>";
-      lcdLine2 = " ";
+      lcdLine1 = F("Press (*) for <>");
+      lcdLine2 = F(" ");
       break;
     case 0x9F:
-      lcdLine1 = "Enter  ";
-      lcdLine2 = "access code   ";
+      lcdLine1 = F("Enter  ");
+      lcdLine2 = F("access code   ");
       break;
     case 0xA0:
-      lcdLine1 = "Zone bypass   <>";
-      lcdLine2 = " ";
+      lcdLine1 = F("Zone bypass   <>");
+      lcdLine2 = F(" ");
       break;
     case 0xA1:
-      lcdLine1 = "Trouble menu     <>    ";
-      lcdLine2 = " ";
+      lcdLine1 = F("Trouble menu     <>    ");
+      lcdLine2 = F(" ");
       break;
     case 0xA2:
-      lcdLine1 = "Alarm memory     <> ";
-      lcdLine2 = " ";
+      lcdLine1 = F("Alarm memory     <> ");
+      lcdLine2 = F(" ");
       break;
     case 0xA3:
-      lcdLine1 = "Door         ";
-      lcdLine2 = "chime enabled   ";
+      lcdLine1 = F("Door         ");
+      lcdLine2 = F("chime enabled   ");
       break;
     case 0xA4:
-      lcdLine1 = "Door         ";
-      lcdLine2 = "chime disabled  ";
+      lcdLine1 = F("Door         ");
+      lcdLine2 = F("chime disabled  ");
       break;
     case 0xA5:
-      lcdLine1 = "Enter        ";
-      lcdLine2 = "master code     ";
+      lcdLine1 = F("Enter        ");
+      lcdLine2 = F("master code     ");
       break;
     case 0xA6:
-      lcdLine1 = "*5:  Access Code";
-      lcdLine2 = "code? (2 digits)";
+      lcdLine1 = F("*5:  Access Code");
+      lcdLine2 = F("code? (2 digits)");
       //digits = 2;
       break;
     case 0xA7:
-      lcdLine1 = "*5 Enter new ";
-      lcdLine2 = "4-digit code    ";
+      lcdLine1 = F("*5 Enter new ");
+      lcdLine2 = F("4-digit code    ");
       partitionStatus[partition].digits = 4;
       break;
     case 0xA9:
-      lcdLine1 = "*6: User functions";
-      lcdLine2 = "function?  ";
+      lcdLine1 = F("*6: User functions");
+      lcdLine2 = F("function?  ");
       break;
     case 0xAA:
-      lcdLine1 = " HHMM    MMDDYY   ";
-      lcdLine2 = "";
+      lcdLine1 = F(" HHMM    MMDDYY   ");
+      lcdLine2 = F("");
       partitionStatus[partition].digits = 16;
       break;
     case 0xAB:
-      lcdLine1 = "*6:          ";
-      lcdLine2 = "Auto-arm time   ";
+      lcdLine1 = F("*6:          ");
+      lcdLine2 = F("Auto-arm time   ");
       break;
     case 0xAC:
-      lcdLine1 = "*6:          ";
-      lcdLine2 = "Auto-arm on     ";
+      lcdLine1 = F("*6:          ");
+      lcdLine2 = F("Auto-arm on     ");
       break;
     case 0xAD:
-      lcdLine1 = "*6:          ";
-      lcdLine2 = "Auto-arm off    ";
+      lcdLine1 = F("*6:          ");
+      lcdLine2 = F("Auto-arm off    ");
       break;
     case 0xAF:
-      lcdLine1 = "*6:          ";
-      lcdLine2 = "System test     ";
+      lcdLine1 = F("*6:          ");
+      lcdLine2 = F("System test     ");
       break;
     case 0xB0:
-      lcdLine1 = "*6:          ";
-      lcdLine2 = "Enable DLS      ";
+      lcdLine1 = F("*6:          ");
+      lcdLine2 = F("Enable DLS      ");
       break;
     case 0xB2:
-      lcdLine1 = "*7:          ";
-      lcdLine2 = "Command output  ";
+      lcdLine1 = F("*7:          ");
+      lcdLine2 = F("Command output  ");
       break;
     case 0xB7:
-      lcdLine1 = "Enter        ";
+      lcdLine1 = F("Enter        ");
 
-      lcdLine2 = "installer code  ";
+      lcdLine2 = F("installer code  ");
       break;
     case 0xB8:
-      lcdLine1 = "Enter *      ";
-      lcdLine2 = "function code   ";
+      lcdLine1 = F("Enter *      ");
+      lcdLine2 = F("function code   ");
 
       break;
     case 0xB9:
-      lcdLine1 = "Zone Tamper <>";
-      lcdLine2 = " ";
+      lcdLine1 = F("Zone Tamper <>");
+      lcdLine2 = F(" ");
       break;
     case 0xBA:
-      lcdLine1 = "Zones low battery <>";
-      lcdLine2 = " ";
+      lcdLine1 = F("Zones low battery <>");
+      lcdLine2 = F(" ");
       break;
     case 0xBC:
-      lcdLine1 = "*5 Enter new ";
-      lcdLine2 = "6-digit code    ";
+      lcdLine1 = F("*5 Enter new ");
+      lcdLine2 = F("6-digit code    ");
       partitionStatus[partition].digits = 6;
       break;
     case 0xC6:
-      lcdLine1 = " Zone faults  <>";
-      lcdLine2 = " ";
+      lcdLine1 = F(" Zone faults  <>");
+      lcdLine2 = F(" ");
       break;
     case 0xC7:
-      lcdLine1 = "Partition    ";
-      lcdLine2 = "disabled        ";
+      lcdLine1 = F("Partition    ");
+      lcdLine2 = F("disabled        ");
       break;
     case 0xC8:
-      lcdLine1 = "Service req.  <>";
-      lcdLine2 = " ";
+      lcdLine1 = F("Service req.  <>");
+      lcdLine2 = F(" ");
       break;
     case 0xCE:
-      lcdLine1 = "Active camera";
-      lcdLine2 = "monitor select. ";
+      lcdLine1 = F("Active camera");
+      lcdLine2 = F("monitor select. ");
       break;
     case 0xD0:
-      lcdLine1 = "*2: Keypads  ";
-      lcdLine2 = "low battery     ";
+      lcdLine1 = F("*2: Keypads  ");
+      lcdLine2 = F("low battery     ");
       break;
     case 0xD1:
-      lcdLine1 = "*2: Keyfobs  ";
-      lcdLine2 = "low battery     ";
+      lcdLine1 = F("*2: Keyfobs  ");
+      lcdLine2 = F("low battery     ");
       break;
     case 0xD4:
-      lcdLine1 = "*2: Sensors  ";
-      lcdLine2 = "RF Delinquency  ";
+      lcdLine1 = F("*2: Sensors  ");
+      lcdLine2 = F("RF Delinquency  ");
       break;
     case 0xE4:
-      lcdLine1 = "*8: Installer menu";
-      lcdLine2 = "Section? ";
+      lcdLine1 = F("*8: Installer menu");
+      lcdLine2 = F("Section? ");
       partitionStatus[partition].decimalInput = false;
       break;
     case 0xE5:
-      lcdLine1 = "Keypad       ";
-      lcdLine2 = "slot assignment ";
+      lcdLine1 = F("Keypad       ");
+      lcdLine2 = F("slot assignment ");
       break;
     case 0xE6:
-      lcdLine1 = "Input (2 digits)";
-      lcdLine2 = " ";
+      lcdLine1 = F("Input (2 digits)");
+      lcdLine2 = F(" ");
       partitionStatus[partition].digits = 2;
       break;
     case 0xE7:
-      lcdLine1 = "Input:       ";
+      lcdLine1 = F("Input:       ");
       partitionStatus[partition].digits = 3;
-      lcdLine2 = "3 digits    ";
+      lcdLine2 = F("3 digits    ");
       partitionStatus[partition].decimalInput = true;
       break;
     case 0xE8:
-      lcdLine1 = "Input:       ";
+      lcdLine1 = F("Input:       ");
       partitionStatus[partition].digits = 4;
-      lcdLine2 = "4 digits        ";
+      lcdLine2 = F("4 digits        ");
       break;
     case 0xE9:
-      lcdLine1 = "Input:       ";
+      lcdLine1 = F("Input:       ");
       partitionStatus[partition].digits = 5;
-      lcdLine2 = "5 digits    ";
+      lcdLine2 = F("5 digits    ");
       break;
     case 0xEA:
-      lcdLine1 = "Input HEX:   ";
+      lcdLine1 = F("Input HEX:   ");
       partitionStatus[partition].digits = 2;
       partitionStatus[partition].hex = true;
-      lcdLine2 = "2 digits    ";
+      lcdLine2 = F("2 digits    ");
       //setlcdrec 2
       break;
     case 0xEB:
-      lcdLine1 = "Input hex(4dig)";
+      lcdLine1 = F("Input hex(4dig)");
       partitionStatus[partition].digits = 4;
       partitionStatus[partition].hex = true;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       //setlcdrec 4
       break;
     case 0xEC:
-      lcdLine1 = "Input hex(6dig)";
+      lcdLine1 = F("Input hex(6dig)");
       partitionStatus[partition].digits = 6;
       partitionStatus[partition].hex = true;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       //setlcdreceive 6
       break;
     case 0xED:
-      lcdLine1 = "Input HEX:   ";
+      lcdLine1 = F("Input HEX:   ");
       partitionStatus[partition].digits = 32;
       partitionStatus[partition].hex = true;
-      lcdLine2 = "32 digits  ";
+      lcdLine2 = F("32 digits  ");
       //setlcdreceive 32
 
       break;
     case 0xEE:
-      lcdLine1 = "Input: options     ";
+      lcdLine1 = F("Input: options     ");
       options = true;
-      lcdLine2 = "option per zone ";
+      lcdLine2 = F("option per zone ");
       break;
     case 0xEF:
-      lcdLine1 = "Module       ";
-      lcdLine2 = "supervision   ";
+      lcdLine1 = F("Module       ");
+      lcdLine2 = F("supervision   ");
       break;
     case 0xF0:
-      lcdLine1 = "Function     ";
-      lcdLine2 = "key 1      ";
+      lcdLine1 = F("Function     ");
+      lcdLine2 = F("key 1      ");
       break;
     case 0xF1:
-      lcdLine1 = "Function     ";
-      lcdLine2 = "key 2        ";
+      lcdLine1 = F("Function     ");
+      lcdLine2 = F("key 2        ");
       break;
     case 0xF2:
-      lcdLine1 = "Function     ";
-      lcdLine2 = "key 3       ";
+      lcdLine1 = F("Function     ");
+      lcdLine2 = F("key 3       ");
       break;
     case 0xF3:
-      lcdLine1 = "Function     ";
-      lcdLine2 = "key 4      ";
+      lcdLine1 = F("Function     ");
+      lcdLine2 = F("key 4      ");
       break;
     case 0xF4:
-      lcdLine1 = "Function     ";
-      lcdLine2 = "key 5           ";
+      lcdLine1 = F("Function     ");
+      lcdLine2 = F("key 5           ");
       break;
     case 0xF5:
-      lcdLine1 = "Wireless mod.";
-      lcdLine2 = "placement test  ";
+      lcdLine1 = F("Wireless mod.");
+      lcdLine2 = F("placement test  ");
       break;
     case 0xF6:
-      lcdLine1 = "Activate     ";
-      lcdLine2 = "device for test ";
+      lcdLine1 = F("Activate     ");
+      lcdLine2 = F("device for test ");
       break;
     case 0xF7:
-      lcdLine1 = "*8: Installer";
+      lcdLine1 = F("*8: Installer");
       partitionStatus[partition].decimalInput = false;
       partitionStatus[partition].digits = 0;
-      lcdLine2 = "menu, 2 digits  ";
+      lcdLine2 = F("menu, 2 digits  ");
       break;
     case 0xF8:
-      lcdLine1 = "Keypad    ";
-      lcdLine2 = "programming";
+      lcdLine1 = F("Keypad    ");
+      lcdLine2 = F("programming");
       break;
     case 0xFA:
-      lcdLine1 = "Input:   ";
+      lcdLine1 = F("Input:   ");
       partitionStatus[partition].digits = 6;
-      lcdLine2 = "6 digits ";
+      lcdLine2 = F("6 digits ");
       break;
     default:
       lcdLine2 = dsc.status[partition];
       partitionStatus[partition].digits = 0;
     }
+
 
     if (dsc.status[partition] != 0xA9) partitionStatus[partition].eventViewer = false;
 
@@ -2033,19 +2082,19 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         partitionStatus[partition].editIdx = 0;
         partitionStatus[partition].hexMode = false;
         partitionStatus[partition].newData = true;
-        lcdLine1 = "";
-        lcdLine2 = "";
+        lcdLine1 = F("");
+        lcdLine2 = F("");
 
         //ok, we should have the data now so display it
       } else if (partitionStatus[partition].digits && partitionStatus[partition].newData && dsc.pgmBuffer.dataPending) {
 
         char s[8];
         if (partitionStatus[partition].digits > 16)
-          lcdLine1 = " ";
+        lcdLine1 =" ";
         lcdLine2 = " ";
         int y;
         char c;
-        if (partitionStatus[partition].hexMode) lcdLine1 = "*";
+        if (partitionStatus[partition].hexMode) lcdLine1 = F("*");
 
         if (partitionStatus[partition].decimalInput) {
           if (partitionStatus[partition].digits == 2)
@@ -2060,27 +2109,30 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
             c = decimalInputBuffer[x] - 48;
           else
             c = x % 2 ? dsc.pgmBuffer.data[y] & 0x0F : (dsc.pgmBuffer.data[y] & 0xF0) >> 4;
-          std::string tpl;
-          tpl = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+          //std::string tpl;
+          String tpl = F("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 
           if (dsc.status[partition] == 0xAA) {
-            tpl = "XXXX    XXXXXX  XXXXXXXXXXXXXXXX";
+            tpl = F("XXXX    XXXXXX  XXXXXXXXXXXXXXXX");
           }
           if (tpl[x] == 'X') {
             if (x == partitionStatus[partition].editIdx)
-              sprintf(s, "[%1X]", c);
+              sprintf(s, PSTR("[%1X]"), c);
             else
-              sprintf(s, "%1X", c);
+              sprintf(s, PSTR("%1X"), c);
           } else
             sprintf(s, " ");
-
+           
           if (partitionStatus[partition].digits < 17)
-            lcdLine2.append(s);
+            //lcdLine2.append(s);
+             lcdLine2+=s;
           else {
             if (x < 16)
-              lcdLine1.append(s);
+              //lcdLine1.append(s);
+              lcdLine1+=s;
             else
-              lcdLine2.append(s);
+              //lcdLine2.append(s);
+               lcdLine2+=s;
           }
         }
 
@@ -2093,20 +2145,20 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
         if ( * currentSelection > 1 && * currentSelection < 6) {
           std::string s = String(FPSTR(statusMenu[ * currentSelection])).c_str();
           int pos = s.find(":");
-          lcdLine1 = (s.substr(0, pos));
-          lcdLine2 = (s.substr(pos + 1));
+          lcdLine1 = (s.substr(0, pos)).c_str();
+          lcdLine2 = (s.substr(pos + 1)).c_str();
         } else {
           byte c = dsc.ready[partition] ? 0 : 1;
           std::string s = String(FPSTR(statusMenuLabels[c])).c_str();
           int pos = s.find(":");
-          lcdLine1 = (s.substr(0, pos));
-          lcdLine2 = (s.substr(pos + 1));
+          lcdLine1 = (s.substr(0, pos)).c_str();
+          lcdLine2 = (s.substr(pos + 1)).c_str();
           * currentSelection = 1;
         }
 
         if (partitionStatus[partition].selectedZone && partitionStatus[partition].selectedZone < maxZones) {
           char s[16];
-          sprintf(s, "Zone %02d  <>", partitionStatus[partition].selectedZone);
+          sprintf(s, PSTR("Zone %02d  <>"), partitionStatus[partition].selectedZone);
           lcdLine2 = s;
         }
 
@@ -2121,7 +2173,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
             bypassStatus = 'B';
           else if (zoneStatus[ * currentSelection - 1].open)
             bypassStatus = 'O';
-          sprintf(s, "%02d   %c", * currentSelection, bypassStatus);
+          sprintf(s, PSTR("%02d   %c"), * currentSelection, bypassStatus);
           lcdLine2 = s;
         }
       } else if (dsc.status[partition] == 0x11) { //alarms
@@ -2131,7 +2183,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           currentSelection = getNextAlarmedZone(0xFF, partition + 1);
         if ( * currentSelection < maxZones && * currentSelection > 0) {
           char s[16];
-          sprintf(s, "zone %02d", * currentSelection);
+          sprintf(s, PSTR("zone %02d"), * currentSelection);
           lcdLine2 = s;
         } else lcdLine2 = " ";
       } else if (dsc.status[partition] == 0xA2) { //alarm memory
@@ -2145,32 +2197,32 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           lcdLine2 = "";
           char bypassStatus = ' ';
 
-          sprintf(s, "zone %02d", * currentSelection);
+          sprintf(s, PSTR("zone %02d"), * currentSelection);
           lcdLine2 = s;
         } else {
-          lcdLine1 = "No alarms";
-          lcdLine2 = "in memory";
+          lcdLine1 = F("No alarms");
+          lcdLine2 = F("in memory");
         }
       } else if (dsc.status[partition] == 0x9E) { // main menu
 
         if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           * currentSelection = 1;
         }
-        lcdLine2 = String(FPSTR(mainMenu[ * currentSelection])).c_str();
+        lcdLine2 = String(FPSTR(mainMenu[ * currentSelection]));
 
       } else if (dsc.status[partition] == 0xB2) { // output menu
 
         if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           * currentSelection = 1;
         }
-        lcdLine2 = String(FPSTR(outputMenu[ * currentSelection])).c_str();
+        lcdLine2 = String(FPSTR(outputMenu[ * currentSelection]));
 
       } else if (dsc.status[partition] == 0xA9 && !partitionStatus[partition].eventViewer) { // user menu
 
         if ( * currentSelection == 0xFF || dsc.status[partition] != partitionStatus[partition].lastStatus) {
           * currentSelection = 1;
         }
-        lcdLine2 = String(FPSTR(userMenu[ * currentSelection])).c_str();
+        lcdLine2 = String(FPSTR(userMenu[ * currentSelection]));
 
       } else if (dsc.status[partition] == 0xA1) { //trouble
 
@@ -2178,7 +2230,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           * currentSelection = getNextOption(0xFF);
         }
         if ( * currentSelection < 9) {
-          lcdLine2 = String(FPSTR(troubleMenu[ * currentSelection])).c_str();
+          lcdLine2 = String(FPSTR(troubleMenu[ * currentSelection]));
 
         }
 
@@ -2188,7 +2240,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           *
           currentSelection = getNextOption(0xFF);
         if ( * currentSelection < 9) {
-          lcdLine2 = String(FPSTR(serviceMenu[ * currentSelection])).c_str();
+          lcdLine2 = String(FPSTR(serviceMenu[ * currentSelection]));
 
         }
 
@@ -2201,7 +2253,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
           char programmed = ' ';
           if (checkUserCode( * currentSelection))
             programmed = 'P';
-          sprintf(s, "%02d   %c", * currentSelection, programmed);
+          sprintf(s, PSTR("%02d   %c"), * currentSelection, programmed);
           lcdLine2 = s;
         }
       } else                 // Sends the access code when needed by the panel for arming
@@ -2220,8 +2272,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
     
 
-    if (lcdLine1 != "") line1DisplayCallback(lcdLine1, partition + 1);
-    if (lcdLine2 != "") line2DisplayCallback(lcdLine2, partition + 1);
+    if (lcdLine1 != "") line1DisplayCallback(lcdLine1.c_str(), partition + 1);
+    if (lcdLine2 != "") line2DisplayCallback(lcdLine2.c_str(), partition + 1);
 
     partitionStatus[partition].lastStatus = dsc.status[partition];
     
@@ -2318,10 +2370,10 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       if (dsc.panelData[7] == 1)
         switch (dsc.panelData[8]) {
         case 0xAE:
-          line2DisplayCallback("Walk test end", activePartition);
+          line2DisplayCallback(String(F("Walk test end")).c_str(), activePartition);
           break;
         case 0xAF:
-          line2DisplayCallback("Walk test beging", activePartition);
+          line2DisplayCallback(String(F("Walk test beging")).c_str(), activePartition);
           break;
         };
       processEventBufferEC(true);
@@ -2375,9 +2427,13 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     beepTime = millis();
   }
 
+
   void printPanel_0x6E() {
     char s1[5];
-    group1msg = "";
+    /*
+    std::string group1msg;
+
+    group1msg= "";
     if (partitionStatus[dsc.pgmBuffer.partition - 1].decimalInput) {
       if (dsc.panelData[2] <= 0x63) group1msg.append("0");
       if (dsc.panelData[2] <= 0x09) group1msg.append("0");
@@ -2390,6 +2446,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       }
 
     }
+    */
     if (dsc.pgmBuffer.partition) {
       if (dsc.pgmBuffer.idx == dsc.pgmBuffer.len) setStatus(dsc.pgmBuffer.partition - 1, true);
       //if (group1msg != "") lightsCallback(group1msg, dsc.pgmBuffer.partition - 1);
@@ -2444,6 +2501,10 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     byte byteCount = 0;
     byte zoneStart = 0;
     byte zone;
+  //  std::string group1msg,group2msg;
+    
+  //  group1msg="";
+ //   group2msg="";
     if (startByte == 5) zoneStart = 4;
     for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
       programZones[zoneGroup] = dsc.panelData[startByte + byteCount];
@@ -2452,22 +2513,22 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     byteCount = 0;
     char s1[5];
-    if (startByte == 4 || startByte == 3) group1msg = "";
-    if (startByte == 5) group2msg = "";
+    //if (startByte == 4 || startByte == 3) group1msg = "";
+   // if (startByte == 5) group2msg = "";
     for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         zone = (zoneBit + 1) + (zoneGroup * 8);
         if (bitRead(dsc.panelData[startByte + byteCount], zoneBit)) {
           sprintf(s1, "%02d ", zone);
-          if (startByte == 4 || startByte == 3) group1msg.append(s1);
-          if (startByte == 5) group2msg.append(s1);
+       //   if (startByte == 4 || startByte == 3) group1msg.append(s1);
+       //   if (startByte == 5) group2msg.append(s1);
 
         }
       }
       byteCount++;
     }
-    group1msg.append(group2msg);
-    ESP_LOGD("info","procesprogramzones: %02X, %s",startByte,group1msg.c_str());
+   // group1msg.append(group2msg);
+   // ESP_LOGD("info","procesprogramzones: %02X, %s",startByte,group1msg.c_str());
     //lightsCallback(group1msg, defaultPartition);
     if (options)
       dsc.statusChanged = true;
@@ -2476,7 +2537,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   void processEventBufferAA(bool showEvent = false) {
     #ifndef dscClassicSeries
     if (extendedBufferFlag) return; // Skips 0xAA data when 0xEC extended event buffer data is available
-
+    eventStatusMsg="";
     char eventInfo[45] = "";
     char charBuffer[4];
     if (!showEvent) {
@@ -2561,7 +2622,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   void processEventBufferEC(bool showEvent = false) {
     #ifndef dscClassicSeries
     if (!extendedBufferFlag) extendedBufferFlag = true;
-
+    eventStatusMsg="";
     char eventInfo[45] = "";
     char charBuffer[4];
     if (!showEvent) {
@@ -2672,160 +2733,162 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   void printPanelStatus0(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
 
-    std::string lcdLine1;
-    std::string lcdLine2;
+    //std::string lcdLine1;
+    //std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;
     switch (dsc.panelData[panelByte]) {
     case 0x49:
-      lcdLine1 = "Duress alarm";
-      lcdLine2 = " ";
+      lcdLine1 = F("Duress alarm");
+      lcdLine2 = F(" ");
       break;
     case 0x4A:
-      lcdLine1 = "Disarmed:";
-      lcdLine2 = "Alarm mem";
+      lcdLine1 = F("Disarmed:");
+      lcdLine2 = F("Alarm mem");
       break;
     case 0x4B:
-      lcdLine1 = "Recent";
-      lcdLine2 = "closing alarm";
+      lcdLine1 = F("Recent");
+      lcdLine2 = F("closing alarm");
       break;
     case 0x4C:
-      lcdLine1 = "Zone exp";
-      lcdLine2 = "suprvis. alarm";
+      lcdLine1 = F("Zone exp");
+      lcdLine2 = F("suprvis. alarm");
       break;
     case 0x4D:
-      lcdLine1 = "Zone exp";
-      lcdLine2 = "suprvis. rest";
+      lcdLine1 = F("Zone exp");
+      lcdLine2 = F("suprvis. rest");
       break;
     case 0x4E:
-      lcdLine1 = "Keypad Fire";
-      lcdLine2 = "alarm";
+      lcdLine1 = F("Keypad Fire");
+      lcdLine2 = F("alarm");
       break;
     case 0x4F:
-      lcdLine1 = "Keypad Aux";
-      lcdLine2 = "alarm";
+      lcdLine1 = F("Keypad Aux");
+      lcdLine2 = F("alarm");
       break;
     case 0x50:
-      lcdLine1 = "Keypad Panic";
-      lcdLine2 = "alarm";
+      lcdLine1 = F("Keypad Panic");
+      lcdLine2 = F("alarm");
       break;
     case 0x51:
-      lcdLine1 = "Aux input";
-      lcdLine2 = "alarm";
+      lcdLine1 = F("Aux input");
+      lcdLine2 = F("alarm");
       break;
     case 0x52:
-      lcdLine1 = "Keypad Fire";
-      lcdLine2 = "alarm rest";
+      lcdLine1 = F("Keypad Fire");
+      lcdLine2 = F("alarm rest");
       break;
     case 0x53:
-      lcdLine1 = "Keypad Aux";
-      lcdLine2 = "alarm rest";
+      lcdLine1 = F("Keypad Aux");
+      lcdLine2 = F("alarm rest");
       break;
     case 0x54:
-      lcdLine1 = "Keypad Panic";
-      lcdLine2 = "alarm rest";
+      lcdLine1 = F("Keypad Panic");
+      lcdLine2 = F("alarm rest");
       break;
     case 0x55:
-      lcdLine1 = "Aux input";
-      lcdLine2 = "alarm rest";
+      lcdLine1 = F("Aux input");
+      lcdLine2 = F("alarm rest");
       break;
       // 0x56 - 0x75: Zone tamper, zones 1-32
       // 0x76 - 0x95: Zone tamper restored, zones 1-32      
     case 0x98:
-      lcdLine1 = "Keypad";
-      lcdLine2 = "lockout";
+      lcdLine1 = F("Keypad");
+      lcdLine2 = F("lockout");
       break;
       // 0x99 - 0xBD: Armed: Access codes 1-34, 40-42      
     case 0xBE:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Partial";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Partial");
       break;
     case 0xBF:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Special";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Special");
       break;
       // 0xC0 - 0xE4: Disarmed: Access codes 1-34, 40-42      
     case 0xE5:
-      lcdLine1 = "Auto-arm";
-      lcdLine2 = "canc";
+      lcdLine1 = F("Auto-arm");
+      lcdLine2 = F("canc");
       break;
     case 0xE6:
-      lcdLine1 = "Disarmed:";
-      lcdLine2 = "Special";
+      lcdLine1 = F("Disarmed:");
+      lcdLine2 = F("Special");
       break;
     case 0xE7:
-      lcdLine1 = "Panel bat";
-      lcdLine2 = "trble";
+      lcdLine1 = F("Panel bat");
+      lcdLine2 = F("trble");
       break;
     case 0xE8:
-      lcdLine1 = "Panel AC";
-      lcdLine2 = "trble";
+      lcdLine1 = F("Panel AC");
+      lcdLine2 = F("trble");
       break;
     case 0xE9:
-      lcdLine1 = "Bell trble";
-      lcdLine2 = " ";
+      lcdLine1 = F("Bell trble");
+      lcdLine2 = F(" ");
       break;
     case 0xEA:
-      lcdLine1 = "Fire zone";
-      lcdLine2 = "trble";
+      lcdLine1 = F("Fire zone");
+      lcdLine2 = F("trble");
       break;
     case 0xEB:
-      lcdLine1 = "Panel aux sup";
-      lcdLine2 = "trble";
+      lcdLine1 = F("Panel aux sup");
+      lcdLine2 = F("trble");
       break;
     case 0xEC:
-      lcdLine1 = "Tel line";
-      lcdLine2 = "trble";
+      lcdLine1 = F("Tel line");
+      lcdLine2 = F("trble");
       break;
     case 0xEF:
-      lcdLine1 = "Panel bat";
-      lcdLine2 = "rest";
+      lcdLine1 = F("Panel bat");
+      lcdLine2 = F("rest");
       break;
     case 0xF0:
-      lcdLine1 = "Panel AC";
-      lcdLine2 = "rest";
+      lcdLine1 = F("Panel AC");
+      lcdLine2 = F("rest");
       break;
     case 0xF1:
-      lcdLine1 = "Bell rest";
-      lcdLine2 = " ";
+      lcdLine1 = F("Bell rest");
+      lcdLine2 = F(" ");
       break;
     case 0xF2:
-      lcdLine1 = "Fire zone";
-      lcdLine2 = "trble rest";
+      lcdLine1 = F("Fire zone");
+      lcdLine2 = F("trble rest");
       break;
     case 0xF3:
-      lcdLine1 = "Panel aux sup";
-      lcdLine2 = "rest";
+      lcdLine1 = F("Panel aux sup");
+      lcdLine2 = F("rest");
       break;
     case 0xF4:
-      lcdLine1 = "Tel line";
-      lcdLine2 = "rest";
+      lcdLine1 = F("Tel line");
+      lcdLine2 = F("rest");
       break;
     case 0xF7:
-      lcdLine1 = "Phone 1 FTC";
-      lcdLine2 = " ";
+      lcdLine1 = F("Phone 1 FTC");
+      lcdLine2 = F(" ");
       break;
     case 0xF8:
-      lcdLine1 = "Phone 2 FTC";
-      lcdLine2 = " ";
+      lcdLine1 = F("Phone 2 FTC");
+      lcdLine2 = F(" ");
       break;
     case 0xF9:
-      lcdLine1 = "Event buffer";
-      lcdLine2 = "threshold";
+      lcdLine1 = F("Event buffer");
+      lcdLine2 = F("threshold");
       break;
     case 0xFA:
-      lcdLine1 = "DLS lead-in";
-      lcdLine2 = " ";
+      lcdLine1 = F("DLS lead-in");
+      lcdLine2 = F(" ");
       break;
     case 0xFB:
-      lcdLine1 = "DLS lead-out";
-      lcdLine2 = " ";
+      lcdLine1 = F("DLS lead-out");
+      lcdLine2 = F(" ");
       break;
     case 0xFE:
-      lcdLine1 = "Periodic test";
-      lcdLine2 = "trans";
+      lcdLine1 = F("Periodic test");
+      lcdLine2 = F("trans");
       break;
     case 0xFF:
-      lcdLine1 = "System test";
-      lcdLine2 = " ";
+      lcdLine1 = F("System test");
+      lcdLine2 = F(" ");
       break;
     default:
       decoded = false;
@@ -2835,7 +2898,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     char charBuffer[4];
 
     if (dsc.panelData[panelByte] >= 0x09 && dsc.panelData[panelByte] <= 0x28) {
-      strcpy(lcdMessage, "Zone alarm:");
+      strcpy_P(lcdMessage,PSTR("Zone alarm:"));
       byte zone = dsc.panelData[panelByte] - 8;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].alarm = true;
@@ -2847,8 +2910,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0x29 && dsc.panelData[panelByte] <= 0x48) {
-      lcdLine1 = "Zone alarm";
-      strcpy(lcdMessage, " restored:");
+      lcdLine1 = F("Zone alarm");
+      strcpy_P(lcdMessage, PSTR(" restored:"));
       byte zone = dsc.panelData[panelByte] - 40;
       // if (zone > 0 && zone < maxZones) 
       // zoneStatus[zone-1].alarm=false;      
@@ -2859,7 +2922,7 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0x56 && dsc.panelData[panelByte] <= 0x75) {
-      strcpy(lcdMessage, "Zone tamper:");
+      strcpy_P(lcdMessage, PSTR("Zone tamper:"));
       byte zone = dsc.panelData[panelByte] - 85;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].tamper = true;
@@ -2871,8 +2934,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0x76 && dsc.panelData[panelByte] <= 0x95) {
-      lcdLine1 = "Zone tamper";
-      strcpy(lcdMessage, " restored: ");
+      lcdLine1 = F("Zone tamper");
+      strcpy_P(lcdMessage, PSTR(" restored: "));
       byte zone = dsc.panelData[panelByte] - 117;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].tamper = false;
@@ -2883,105 +2946,107 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0x99 && dsc.panelData[panelByte] <= 0xBD) {
-      lcdLine1 = "Armed:";
+      lcdLine1 = F("Armed:");
       byte dscCode = dsc.panelData[panelByte] - 0x98;
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
-      else strcpy(lcdMessage, "Access code:");
+      if (dscCode == 40) strcpy_P(lcdMessage, PSTR("Master code:"));
+      else strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string  c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
 
     if (dsc.panelData[panelByte] >= 0xC0 && dsc.panelData[panelByte] <= 0xE4) {
-      lcdLine1 = "Disarmed:";
+      lcdLine1 = F("Disarmed:");
       byte dscCode = dsc.panelData[panelByte] - 0xBF;
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
-      else strcpy(lcdMessage, "Access code:");
+      if (dscCode == 40) strcpy_P(lcdMessage, PSTR("Master code:"));
+      else strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data0";
+      lcdLine1 = F("Unknown data0");
       lcdLine2 = " ";
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1 + " " + lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
 
   }
 
   void printPanelStatus1(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    std::string lcdLine1;
-    std::string lcdLine2;
+   // std::string lcdLine1;
+    //std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;
     switch (dsc.panelData[panelByte]) {
     case 0x03:
-      lcdLine1 = "Cross zone";
-      lcdLine2 = "alarm";
+      lcdLine1 = F("Cross zone");
+      lcdLine2 = F("alarm");
       break;
     case 0x04:
-      lcdLine1 = "Delinquency";
-      lcdLine2 = "alarm";
+      lcdLine1 = F("Delinquency");
+      lcdLine2 = F("alarm");
       break;
     case 0x05:
-      lcdLine1 = "Late to close";
-      lcdLine2 = " ";
+      lcdLine1 = F("Late to close");
+      lcdLine2 = F(" ");
       break;
       // 0x24 - 0x28: Access codes 33-34, 40-42      
     case 0x29:
-      lcdLine1 = "Download";
-      lcdLine2 = "forced ans";
+      lcdLine1 = F("Download");
+      lcdLine2 = F("forced ans");
       break;
     case 0x2B:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Auto-arm";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Auto-arm");
       break;
       // 0x2C - 0x4B: Zone battery restored, zones 1-32
       // 0x4C - 0x6B: Zone battery low, zones 1-32
       // 0x6C - 0x8B: Zone fault restored, zones 1-32
       // 0x8C - 0xAB: Zone fault, zones 1-32      
     case 0xAC:
-      lcdLine1 = "Exit inst";
-      lcdLine2 = "prog";
+      lcdLine1 = F("Exit inst");
+      lcdLine2 = F("prog");
       break;
     case 0xAD:
-      lcdLine1 = "Enter inst";
-      lcdLine2 = "prog";
+      lcdLine1 = F("Enter inst");
+      lcdLine2 = F("prog");
       break;
     case 0xAE:
-      lcdLine1 = "Walk test";
-      lcdLine2 = "end";
+      lcdLine1 = F("Walk test");
+      lcdLine2 = F("end");
       break;
     case 0xAF:
-      lcdLine1 = "Walk test";
-      lcdLine2 = "begin";
+      lcdLine1 = F("Walk test");
+      lcdLine2 = F("begin");
       break;
       // 0xB0 - 0xCF: Zones bypassed, zones 1-32      
     case 0xD0:
-      lcdLine1 = "Command";
-      lcdLine2 = "output 4";
+      lcdLine1 = F("Command");
+      lcdLine2 = F("output 4");
       break;
     case 0xD1:
-      lcdLine1 = "Exit fault";
-      lcdLine2 = "pre-alert";
+      lcdLine1 = F("Exit fault");
+      lcdLine2 = F("pre-alert");
       break;
     case 0xD2:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Entry delay";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Entry delay");
       break;
     case 0xD3:
-      lcdLine1 = "Downlook rem";
-      lcdLine2 = "trig";
+      lcdLine1 = F("Downlook rem");
+      lcdLine2 = F("trig");
       break;
     default:
       decoded = false;
@@ -2992,19 +3057,19 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     if (dsc.panelData[panelByte] >= 0x24 && dsc.panelData[panelByte] <= 0x28) {
       byte dscCode = dsc.panelData[panelByte] - 0x03;
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
-      else strcpy(lcdMessage, "Access code:");
+      if (dscCode == 40) strcpy_P(lcdMessage, PSTR("Master code:"));
+      else strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine1 = lcdMessage;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       decoded = true;
     }
 
     if (dsc.panelData[panelByte] >= 0x2C && dsc.panelData[panelByte] <= 0x4B) {
-      lcdLine1 = "Zone bat";
-      strcpy(lcdMessage, "rest:");
+      lcdLine1 = F("Zone bat");
+      strcpy_P(lcdMessage, PSTR("rest:"));
       zoneStatus[dsc.panelData[panelByte] - 42].batteryLow = false;
       itoa(dsc.panelData[panelByte] - 43, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
@@ -3014,8 +3079,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0x4C && dsc.panelData[panelByte] <= 0x6B) {
-      lcdLine1 = "Zone bat";
-      strcpy(lcdMessage, "low:");
+      lcdLine1 = F("Zone bat");
+      strcpy_P(lcdMessage, PSTR("low:"));
       zoneStatus[dsc.panelData[panelByte] - 74].batteryLow = true;
       itoa(dsc.panelData[panelByte] - 75, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
@@ -3025,8 +3090,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0x6C && dsc.panelData[panelByte] <= 0x8B) {
-      lcdLine1 = "Zone fault";
-      strcpy(lcdMessage, "rest:");
+      lcdLine1 = F("Zone fault");
+      strcpy_P(lcdMessage, PSTR("rest:"));
       // zoneStatus[dsc.panelData[panelByte] - 106].open=false;
       itoa(dsc.panelData[panelByte] - 107, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
@@ -3036,119 +3101,121 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0x8C && dsc.panelData[panelByte] <= 0xAB) {
-      strcpy(lcdMessage, "Zone fault:");
+      strcpy_P(lcdMessage, PSTR("Zone fault:"));
       itoa(dsc.panelData[panelByte] - 139, charBuffer, 10);
       //zoneStatus[dsc.panelData[panelByte] - 138].open=true;
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       decoded = true;
       dsc.statusChanged = true;
     }
 
     if (dsc.panelData[panelByte] >= 0xB0 && dsc.panelData[panelByte] <= 0xCF) {
-      strcpy(lcdMessage, "Zone bypass:");
+      strcpy_P(lcdMessage, PSTR("Zone bypass:"));
       itoa(dsc.panelData[panelByte] - 175, charBuffer, 10);
       // zoneStatus[dsc.panelData[panelByte] - 174].bypassed=true;
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       decoded = true;
       dsc.statusChanged = true;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data1";
-      lcdLine2 = " ";
+      lcdLine1 = F("Unknown data1");
+      lcdLine2 = F(" ");
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1 + " " + lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1+ " " +lcdLine2).c_str(), partition);
 
   }
 
   void printPanelStatus2(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    std::string lcdLine1;
-    std::string lcdLine2;
+    //std::string lcdLine1;
+    //std::string lcdLine2;
+    String lcdLine1;
+    String lcdLine2; 
     switch (dsc.panelData[panelByte]) {
     case 0x2A:
-      lcdLine1 = "Quick exit";
-      lcdLine2 = " ";
+      lcdLine1 = F("Quick exit");
+      lcdLine2 = F(" ");
       break;
     case 0x63:
-      lcdLine1 = "Keybus fault";
-      lcdLine2 = "rest";
+      lcdLine1 = F("Keybus fault");
+      lcdLine2 = F("rest");
       break;
     case 0x64:
-      lcdLine1 = "Keybus fault";
-      lcdLine2 = " ";
+      lcdLine1 = F("Keybus fault");
+      lcdLine2 = F(" ");
       break;
     case 0x66:
-      lcdLine1 = "Zone bypass";
-      lcdLine2 = "program";
+      lcdLine1 = F("Zone bypass");
+      lcdLine2 = F("program");
       break;
     case 0x67:
-      lcdLine1 = "Command";
-      lcdLine2 = "output 1";
+      lcdLine1 = F("Command");
+      lcdLine2 = F("output 1");
       break;
     case 0x68:
-      lcdLine1 = "Command";
-      lcdLine2 = "output 2";
+      lcdLine1 = F("Command");
+      lcdLine2 = F("output 2");
       break;
     case 0x69:
-      lcdLine1 = "Command";
-      lcdLine2 = "output 3";
+      lcdLine1 = F("Command");
+      lcdLine2 = F("output 3");
       break;
     case 0x8C:
-      lcdLine1 = "Cold start";
-      lcdLine2 = " ";
+      lcdLine1 = F("Cold start");
+      lcdLine2 = F(" ");
       break;
     case 0x8D:
-      lcdLine1 = "Warm start";
-      lcdLine2 = " ";
+      lcdLine1 = F("Warm start");
+      lcdLine2 = F(" ");
       break;
     case 0x8E:
-      lcdLine1 = "Panel factory";
-      lcdLine2 = "default";
+      lcdLine1 = F("Panel factory");
+      lcdLine2 = F("default");
       break;
     case 0x91:
-      lcdLine1 = "Swinger shutdown";
-      lcdLine2 = " ";
+      lcdLine1 = F("Swinger shutdown");
+      lcdLine2 = F(" ");
       break;
     case 0x93:
-      lcdLine1 = "Disarmed:";
-      lcdLine2 = "Keyswitch";
+      lcdLine1 = F("Disarmed:");
+      lcdLine2 = F("Keyswitch");
       break;
     case 0x96:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Keyswitch";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Keyswitch");
       break;
     case 0x97:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Keypad away";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Keypad away");
       break;
     case 0x98:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Quick-arm";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Quick-arm");
       break;
     case 0x99:
-      lcdLine1 = "Activate";
-      lcdLine2 = "stay/away zones";
+      lcdLine1 = F("Activate");
+      lcdLine2 = F("stay/away zones");
       break;
     case 0x9A:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Stay";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Stay");
       break;
     case 0x9B:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "Away";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("Away");
       break;
     case 0x9C:
-      lcdLine1 = "Armed:";
-      lcdLine2 = "No ent del";
+      lcdLine1 = F("Armed:");
+      lcdLine2 = F("No ent del");
       break;
       // 0x9E - 0xC2: *1: Access codes 1-34, 40-42
       // 0xC3 - 0xC5: *5: Access codes 40-42
@@ -3158,8 +3225,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       // 0xF1 - 0xF8: Keypad trouble: Slots 1-8
       // 0xF9 - 0xFE: Zone expander restored: 1-6      
     case 0xFF:
-      lcdLine1 = "Zone exp";
-      lcdLine2 = "trble:1";
+      lcdLine1 = F("Zone exp");
+      lcdLine2 = F("trble:1");
       break;
     default:
       decoded = false;
@@ -3168,22 +3235,22 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     char lcdMessage[20];
     char charBuffer[4];
     if (dsc.panelData[panelByte] >= 0x67 && dsc.panelData[panelByte] <= 0x69) {
-      strcpy(lcdMessage, "Cmd O/P:");
+      strcpy_P(lcdMessage,  PSTR("Cmd O/P:"));
       itoa(dsc.panelData[panelByte] - 0x66, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       decoded = true;
     }
 
     if (dsc.panelData[panelByte] >= 0x9E && dsc.panelData[panelByte] <= 0xC2) {
       byte dscCode = dsc.panelData[panelByte] - 0x9D;
-      lcdLine1 = "*1: ";
+      lcdLine1 = F("*1: ");
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
-      else strcpy(lcdMessage, "Access code:");
+      if (dscCode == 40) strcpy_P(lcdMessage, PSTR("Master code:"));
+      else strcpy_P(lcdMessage,  PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3191,12 +3258,12 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (dsc.panelData[panelByte] >= 0xC3 && dsc.panelData[panelByte] <= 0xC5) {
       byte dscCode = dsc.panelData[panelByte] - 0xA0;
-      lcdLine1 = "*5: ";
+      lcdLine1 = F("*5: ");
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
-      else strcpy(lcdMessage, "Access code:");
+      if (dscCode == 40) strcpy_P(lcdMessage,  PSTR("Master code:"));
+      else strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3205,32 +3272,32 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     if (dsc.panelData[panelByte] >= 0xC6 && dsc.panelData[panelByte] <= 0xE5) {
       byte dscCode = dsc.panelData[panelByte] - 0xC5;
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
-      else strcpy(lcdMessage, "Access code:");
+      if (dscCode == 40) strcpy_P(lcdMessage, PSTR("Master code:"));
+      else strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+      std::string  c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine1 = lcdMessage;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       decoded = true;
     }
 
     if (dsc.panelData[panelByte] >= 0xE6 && dsc.panelData[panelByte] <= 0xE8) {
       byte dscCode = dsc.panelData[panelByte] - 0xC3;
-      lcdLine1 = "";
+      lcdLine1 = F("");
       if (dscCode >= 35) dscCode += 5;
-      if (dscCode == 40) strcpy(lcdMessage, "Master code:");
-      else strcpy(lcdMessage, "Access code:");
+      if (dscCode == 40) strcpy_P(lcdMessage, PSTR("Master code:"));
+      else strcpy_P(lcdMessage,  PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
 
     if (dsc.panelData[panelByte] >= 0xE9 && dsc.panelData[panelByte] <= 0xF0) {
-      lcdLine1 = "Keypad rest";
-      strcpy(lcdMessage, " slot:");
+      lcdLine1 = F("Keypad rest");
+      strcpy_P(lcdMessage,  PSTR(" slot:"));
       itoa(dsc.panelData[panelByte] - 232, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3238,8 +3305,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0xF1 && dsc.panelData[panelByte] <= 0xF8) {
-      lcdLine1 = "Keypad trble ";
-      strcpy(lcdMessage, "slot: ");
+      lcdLine1 = F("Keypad trble ");
+      strcpy_P(lcdMessage, PSTR("slot: "));
       itoa(dsc.panelData[panelByte] - 240, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3247,117 +3314,119 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (dsc.panelData[panelByte] >= 0xF9 && dsc.panelData[panelByte] <= 0xFE) {
-      strcpy(lcdMessage, "Zone exp:");
+      strcpy_P(lcdMessage,PSTR("Zone exp:"));
       itoa(dsc.panelData[panelByte] - 248, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = " rest";
+      lcdLine2 = F(" rest");
       decoded = true;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data2";
+      lcdLine1 = F("Unknown data2");
       lcdLine2 = " ";
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1+" " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
   }
 
   void printPanelStatus3(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    std::string lcdLine1;
-    std::string lcdLine2;
+   // std::string lcdLine1;
+   // std::string lcdLine2;
+    String lcdLine1;
+    String lcdLine2;
     switch (dsc.panelData[panelByte]) {
     case 0x05:
-      lcdLine1 = "PC/RF5132:";
-      lcdLine2 = "Suprvis. rest";
+      lcdLine1 = F("PC/RF5132:");
+      lcdLine2 = F("Suprvis. rest");
       break;
     case 0x06:
-      lcdLine1 = "PC/RF5132:";
-      lcdLine2 = "Suprvis. trble";
+      lcdLine1 = F("PC/RF5132:");
+      lcdLine2 = F("Suprvis. trble");
       break;
     case 0x09:
-      lcdLine1 = "PC5204:";
-      lcdLine2 = "Suprvis. rest";
+      lcdLine1 = F("PC5204:");
+      lcdLine2 = F("Suprvis. rest");
       break;
     case 0x0A:
-      lcdLine1 = "PC5204:";
-      lcdLine2 = "Suprvis. trble";
+      lcdLine1 = F("PC5204:");
+      lcdLine2 = F("Suprvis. trble");
       break;
     case 0x17:
-      lcdLine1 = "Zone exp 7";
-      lcdLine2 = "rest";
+      lcdLine1 = F("Zone exp 7");
+      lcdLine2 = F("rest");
       break;
     case 0x18:
-      lcdLine1 = "Zone exp 7";
-      lcdLine2 = "trble";
+      lcdLine1 = F("Zone exp 7");
+      lcdLine2 = F("trble");
       break;
       // 0x25 - 0x2C: Keypad tamper restored, slots 1-8
       // 0x2D - 0x34: Keypad tamper, slots 1-8
       // 0x35 - 0x3A: Module tamper restored, slots 9-14
       // 0x3B - 0x40: Module tamper, slots 9-14      
     case 0x41:
-      lcdLine1 = "PC/RF5132:";
-      lcdLine2 = "Tamper rest";
+      lcdLine1 = F("PC/RF5132:");
+      lcdLine2 = F("Tamper rest");
       break;
     case 0x42:
-      lcdLine1 = "PC/RF5132: Tamper";
-      lcdLine2 = " ";
+      lcdLine1 = F("PC/RF5132: Tamper");
+      lcdLine2 = F(" ");
       break;
     case 0x43:
-      lcdLine1 = "PC5208: Tamper";
-      lcdLine2 = "rest";
+      lcdLine1 = F("PC5208: Tamper");
+      lcdLine2 = F("rest");
       break;
     case 0x44:
-      lcdLine1 = "PC5208: Tamper";
-      lcdLine2 = " ";
+      lcdLine1 = F("PC5208: Tamper");
+      lcdLine2 = F(" ");
       break;
     case 0x45:
-      lcdLine1 = "PC5204: Tamper";
-      lcdLine2 = "rest";
+      lcdLine1 = F("PC5204: Tamper");
+      lcdLine2 = F("rest");
       break;
     case 0x46:
-      lcdLine1 = "PC5204: Tamper";
-      lcdLine2 = " ";
+      lcdLine1 = F("PC5204: Tamper");
+      lcdLine2 = F(" ");
       break;
     case 0x51:
-      lcdLine1 = "Zone exp 7";
-      lcdLine2 = "tamper rest";
+      lcdLine1 = F("Zone exp 7");
+      lcdLine2 = F("tamper rest");
       break;
     case 0x52:
-      lcdLine1 = "Zone exp 7";
-      lcdLine2 = "tamper";
+      lcdLine1 = F("Zone exp 7");
+      lcdLine2 = F("tamper");
       break;
     case 0xB3:
-      lcdLine1 = "PC5204:";
-      lcdLine2 = "Bat rest";
+      lcdLine1 = F("PC5204:");
+      lcdLine2 = F("Bat rest");
       break;
     case 0xB4:
-      lcdLine1 = "PC5204:";
-      lcdLine2 = "Bat trble";
+      lcdLine1 = F("PC5204:");
+      lcdLine2 = F("Bat trble");
       break;
     case 0xB5:
-      lcdLine1 = "PC5204: Aux";
-      lcdLine2 = "sup rest";
+      lcdLine1 = F("PC5204: Aux");
+      lcdLine2 = F("sup rest");
       break;
     case 0xB6:
-      lcdLine1 = "PC5204: Aux";
-      lcdLine2 = "sup trble";
+      lcdLine1 = F("PC5204: Aux");
+      lcdLine2 = F("sup trble");
       break;
     case 0xB7:
-      lcdLine1 = "PC5204: Out 1";
-      lcdLine2 = "rest";
+      lcdLine1 = F("PC5204: Out 1");
+      lcdLine2 = F("rest");
       break;
     case 0xB8:
-      lcdLine1 = "PC5204: Out 1";
-      lcdLine2 = "trble";
+      lcdLine1 = F("PC5204: Out 1");
+      lcdLine2 = F("trble");
       break;
     case 0xFF:
-      lcdLine1 = "Ext status";
-      lcdLine2 = " ";
+      lcdLine1 = F("Ext status");
+      lcdLine2 = F(" ");
       break;
     default:
       decoded = false;
@@ -3367,76 +3436,78 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     char charBuffer[4];
 
     if (dsc.panelData[panelByte] <= 0x04) {
-      strcpy(lcdMessage, "Zone exp. ");
+      strcpy_P(lcdMessage, PSTR("Zone exp. "));
       itoa(dsc.panelData[panelByte] + 2, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = "trouble";
+      lcdLine2 = F("trouble");
       decoded = true;
     }
     if (dsc.panelData[panelByte] >= 0x25 && dsc.panelData[panelByte] <= 0x2C) {
-      strcpy(lcdMessage, "keypad ");
+      strcpy_P(lcdMessage, PSTR("keypad "));
       itoa(dsc.panelData[panelByte] - 0x24, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = "tamper rest";
+      lcdLine2 = F("tamper rest");
       decoded = true;
     }
     if (dsc.panelData[panelByte] >= 0x2D && dsc.panelData[panelByte] <= 0x34) {
-      strcpy(lcdMessage, "keypad ");
+      strcpy_P(lcdMessage, PSTR("keypad "));
       itoa(dsc.panelData[panelByte] - 0x2c, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = "tamper";
+      lcdLine2 = F("tamper");
       decoded = true;
     }
 
     if (dsc.panelData[panelByte] >= 0x35 && dsc.panelData[panelByte] <= 0x3A) {
-      strcpy(lcdMessage, "Zone expander ");
+      strcpy_P(lcdMessage, PSTR("Zone expander "));
       itoa(dsc.panelData[panelByte] - 52, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = "tamper rest";
+      lcdLine2 = F("tamper rest");
       decoded = true;
     }
 
     if (dsc.panelData[panelByte] >= 0x3B && dsc.panelData[panelByte] <= 0x40) {
-      strcpy(lcdMessage, "Zone expander ");
+      strcpy_P(lcdMessage, PSTR("Zone expander "));
       itoa(dsc.panelData[panelByte] - 58, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = "tamper";
+      lcdLine2 = F("tamper");
       decoded = true;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data3";
+      lcdLine1 = F("Unknown data3");
       lcdLine2 = " ";
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1+ " " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
 
   }
 
   void printPanelStatus4(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    std::string lcdLine1;
-    std::string lcdLine2;
+    //std::string lcdLine1;
+    //std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;
     switch (dsc.panelData[panelByte]) {
     case 0x86:
-      lcdLine1 = "Period test";
-      lcdLine2 = "trble";
+      lcdLine1 = F("Period test");
+      lcdLine2 = F("trble");
       break;
     case 0x87:
-      lcdLine1 = "Exit fault";
-      lcdLine2 = " ";
+      lcdLine1 = F("Exit fault");
+      lcdLine2 = F(" ");
       break;
     case 0x89:
-      lcdLine1 = "Alarm canc";
-      lcdLine2 = " ";
+      lcdLine1 = F("Alarm canc");
+      lcdLine2 = F(" ");
       break;
     default:
       decoded = false;
@@ -3446,18 +3517,18 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     char charBuffer[4];
 
     if (dsc.panelData[panelByte] <= 0x1F) {
-      strcpy(lcdMessage, "Zone alarm: ");
+      strcpy_P(lcdMessage, PSTR("Zone alarm: "));
       byte zone = dsc.panelData[panelByte] - 33;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].alarm = true;
       itoa(dsc.panelData[panelByte] + 33, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x20 && dsc.panelData[panelByte] <= 0x3F) {
-      lcdLine1 = "Zone alarm";
-      strcpy(lcdMessage, " rest: ");
+      lcdLine1 = F("Zone alarm");
+      strcpy_P(lcdMessage, PSTR(" rest: "));
       byte zone = dsc.panelData[panelByte] + 1;
       //   if (zone > 0 && zone < maxZones) 
       //    zoneStatus[zone-1].alarm=false;      
@@ -3466,18 +3537,18 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
       lcdLine2 = lcdMessage;
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x40 && dsc.panelData[panelByte] <= 0x5F) {
-      strcpy(lcdMessage, "Zone tamper:");
+      strcpy_P(lcdMessage, PSTR("Zone tamper:"));
       byte zone = dsc.panelData[panelByte] - 31;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].tamper = true;
       itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
       decoded = true;
     } else if (dsc.panelData[panelByte] >= 0x60 && dsc.panelData[panelByte] <= 0x7F) {
-      lcdLine1 = "Zone tamper";
-      strcpy(lcdMessage, " rest:");
+      lcdLine1 = F("Zone tamper");
+      strcpy_P(lcdMessage, PSTR(" rest:"));
       byte zone = dsc.panelData[panelByte] - 63;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].tamper = false;
@@ -3488,32 +3559,34 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data4";
-      lcdLine2 = " ";
+      lcdLine1 = F("Unknown data4");
+      lcdLine2 = F(" ");
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1+ " " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
 
   }
 
   void printPanelStatus5(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
 
-    std::string lcdLine1;
-    std::string lcdLine2;
+   // std::string lcdLine1;
+   // std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;
     char lcdMessage[20];
     char charBuffer[4];
 
     if (dsc.panelData[panelByte] <= 0x39) {
       byte dscCode = dsc.panelData[panelByte] + 0x23;
-      lcdLine1 = "Armed:";
+      lcdLine1 = F("Armed:");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3521,114 +3594,120 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (dsc.panelData[panelByte] >= 0x3A && dsc.panelData[panelByte] <= 0x73) {
       byte dscCode = dsc.panelData[panelByte] - 0x17;
-      lcdLine1 = "Disarmed:";
+      lcdLine1 = F("Disarmed:");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data5";
-      lcdLine2 = " ";
+      lcdLine1 = F("Unknown data5");
+      lcdLine2 = F(" ");
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1+ " " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
 
   }
 
   void printPanelStatus14(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
 
-    std::string lcdLine1;
-    std::string lcdLine2;
+    //std::string lcdLine1;
+    //std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;
     switch (dsc.panelData[panelByte]) {
     case 0xC0:
-      lcdLine1 = "TLink";
-      lcdLine2 = "com fault";
+      lcdLine1 = F("TLink");
+      lcdLine2 = F("com fault");
       break;
     case 0xC2:
-      lcdLine1 = "Tlink";
-      lcdLine2 = "net fault";
+      lcdLine1 = F("Tlink");
+      lcdLine2 = F("net fault");
       break;
     case 0xC4:
-      lcdLine1 = "TLink rec";
-      lcdLine2 = "trouble";
+      lcdLine1 = F("TLink rec");
+      lcdLine2 = F("trouble");
       break;
     case 0xC5:
-      lcdLine1 = "TLink receiver";
-      lcdLine2 = "restored";
+      lcdLine1 = F("TLink receiver");
+      lcdLine2 = F("restored");
       break;
     default:
       decoded = false;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data14";
-      lcdLine2 = " ";
+      lcdLine1 = F("Unknown data14");
+      lcdLine2 = F(" ");
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1+ " " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
 
   }
 
   void printPanelStatus16(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    std::string lcdLine1;
-    std::string lcdLine2;
+    //std::string lcdLine1;
+    //std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;    
 
     switch (dsc.panelData[panelByte]) {
     case 0x80:
-      lcdLine1 = "Trouble";
-      lcdLine2 = "ack";
+      lcdLine1 = F("Trouble");
+      lcdLine2 = F("ack");
       break;
     case 0x81:
-      lcdLine1 = "RF delin";
-      lcdLine2 = "trouble";
+      lcdLine1 = F("RF delin");
+      lcdLine2 = F("trouble");
       break;
     case 0x82:
-      lcdLine1 = "RF delin";
-      lcdLine2 = "rest";
+      lcdLine1 = F("RF delin");
+      lcdLine2 = F("rest");
       break;
     default:
       decoded = false;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data16";
-      lcdLine2 = "";
+      lcdLine1 = F("Unknown data16");
+      lcdLine2 = F("");
     }
 
-    if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+if (showEvent)
+      eventStatusMsg.append((lcdLine1+ " " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
 
   }
 
   void printPanelStatus17(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    std::string lcdLine1;
-    std::string lcdLine2;
+    //std::string lcdLine1;
+    //std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;
     char lcdMessage[20];
     char charBuffer[4];
 
     if (dsc.panelData[panelByte] >= 0x4A && dsc.panelData[panelByte] <= 0x83) {
       byte dscCode = dsc.panelData[panelByte] - 0x27;
-      lcdLine1 = "*1: ";
+      lcdLine1 = F("*1: ");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3636,11 +3715,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (dsc.panelData[panelByte] <= 0x24) {
       byte dscCode = dsc.panelData[panelByte] + 1;
-      lcdLine1 = "*2: ";
+      lcdLine1 = F("*2: ");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3648,11 +3727,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (dsc.panelData[panelByte] >= 0x84 && dsc.panelData[panelByte] <= 0xBD) {
       byte dscCode = dsc.panelData[panelByte] - 0x61;
-      lcdLine1 = "*2: ";
+      lcdLine1 = F("*2: ");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3660,11 +3739,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (dsc.panelData[panelByte] >= 0x25 && dsc.panelData[panelByte] <= 0x49) {
       byte dscCode = dsc.panelData[panelByte] - 0x24;
-      lcdLine1 = "*3: ";
+      lcdLine1 = F("*3: ");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3672,25 +3751,25 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (dsc.panelData[panelByte] >= 0xBE && dsc.panelData[panelByte] <= 0xF7) {
       byte dscCode = dsc.panelData[panelByte] - 0x9B;
-      lcdLine1 = "*3: ";
+      lcdLine1 = F("*3: ");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data17";
-      lcdLine2 = "";
+      lcdLine1 = F("Unknown data17");
+      lcdLine2 = F("");
     }
 
-    if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+if (showEvent)
+      eventStatusMsg.append((lcdLine1+ " " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
 
   }
 
@@ -3699,14 +3778,16 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     char lcdMessage[20];
     char charBuffer[4];
-    std::string lcdLine1;
-    std::string lcdLine2;
+   // std::string lcdLine1;
+   // std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;
     if (dsc.panelData[panelByte] <= 0x39) {
       byte dscCode = dsc.panelData[panelByte] + 0x23;
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
@@ -3715,11 +3796,11 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (dsc.panelData[panelByte] >= 0x3A && dsc.panelData[panelByte] <= 0x95) {
       byte dscCode = dsc.panelData[panelByte] - 0x39;
-      lcdLine1 = "*5: ";
+      lcdLine1 = F("*5: ");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3727,50 +3808,52 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
 
     if (dsc.panelData[panelByte] >= 0x96 && dsc.panelData[panelByte] <= 0xF1) {
       byte dscCode = dsc.panelData[panelByte] - 0x95;
-      lcdLine1 = "*6: ";
+      lcdLine1 = F("*6: ");
       if (dscCode >= 40) dscCode += 3;
-      strcpy(lcdMessage, "Access code:");
+      strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-      std::string c=getUserName(charBuffer);
+     std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data18";
-      lcdLine2 = "";
+      lcdLine1 = F("Unknown data18");
+      lcdLine2 = F("");
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1+ " " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
 
   }
 
   void printPanelStatus1B(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    std::string lcdLine1;
-    std::string lcdLine2;
+    //std::string lcdLine1;
+    //std::string lcdLine2;
+     String lcdLine1;
+     String lcdLine2;
     switch (dsc.panelData[panelByte]) {
     case 0xF1:
-      lcdLine1 = "System reset ";
-      lcdLine2 = "trans";
+      lcdLine1 = F("System reset ");
+      lcdLine2 = F("trans");
       break;
     default:
       decoded = false;
     }
 
     if (!decoded) {
-      lcdLine1 = "Unknown data1b";
-      lcdLine2 = "";
+      lcdLine1 = F("Unknown data1b");
+      lcdLine2 = F("");
     }
 
     if (showEvent)
-      eventStatusMsg.append(lcdLine1.append(" ").append(lcdLine2));
+      eventStatusMsg.append((lcdLine1+ " " +lcdLine2).c_str());
     else
-      line2DisplayCallback(lcdLine1.append(" ").append(lcdLine2), partition);
+      line2DisplayCallback((lcdLine1 + " " +lcdLine2).c_str(), partition);
   }
   
   const __FlashStringHelper *statusText(uint8_t statusCode)

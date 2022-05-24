@@ -1,5 +1,6 @@
 #include "dscKeybus.h"
 
+#if defined(EXPANDER)
 
 void dscKeybusInterface::setSupervisorySlot(byte address, bool set = true) {
   //set our response data for the 0x11 supervisory request
@@ -299,6 +300,7 @@ dscKeybusInterface::prepareModuleResponse(byte address, int bit) {
   }
   
 }
+#endif //expander
 
 unsigned int dscKeybusInterface::dec2bcd(unsigned int num)
 {

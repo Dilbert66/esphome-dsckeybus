@@ -48,6 +48,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   pauseStatus = false;
 
   // start expander
+#if defined(EXPANDER)   
   maxFields05 = 4;
   maxFields11 = 4;
   enableModuleSupervision = false;
@@ -56,7 +57,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
     // pendingZoneStatus[x]=0xff;
     moduleSlots[x] = 0xff;
   }
-
+#endif
   //end expander
 
 
@@ -103,7 +104,7 @@ void dscKeybusInterface::begin(Stream & _stream,byte setClockPin, byte setReadPi
   #endif // ESP32
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino/AVR
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
-
+#if defined(EXPANDER)  
   if (maxZones > 32) {
     maxFields05 = 6;
     maxFields11 = 6;
@@ -111,6 +112,7 @@ void dscKeybusInterface::begin(Stream & _stream,byte setClockPin, byte setReadPi
     maxFields05 = 4;
     maxFields11 = 4;
   }
+#endif  
 
 }
 
@@ -215,10 +217,11 @@ bool dscKeybusInterface::loop() {
     else if (panelData[0] == 0x05 || panelData[0] == 0x1B) {
       if (panelByteCount == 6) keybusVersion1 = true;
       startupCycle = false;
-
+#if defined(EXPANDER) 
       //start expander
       updateModules();
       //end expander
+#endif      
 
     } else if (!validCRC()) return false;
   }
@@ -813,6 +816,7 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
   case 0x05:
     processPendingQueue(cmd);
     return;
+#if defined(EXPANDER)    
   case 0x11:
     if (!enableModuleSupervision) return;
     updateWriteBuffer((byte * ) moduleSlots, 9,1,maxFields11 );
@@ -826,6 +830,7 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
   case 0x39:
     prepareModuleResponse(11, 9);
     return;
+#endif    
   case 0x70:
     if (pending70) {
         pending70=false;
@@ -867,9 +872,10 @@ IRAM_ATTR
 dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
 
   if (writeDataPending) return;
-  
+ 
   switch (subcmd) {
 
+#if defined(EXPANDER)
   case 0x08:
     prepareModuleResponse(12, 17);
     break;
@@ -882,7 +888,7 @@ dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
   case 0x0E:
     prepareModuleResponse(16, 17);;
     break;
-
+#endif
   default:
     return;
   }

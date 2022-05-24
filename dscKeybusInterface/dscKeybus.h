@@ -18,6 +18,7 @@
  */
 //#define SERIALDEBUGCOMMANDS  //enable to use debug cmd decoding  to serial port
 //#define DEBOUNCE  //for older panels that send bogus cmd05's during switchovers
+#define EXPANDER
 #ifndef dscKeybus_h
 #define dscKeybus_h
 
@@ -47,7 +48,7 @@ const byte maxModules = 4;
 const byte writeQueueSize=5; //write pending queue size
 #elif defined(ESP8266)
 const byte maxModules = 4;
-const byte writeQueueSize=10; //zone pending update queue
+const byte writeQueueSize=20; //zone pending update queue
 #elif defined(ESP32)
 const byte maxModules = 4;
 const byte writeQueueSize=20; //zone pending update queue
@@ -60,7 +61,7 @@ const byte partitionToBits[9]={0,9,17,57,65,9,17,57,65};
         byte idx;
         byte mask;
     };
-    
+#if defined(EXPANDER)     
     struct moduleType {
         byte address;
         byte fields[4];
@@ -68,6 +69,7 @@ const byte partitionToBits[9]={0,9,17,57,65,9,17,57,65};
         byte zoneStatusMask;
         byte zoneStatusByte;
     };
+#endif    
     
 
 
@@ -220,7 +222,6 @@ class dscKeybusInterface {
     static bool enableModuleSupervision;    
 
     //end expander
-    static bool debounce05;
     static volatile pgmBufferType pgmBuffer;
     bool keybusVersion1;    
     
@@ -414,20 +415,22 @@ class dscKeybusInterface {
     static volatile byte isrModuleData[dscReadSize];
     
     //start expander
+#if defined(EXPANDER)      
     const byte zoneOpen=3; //fault 
     const byte zoneClosed=2;// Normal 
     static byte moduleIdx;    
     static void prepareModuleResponse(byte cmd,int bit); 
-    unsigned int dec2bcd(unsigned int);
     void removeModule(byte address);
     static void setPendingZoneUpdate();
     void setSupervisorySlot(byte slot,bool set);
-    static void processCmd70();    
     zoneMaskType getUpdateMask(byte address);    
     static byte maxFields05; 
     static byte maxFields11;
     static moduleType modules[maxModules];
     static byte moduleSlots[6];
+#endif    
+    static void processCmd70();
+        unsigned int dec2bcd(unsigned int);
      //end expander
 
      //start new command handling 
