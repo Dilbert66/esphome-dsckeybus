@@ -439,7 +439,6 @@ std::string getUserName(char * code) {
     while ((pos = s.find(',')) != std::string::npos) {
       token1 = s.substr(0, pos); // store the substring   
       pos1 = token1.find(':');
-
       token2 = token1.substr(0, pos1);
       token3 = token1.substr(pos1 + 1);
       if (token2 == code) {
@@ -873,21 +872,6 @@ std::string getUserName(char * code) {
   }
 
   void printPacket(const char * label, char cmd, volatile byte cbuf[], int len) {
-
-#ifdef ESP32
-    ESPTime rtc = now();
-    char s1[4];
-    char s2[25];
-    std::string s;
-    s.reserve(100);
-    s = "";
-    sprintf(s2, PSTR("%02d-%02d-%02d %02d:%02d "), rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
-    for (int c = 0; c < len; c++) {
-      sprintf(s1, PSTR("%02X "), cbuf[c]);
-      s = s.append(s1);
-    }
-    ESP_LOGI(label, "%s %02X: %s", s2, cmd, s.c_str());
-#else
     char s1[4];
     std::string s;
     s = "";
@@ -896,7 +880,6 @@ std::string getUserName(char * code) {
       s = s.append(s1);
     }
     ESP_LOGI(label, "%02X: %s", cmd, s.c_str());
-#endif    
 
   }
 
@@ -1374,7 +1357,7 @@ std::string getUserName(char * code) {
          if (lastStatus[partition] != dsc.status[partition]  ) {
 				lastStatus[partition]=dsc.status[partition];
 				char msg[50];
-				sprintf(msg,"%02X: %s", dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
+				sprintf(msg,PSTR("%02X: %s"), dsc.status[partition], String(statusText(dsc.status[partition])).c_str());
 				partitionMsgChangeCallback(msg,partition+1);
 
         }
@@ -1394,6 +1377,7 @@ std::string getUserName(char * code) {
         // Publishes armed/disarmed status
         if (dsc.armedChanged[partition] || forceRefresh ) {
           dsc.armedChanged[partition] = false; // Resets the partition armed status flag
+
           if (dsc.armed[partition]) {
             panelStatusChangeCallback(armStatus, true, partition + 1);
             if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) { 
@@ -1513,30 +1497,30 @@ std::string getUserName(char * code) {
             zoneStatusChangeCallback(x+1,zoneStatus[x].open);
             
         if (zoneStatus[x].open) {
-          sprintf(s1, "OP:%d", x + 1);
+          sprintf(s1, PSTR("OP:%d"), x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
 
         if (zoneStatus[x].alarm) {
-          sprintf(s1, "AL:%d", x + 1);
+          sprintf(s1, PSTR("AL:%d"), x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
         if (zoneStatus[x].bypassed) {
-          sprintf(s1, "BY:%d", x + 1);
+          sprintf(s1, PSTR("BY:%d"), x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
 
         if (zoneStatus[x].tamper) {
-          sprintf(s1, "TA:%d", x + 1);
+          sprintf(s1, PSTR("TA:%d"), x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
 
         if (zoneStatus[x].batteryLow) {
-          sprintf(s1, "BL:%d", x + 1);
+          sprintf(s1, PSTR("BL:%d"), x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
           zoneStatusMsg.append(s1);
         }
@@ -2098,9 +2082,9 @@ std::string getUserName(char * code) {
 
         if (partitionStatus[partition].decimalInput) {
           if (partitionStatus[partition].digits == 2)
-            sprintf(decimalInputBuffer, "%2d", dsc.pgmBuffer.data[0]);
+            sprintf(decimalInputBuffer, PSTR("%2d"), dsc.pgmBuffer.data[0]);
           else
-            sprintf(decimalInputBuffer, "%03d", dsc.pgmBuffer.data[0]);
+            sprintf(decimalInputBuffer, PSTR("%03d"), dsc.pgmBuffer.data[0]);
         }
    
         for (int x = 0; x < partitionStatus[partition].digits ; x++) { 
@@ -2541,9 +2525,9 @@ std::string getUserName(char * code) {
     char eventInfo[45] = "";
     char charBuffer[4];
     if (!showEvent) {
-      strcat(eventInfo, "E:");
+      strcat_P(eventInfo, PSTR("E:"));
       itoa(dsc.panelData[7], charBuffer, 10);
-      if (dsc.panelData[7] < 10) strcat(eventInfo, "00");
+      if (dsc.panelData[7] < 10) strcat_P(eventInfo, PSTR("00"));
       else if (dsc.panelData[7] < 100) strcat(eventInfo, "0");
       strcat(eventInfo, charBuffer);
       strcat(eventInfo, " ");
@@ -2559,8 +2543,8 @@ std::string getUserName(char * code) {
     byte dscHour = dsc.panelData[2 + 2] & 0x1F;
     byte dscMinute = dsc.panelData[2 + 3] >> 2;
 
-    if (dscYear3 >= 7) strcat(eventInfo, "19");
-    else strcat(eventInfo, "20");
+    if (dscYear3 >= 7) strcat_P(eventInfo, PSTR("19"));
+    else strcat_P(eventInfo, PSTR("20"));
     itoa(dscYear3, charBuffer, 10);
     strcat(eventInfo, charBuffer);
     itoa(dscYear4, charBuffer, 10);
@@ -2588,7 +2572,7 @@ std::string getUserName(char * code) {
     }   
 
     byte partition = dsc.panelData[3] >> 6;
-    strcat(eventInfo, " P:");
+    strcat_P(eventInfo, PSTR(" P:"));
     itoa(partition, charBuffer, 10);
     strcat(eventInfo, charBuffer);
     strcat(eventInfo, " ");
@@ -2629,7 +2613,7 @@ std::string getUserName(char * code) {
       strcat(eventInfo, "E:");
       int eventNumber = dsc.panelData[9] + ((dsc.panelData[4] >> 6) * 256);
       itoa(eventNumber, charBuffer, 10);
-      if (eventNumber < 10) strcat(eventInfo, "00");
+      if (eventNumber < 10) strcat_P(eventInfo, PSTR("00"));
       else if (eventNumber < 100) strcat(eventInfo, "0");
       strcat(eventInfo, charBuffer);
       strcat(eventInfo, " ");
@@ -2646,8 +2630,8 @@ std::string getUserName(char * code) {
     byte dscHour = dsc.panelData[5] & 0x1F;
     byte dscMinute = dsc.panelData[6] >> 2;
 
-    if (dscYear3 >= 7) strcat(eventInfo, "19");
-    else strcat(eventInfo, "20");
+    if (dscYear3 >= 7) strcat_P(eventInfo, PSTR("19"));
+    else strcat_P(eventInfo, PSTR("20"));
     itoa(dscYear3, charBuffer, 10);
     strcat(eventInfo, charBuffer);
     itoa(dscYear4, charBuffer, 10);
@@ -2670,7 +2654,7 @@ std::string getUserName(char * code) {
     strcat(eventInfo, charBuffer);
 
     if (dsc.panelData[2] != 0) {
-      strcat(eventInfo, " P:");
+      strcat_P(eventInfo, PSTR(" P:"));
 
       byte bitCount = 0;
       for (byte bit = 0; bit <= 7; bit++) {
@@ -2681,7 +2665,7 @@ std::string getUserName(char * code) {
       }
       strcat(eventInfo, charBuffer);
     }
-    strcat(eventInfo, " ");
+    strcat_P(eventInfo, PSTR(" "));
 
     if (showEvent)
       eventStatusMsg = eventInfo;
@@ -2733,8 +2717,6 @@ std::string getUserName(char * code) {
   void printPanelStatus0(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
 
-    //std::string lcdLine1;
-    //std::string lcdLine2;
      String lcdLine1;
      String lcdLine2;
     switch (dsc.panelData[panelByte]) {
@@ -2985,8 +2967,6 @@ std::string getUserName(char * code) {
 
   void printPanelStatus1(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-   // std::string lcdLine1;
-    //std::string lcdLine2;
      String lcdLine1;
      String lcdLine2;
     switch (dsc.panelData[panelByte]) {
@@ -3136,8 +3116,6 @@ std::string getUserName(char * code) {
 
   void printPanelStatus2(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    //std::string lcdLine1;
-    //std::string lcdLine2;
     String lcdLine1;
     String lcdLine2; 
     switch (dsc.panelData[panelByte]) {
@@ -3335,8 +3313,6 @@ std::string getUserName(char * code) {
 
   void printPanelStatus3(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-   // std::string lcdLine1;
-   // std::string lcdLine2;
     String lcdLine1;
     String lcdLine2;
     switch (dsc.panelData[panelByte]) {
@@ -3480,7 +3456,7 @@ std::string getUserName(char * code) {
 
     if (!decoded) {
       lcdLine1 = F("Unknown data3");
-      lcdLine2 = " ";
+      lcdLine2 = F(" ");
     }
 
     if (showEvent)
@@ -3492,8 +3468,6 @@ std::string getUserName(char * code) {
 
   void printPanelStatus4(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    //std::string lcdLine1;
-    //std::string lcdLine2;
      String lcdLine1;
      String lcdLine2;
     switch (dsc.panelData[panelByte]) {
@@ -3572,9 +3546,6 @@ std::string getUserName(char * code) {
 
   void printPanelStatus5(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-
-   // std::string lcdLine1;
-   // std::string lcdLine2;
      String lcdLine1;
      String lcdLine2;
     char lcdMessage[20];
@@ -3618,9 +3589,6 @@ std::string getUserName(char * code) {
 
   void printPanelStatus14(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-
-    //std::string lcdLine1;
-    //std::string lcdLine2;
      String lcdLine1;
      String lcdLine2;
     switch (dsc.panelData[panelByte]) {
@@ -3658,8 +3626,6 @@ std::string getUserName(char * code) {
 
   void printPanelStatus16(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    //std::string lcdLine1;
-    //std::string lcdLine2;
      String lcdLine1;
      String lcdLine2;    
 
@@ -3743,7 +3709,7 @@ if (showEvent)
       if (dscCode >= 40) dscCode += 3;
       strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-     std::string c=getUserName(charBuffer);
+      std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3778,8 +3744,6 @@ if (showEvent)
 
     char lcdMessage[20];
     char charBuffer[4];
-   // std::string lcdLine1;
-   // std::string lcdLine2;
      String lcdLine1;
      String lcdLine2;
     if (dsc.panelData[panelByte] <= 0x39) {
@@ -3800,7 +3764,7 @@ if (showEvent)
       if (dscCode >= 40) dscCode += 3;
       strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-     std::string c=getUserName(charBuffer);
+      std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3812,7 +3776,7 @@ if (showEvent)
       if (dscCode >= 40) dscCode += 3;
       strcpy_P(lcdMessage, PSTR("Access code:"));
       itoa(dscCode, charBuffer, 10);
-     std::string c=getUserName(charBuffer);
+      std::string c=getUserName(charBuffer);
       strcat(lcdMessage, c.c_str());
       lcdLine2 = lcdMessage;
       decoded = true;
@@ -3832,8 +3796,6 @@ if (showEvent)
 
   void printPanelStatus1B(byte panelByte, byte partition, bool showEvent = false) {
     bool decoded = true;
-    //std::string lcdLine1;
-    //std::string lcdLine2;
      String lcdLine1;
      String lcdLine2;
     switch (dsc.panelData[panelByte]) {

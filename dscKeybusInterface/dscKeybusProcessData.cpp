@@ -437,8 +437,7 @@ void dscKeybusInterface::processPanel_0x3E() {
 
 
 void dscKeybusInterface::processPanel_0x6E() {
-
-      if (!pending6E) return;
+      if (!pending6E || !validCRC()) return;
       pending6E=false;       
       if (pgmBuffer.idx+5>pgmBuffer.len) return;
       for(byte x=0;x<5;x++) {

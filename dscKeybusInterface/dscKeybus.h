@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 //#define SERIALDEBUGCOMMANDS  //enable to use debug cmd decoding  to serial port
-//#define DEBOUNCE  //for older panels that send bogus cmd05's during switchovers
+#define DEBOUNCE  //filter to remove corrupted 05/1b's.  Only accepts the second valid packet
 #define EXPANDER
 #ifndef dscKeybus_h
 #define dscKeybus_h
@@ -32,9 +32,9 @@ const byte dscReadSize = 16;    // Maximum bytes of a Keybus command
 #elif defined(ESP8266)
 const byte dscPartitions = 4;
 const byte dscZones = 8;
-const byte dscBufferSize = 10;
+const byte dscBufferSize = 50;
 const byte dscReadSize = 16;
-#elif defined(ESP32)
+#elif defined(ESP32) 
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const DRAM_ATTR byte dscBufferSize = 50;
@@ -364,7 +364,7 @@ class dscKeybusInterface {
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
     static void dscClockInterrupt();
-    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
+    static bool redundantPanelData(byte   previousCmd[], volatile byte   currentCmd[], byte checkedBytes = dscReadSize);
 
     #if defined(ESP32)
     #if ESP_IDF_VERSION_MAJOR < 4

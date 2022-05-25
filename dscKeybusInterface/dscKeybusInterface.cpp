@@ -501,7 +501,7 @@ ICACHE_RAM_ATTR
 #elif defined(ESP32)
 IRAM_ATTR
 #endif
-dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+dscKeybusInterface::redundantPanelData(byte  previousCmd[] , volatile byte  currentCmd[], byte checkedBytes) {
 
   bool redundantData = true;
   for (byte i = 0; i < checkedBytes; i++) {
