@@ -279,7 +279,9 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   int activePartition = 1;
   byte maxZones = maxZonesDefault;
 
-  private: uint8_t zone;
+  private: 
+  
+  uint8_t zone;
   byte dscClockPin,
   dscReadPin,
   dscWritePin;
@@ -316,15 +318,8 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
   };
   
   zoneType * zoneStatus;
-  partitionType * partitionStatus;
+  partitionType partitionStatus[dscPartitions];
   byte  lastStatus[dscPartitions];  
-  
- /* std::string zoneStatusMsg,
-  systemMsg,
-  group1msg,
-  group2msg,
-  eventStatusMsg;
-  */
   
   std::string previousZoneStatusMsg,previousSystemMsg,eventStatusMsg;
   bool relayStatus[16],
@@ -348,7 +343,6 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     eventStatusMsg.reserve(64);
     
     zoneStatus = new zoneType[maxZones];
-    partitionStatus = new partitionType[dscPartitions];  
     
     if (debug > 2)
       Serial.begin(115200);
@@ -447,7 +441,6 @@ std::string getUserName(char * code) {
       }
       s.erase(0, pos + 1); /* erase() function store the current positon and move to next token. */
     }
-    //ESP_LOGD("info", "token=%s,token2=%s,token3=%s,name=%s,code=%s", token1.c_str(), token2.c_str(), token3.c_str(), name.c_str(), code);
   }
   return name;
 }
@@ -506,8 +499,6 @@ std::string getUserName(char * code) {
 
     if (partition < 1) partition = defaultPartition;
     byte * currentSelection = & partitionStatus[partition - 1].currentSelection;
-
-   // ESP_LOGD("info", "key %d pressed, state=%02X,current=%02X,digits=%d,hex=%d,partition=%d,locked=%d", key, dsc.status[partition - 1], * currentSelection, partitionStatus[partition - 1].digits, partitionStatus[partition - 1].hex, partition, partitionStatus[partition - 1].locked);
 
     if (partitionStatus[partition - 1].locked) {
       line1DisplayCallback(String(F("System")).c_str(), partition);
@@ -789,7 +780,6 @@ std::string getUserName(char * code) {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx > 0 ? partitionStatus[partition - 1].editIdx - 1 : partitionStatus[partition - 1].digits - 1;
       count++;
        byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
-      //if ((b%4)) continue;       
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count <= partitionStatus[partition - 1].digits);
 
   }
@@ -800,7 +790,6 @@ std::string getUserName(char * code) {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx + 1 < partitionStatus[partition - 1].digits ? partitionStatus[partition - 1].editIdx + 1 : 0;
       count++;
        byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
-      //if ((b%4)) continue;        
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count <= partitionStatus[partition - 1].digits);
 
   }
@@ -818,7 +807,6 @@ std::string getUserName(char * code) {
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
     } else {
-      //  ESP_LOGD("info","partition is %d",partitionStatus[partition].locked);
         if (!partitionStatus[partition].locked) dsc.write(keys, partition);
     }
   }
@@ -874,6 +862,7 @@ std::string getUserName(char * code) {
   void printPacket(const char * label, char cmd, volatile byte cbuf[], int len) {
     char s1[4];
     std::string s;
+    s.reserve(80);
     s = "";
     for (int c = 0; c < len; c++) {
       sprintf(s1, PSTR("%02X "), cbuf[c]);
@@ -939,16 +928,6 @@ std::string getUserName(char * code) {
       }
     }
     return zonesEnabled;
-  }
-
-  void printTimestamp() {
-    float timeStamp = millis() / 1000.0;
-    if (timeStamp < 10) Serial.print("    ");
-    else if (timeStamp < 100) Serial.print("   ");
-    else if (timeStamp < 1000) Serial.print("  ");
-    else if (timeStamp < 10000) Serial.print(" ");
-    Serial.print(timeStamp, 2);
-    Serial.print(F(":"));
   }
 
   String getOptionsString() {
@@ -1239,10 +1218,7 @@ std::string getUserName(char * code) {
 
 
     if ((!forceDisconnect && dsc.loop()) || forceRefresh) { //Processes data only when a valid Keybus command has been read
-     
-      
-      
-
+ 
       static bool delayedStart = true;
       static unsigned long startWait = millis();
       if (millis() - startWait > 10000 && delayedStart) {
@@ -1264,7 +1240,6 @@ std::string getUserName(char * code) {
         printPacket("Paneldata: ", dsc.panelData[0], dsc.panelData, 16);
       #ifdef SERIALDEBUGCOMMANDS
       if (debug > 2) {
-        printTimestamp();
         Serial.print(" ");
         dsc.printPanelBinary(); // Optionally prints without spaces: printPanelBinary(false);
         Serial.print(" [");
@@ -1296,7 +1271,6 @@ std::string getUserName(char * code) {
         setStatus(partition, true);
 
       }
-
 
       if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
       dsc.bufferOverflow = false;
@@ -1465,7 +1439,7 @@ std::string getUserName(char * code) {
       //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
       //   ...
       //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64	
-      // ESP_LOGD("test","alarmzonestatuschanged=%d",dsc.alarmZonesStatusChanged);
+
       if (dsc.alarmZonesStatusChanged ) {
         dsc.alarmZonesStatusChanged = false; // Resets the alarm zones status flag
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
@@ -1537,67 +1511,67 @@ std::string getUserName(char * code) {
       systemMsg  = "";
       if (bitRead(system1, 0)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("BAT");
+        systemMsg.append(String(PSTR("BAT")).c_str());
         panelStatusChangeCallback(batStatus, true, 0);
       } else
         panelStatusChangeCallback(batStatus, false, 0);
       if (bitRead(system1, 1)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("BELL");
+        systemMsg.append(String(PSTR("BELL")).c_str());
       }
       if (bitRead(system1, 2)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("SYS");
+        systemMsg.append(String(PSTR("SYS")).c_str());
       }
       if (bitRead(system1, 3)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("TAMP");
+        systemMsg.append(String(PSTR("TAMP")).c_str());
       }
       if (bitRead(system1, 4)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("SUP");
+        systemMsg.append(String(PSTR("SUP")).c_str());
       }
       if (bitRead(system1, 5)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("RF");
+        systemMsg.append(String(PSTR("RF")).c_str());
       }
       if (bitRead(system1, 6)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("B4");
+        systemMsg.append(String(PSTR("B4")).c_str());
       }
       if (bitRead(system1, 7)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("A4");
+        systemMsg.append(String(PSTR("A4")).c_str());
       }
 
       
       if (bitRead(system0, 1)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("AC");
+        systemMsg.append(String(PSTR("AC")).c_str());
       }
       if (bitRead(system0, 2)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("TEL");
+        systemMsg.append(String(PSTR("TEL")).c_str());
       }
       if (bitRead(system0, 3)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("COM");
+        systemMsg.append(String(PSTR("COM")).c_str());
       }
       if (bitRead(system0, 4)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("ZF");
+        systemMsg.append(String(PSTR("ZF")).c_str());
       }
       if (bitRead(system0, 5)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("ZT");
+        systemMsg.append(String(PSTR("ZT")).c_str());
       }
       if (bitRead(system0, 6)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("DBAT");
+        systemMsg.append(String(PSTR("DBAT")).c_str());
       }
       if (bitRead(system0, 7)) {
         if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append("TIME");
+        systemMsg.append(String(PSTR("TIME")).c_str());
       }
       if (systemMsg == "") systemMsg = "OK";
 
@@ -1629,7 +1603,6 @@ std::string getUserName(char * code) {
 
       #ifdef DEBUGCOMMANDS
       if (debug > 2) {
-        printTimestamp();
         Serial.print("[MODULE] ");
         Serial.print(dsc.panelData[0], HEX);
         Serial.print(": ");
@@ -1648,12 +1621,9 @@ std::string getUserName(char * code) {
 
   void setStatus(byte partition, bool force = false, bool skip = false) {
 
-    // if (dsc.status[partition] == partitionStatus[partition].lastStatus && line2Status != dsc.status[partition] && beeps == 0 && !force) return;
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
     byte * currentSelection = & partitionStatus[partition].currentSelection;
 
-    //std::string lcdLine1;
-    //std::string lcdLine2;
     String lcdLine1;
     String lcdLine2;
     options = false;
@@ -1948,29 +1918,24 @@ std::string getUserName(char * code) {
       partitionStatus[partition].digits = 2;
       partitionStatus[partition].hex = true;
       lcdLine2 = F("2 digits    ");
-      //setlcdrec 2
       break;
     case 0xEB:
       lcdLine1 = F("Input hex(4dig)");
       partitionStatus[partition].digits = 4;
       partitionStatus[partition].hex = true;
       lcdLine2 = F(" ");
-      //setlcdrec 4
       break;
     case 0xEC:
       lcdLine1 = F("Input hex(6dig)");
       partitionStatus[partition].digits = 6;
       partitionStatus[partition].hex = true;
       lcdLine2 = F(" ");
-      //setlcdreceive 6
       break;
     case 0xED:
       lcdLine1 = F("Input HEX:   ");
       partitionStatus[partition].digits = 32;
       partitionStatus[partition].hex = true;
       lcdLine2 = F("32 digits  ");
-      //setlcdreceive 32
-
       break;
     case 0xEE:
       lcdLine1 = F("Input: options     ");
@@ -2030,9 +1995,11 @@ std::string getUserName(char * code) {
     }
 
 
-    if (dsc.status[partition] != 0xA9) partitionStatus[partition].eventViewer = false;
+    if (dsc.status[partition] != 0xA9) 
+        partitionStatus[partition].eventViewer = false;
 
-    if (partitionStatus[partition].digits == 0) partitionStatus[partition].newData = false;
+    if (partitionStatus[partition].digits == 0)
+        partitionStatus[partition].newData = false;
 
     if (millis() - partitionStatus[partition].keyPressTime > 3000 && dsc.status[partition] > 0x8B) {
       if (!partitionStatus[partition].inprogram) {
@@ -2093,7 +2060,6 @@ std::string getUserName(char * code) {
             c = decimalInputBuffer[x] - 48;
           else
             c = x % 2 ? dsc.pgmBuffer.data[y] & 0x0F : (dsc.pgmBuffer.data[y] & 0xF0) >> 4;
-          //std::string tpl;
           String tpl = F("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 
           if (dsc.status[partition] == 0xAA) {
@@ -2108,14 +2074,11 @@ std::string getUserName(char * code) {
             sprintf(s, " ");
            
           if (partitionStatus[partition].digits < 17)
-            //lcdLine2.append(s);
              lcdLine2+=s;
           else {
             if (x < 16)
-              //lcdLine1.append(s);
               lcdLine1+=s;
             else
-              //lcdLine2.append(s);
                lcdLine2+=s;
           }
         }
@@ -2251,9 +2214,7 @@ std::string getUserName(char * code) {
         lcdLine2 = getOptionsString();
       }
       
-    
-
-    }
+     }
     
 
     if (lcdLine1 != "") line1DisplayCallback(lcdLine1.c_str(), partition + 1);
@@ -2413,32 +2374,13 @@ std::string getUserName(char * code) {
 
 
   void printPanel_0x6E() {
-    char s1[5];
-    /*
-    std::string group1msg;
-
-    group1msg= "";
-    if (partitionStatus[dsc.pgmBuffer.partition - 1].decimalInput) {
-      if (dsc.panelData[2] <= 0x63) group1msg.append("0");
-      if (dsc.panelData[2] <= 0x09) group1msg.append("0");
-      sprintf(s1, "%02d", dsc.panelData[2]);
-      group1msg.append(s1);
-    } else {
-      for (byte panelByte = 2; panelByte <= 5; panelByte++) {
-        sprintf(s1, "%02x", dsc.panelData[panelByte]);
-        group1msg.append(s1);
-      }
-
-    }
-    */
     if (dsc.pgmBuffer.partition) {
-      if (dsc.pgmBuffer.idx == dsc.pgmBuffer.len) setStatus(dsc.pgmBuffer.partition - 1, true);
-      //if (group1msg != "") lightsCallback(group1msg, dsc.pgmBuffer.partition - 1);
+      if (dsc.pgmBuffer.idx == dsc.pgmBuffer.len) 
+          setStatus(dsc.pgmBuffer.partition - 1, true);
     }
   }
 
   void processLowBatteryZones() {
-    // if (dsc.panelData[0] == 0x0A && dsc.panelData[3] == 0xBA) { //low battery zones
     for (byte panelByte = 4; panelByte < 8; panelByte++) {
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         zone = zoneBit + ((panelByte - 4) * 8);
@@ -2449,7 +2391,6 @@ std::string getUserName(char * code) {
           zoneStatus[zone].batteryLow = false;
       }
     }
-    // }
   }
 
   void processRelayCmd() {

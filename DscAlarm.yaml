@@ -1,6 +1,5 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 
-
 #you can enter a list of user codes mapped to their names for display in armed/disarmed event messages
 globals: 
   - id: userCodes
@@ -81,7 +80,8 @@ status_led:
   pin:
     number: GPIO2
     inverted: no
-    
+
+#comment if using ESP8266 to conserve memory    
 time:
  - platform: sntp
    id: sntp_time
