@@ -5,6 +5,7 @@
 
 #include "esphome.h"
 
+
 #include "dscKeybusInterface.h"
 
 using namespace esphome;
@@ -184,10 +185,10 @@ const char STATUS_TRIGGERED[] PROGMEM = "triggered";
 const char STATUS_READY[] PROGMEM = "ready";
 const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
 
-#ifdef ESP32
+#if defined(ESP32)
 class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
 #else
-class DSCkeybushome: public CustomAPIDevice, public PollingComponent {    
+class DSCkeybushome: public CustomAPIDevice, public Component {    
 #endif
   public: DSCkeybushome(byte dscClockPin = 0, byte dscReadPin = 0, byte dscWritePin = 0): dscClockPin(dscClockPin),
   dscReadPin(dscReadPin),
@@ -346,8 +347,9 @@ class DSCkeybushome: public CustomAPIDevice, public PollingComponent {
     
     if (debug > 2)
       Serial.begin(115200);
-    set_update_interval(10);
-
+#if defined(ESP32)
+    set_update_interval(16);
+#endif
     register_service( & DSCkeybushome::set_alarm_state, "set_alarm_state", {
       "state",
       "code",
@@ -1191,8 +1193,11 @@ std::string getUserName(char * code) {
     }
     setStatus(partition, true);
   }
-
-  void update() override {
+#if defined(ESP32)
+void update() override {
+#else     
+  void loop() override {
+#endif      
 
     if ((millis() - beepTime > 2000 && beeps > 0)) {
       beeps = 0;

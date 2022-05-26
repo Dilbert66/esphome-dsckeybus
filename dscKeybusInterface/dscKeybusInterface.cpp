@@ -559,6 +559,9 @@ dscKeybusInterface::dscClockInterrupt() {
 
   static unsigned long previousClockHighTime;
   static bool skipData = false;
+  #ifdef DEBOUNCE
+  static bool skipFirst = false;
+  #endif  
 
   // Panel sends data while the clock is high
   if (digitalRead(dscClockPin) == HIGH) {
@@ -569,43 +572,41 @@ dscKeybusInterface::dscClockInterrupt() {
   // Keypads and modules send data while the clock is low
   else {
     clockHighTime = micros() - previousClockHighTime; // Tracks the clock high time to find the reset between commands
-    #ifdef DEBOUNCE
-    static bool skipFirst = false;
-    #endif
+
     // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
     if (clockHighTime > 1000) {
       keybusTime = millis();
-
       // Skips incomplete and redundant data from status commands - these are sent constantly on the keybus at a high
       // rate, so they are always skipped.  Checking is required in the ISR to prevent flooding the buffer.
-      if (isrPanelBitTotal < 8) skipData = true;
-      else switch (isrPanelData[0]) {
-        static byte previousCmd05[dscReadSize];
-        static byte previousCmd1B[dscReadSize];
-        #ifdef DEBOUNCE
-      case 0x05: // Status: partitions 1-4
-        if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) {
+     
+      if (isrPanelBitTotal < 8) 
+          skipData = true;
+      else {
+      byte * pcmd=NULL;
+      static byte previousCmd05[dscReadSize];
+      static byte previousCmd1B[dscReadSize]; 
+      
+      switch (isrPanelData[0]) {
+        case 0x05: pcmd=previousCmd05;break;
+        case 0x1B: pcmd=previousCmd1B;break;
+     }
+      if (pcmd!=NULL) {
+        if (redundantPanelData(pcmd, isrPanelData, isrPanelByteCount)) {
+#ifdef DEBOUNCE            
           if (skipFirst) {
-            skipData = false;
             skipFirst = false;
-          } else skipData = true;
-        } else { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported on a pc5005
+          } else 
+#endif              
+              skipData = true;
+        } 
+#ifdef DEBOUNCE        
+        else { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported on a pc5005
           skipData = true;
           skipFirst = true;
-        }
-
-        break;
-        #else
-      case 0x05: // Status: partitions 1-4
-        if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) skipData = true;
-        break;
-
-        #endif
-      case 0x1B: // Status: partitions 5-8
-        if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)) skipData = true;
-        break;
+        }  
+#endif        
+       }
       }
-
       // Stores new panel data in the panel buffer
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {

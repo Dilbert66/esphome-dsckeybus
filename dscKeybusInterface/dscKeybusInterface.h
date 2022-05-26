@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define EXPANDER
 #ifndef dscKeybusInterface_h
 #define dscKeybusInterface_h
 
@@ -202,16 +201,13 @@ volatile byte dscKeybusInterface::moduleCmd;
 volatile byte dscKeybusInterface::moduleSubCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
-#if defined(EXPANDER)  
-//start expander
 byte dscKeybusInterface::moduleSlots[6];
 moduleType dscKeybusInterface::modules[maxModules];
 byte dscKeybusInterface::moduleIdx;
 bool dscKeybusInterface::enableModuleSupervision;
 byte dscKeybusInterface::maxFields05; 
 byte dscKeybusInterface::maxFields11;
-#endif
-//end expander
+
 writeQueueType dscKeybusInterface::writeQueue[writeQueueSize];
 Stream* dscKeybusInterface::stream;
 

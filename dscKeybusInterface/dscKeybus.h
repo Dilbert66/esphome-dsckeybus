@@ -16,9 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-//#define SERIALDEBUGCOMMANDS  //enable to use debug cmd decoding  to serial port
-#define DEBOUNCE  //filter to remove corrupted 05/1b's.  Only accepts the second valid packet
-#define EXPANDER
+
+#define EXPANDER  //enable zone virtual zone expander functionality
+#define DEBOUNCE //filters out bad cmd05/1B's by ensuring we get 2 the same in a row to accept as valid
+
+//#define SERIALDEBUGCOMMANDS  //enable to use verbose debug cmd decoding  to serial port
 #ifndef dscKeybus_h
 #define dscKeybus_h
 
@@ -174,7 +176,7 @@ class dscKeybusInterface {
     bool pgmOutputsStatusChanged;
     byte pgmOutputs[2], pgmOutputsChanged[2];
     static byte panelVersion;
-    bool writeAccessCode[dscPartitions];    
+    bool writeAccessCode[dscPartitions];  
 
     /* panelData[] and moduleData[] store panel and keypad/module data in an array: command [0], stop bit by itself [1],
      * followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already

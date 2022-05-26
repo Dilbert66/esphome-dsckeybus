@@ -1,7 +1,6 @@
 #include "dscKeybus.h"
 
 #if defined(EXPANDER)
-
 void dscKeybusInterface::setSupervisorySlot(byte address, bool set = true) {
   //set our response data for the 0x11 supervisory request
   if (panelVersion < 3) {
