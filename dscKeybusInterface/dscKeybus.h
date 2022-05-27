@@ -56,7 +56,7 @@ const byte maxModules = 4;
 const byte writeQueueSize=20; //zone pending update queue
 #endif
 
-const byte partitionToBits[9]={0,9,17,57,65,9,17,57,65};
+const byte partitionToBits[]={0,9,17,57,65,9,17,57,65};
 
 
     struct zoneMaskType {
@@ -398,16 +398,15 @@ class dscKeybusInterface {
     static byte dscClockPin;
     static byte dscReadPin;
     static byte dscWritePin;
-    static byte writeByte, writeBit;
+    //static byte writeByte, writeBit;
     static bool virtualKeypad;
     static char writeKey;
     static byte panelBitCount, panelByteCount;
-    static volatile bool writeKeyPending;
     static volatile bool writeAlarm;
-    static volatile bool starKeyCheck;
+   // static volatile bool starKeyCheck;
 //    starKeyWait[dscPartitions];
     static volatile bool moduleDataDetected, moduleDataCaptured;
-    static volatile unsigned long clockHighTime, keybusTime;
+    static volatile unsigned long keybusTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
@@ -432,13 +431,11 @@ class dscKeybusInterface {
     static byte moduleSlots[6];
 #endif    
     static void processCmd70();
-        unsigned int dec2bcd(unsigned int);
+    unsigned int dec2bcd(unsigned int);
      //end expander
 
      //start new command handling 
-
     volatile static  byte writePartition;    
-   // volatile static byte writeBuffer[6]; 
     static byte * writeBuffer;
     static byte cmdD0buffer[6];  
     static bool pendingD0,pending70,pending6E;    
@@ -453,7 +450,7 @@ class dscKeybusInterface {
     static writeQueueType writeQueue[writeQueueSize];
     static void writeCharsToQueue(byte* keys,byte partition=1,byte len=1,bool alarm=false,bool star=false);
     byte getWriteBitFromPartition(byte partition);
-    unsigned long starWaitTime;
+   // unsigned long starWaitTime;
     //end new command handling    
  
 };

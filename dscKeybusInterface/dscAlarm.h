@@ -863,15 +863,15 @@ std::string getUserName(char * code) {
 
   void printPacket(const char * label, char cmd, volatile byte cbuf[], int len) {
     char s1[4];
-    std::string s;
-    s.reserve(80);
-    s = "";
+    char s[70];
+    int x=0;
     for (int c = 0; c < len; c++) {
       sprintf(s1, PSTR("%02X "), cbuf[c]);
-      s = s.append(s1);
+      memcpy(&s[x],s1,3);
+      x+=3;
     }
-    ESP_LOGI(label, "%02X: %s", cmd, s.c_str());
-
+    s[x]=0;
+    ESP_LOGI(label, "%02X: %s", cmd, s);
   }
 
   byte getPanelBitNumber(byte panelByte, byte startNumber) {

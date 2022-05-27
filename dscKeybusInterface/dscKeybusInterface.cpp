@@ -287,11 +287,6 @@ bool dscKeybusInterface::loop() {
     if (dscPartitions > 2) processPanel_0xEB();
     break; // Date, time, system status messages - partitions 1-8    
   }
-  //if (millis() - starWaitTime > 5000 && starKeyCheck && writeDataPending) { // timeout after no response from * write
-      // starKeyWait[partition-1] = false;
-       //starKeyCheck = false;
-     //  writeDataPending = false;
-	//}
 
   return true;
 }
@@ -396,7 +391,7 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       writeKey = 0x28;
       if (status[partition - 1] < 0x9E)  {
           isStar = true;
-            starWaitTime=millis();            
+           // starWaitTime=millis();            
       }
       break;
     case '#':
@@ -520,8 +515,10 @@ bool dscKeybusInterface::validCRC() {
   for (byte panelByte = 0; panelByte < byteCount; panelByte++) {
     if (panelByte != 1) dataSum += panelData[panelByte];
   }
-  if (dataSum % 256 == panelData[byteCount]) return true;
-  else return false;
+  if (dataSum % 256 == panelData[byteCount]) 
+      return true;
+  else 
+      return false;
 }
 
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
@@ -565,16 +562,15 @@ dscKeybusInterface::dscClockInterrupt() {
 
   // Panel sends data while the clock is high
   if (digitalRead(dscClockPin) == HIGH) {
-    if (virtualKeypad) digitalWrite(dscWritePin, LOW); // Restores the data line after a virtual keypad write
+    if (virtualKeypad) 
+        digitalWrite(dscWritePin, LOW); // Restores the data line after a virtual keypad write
     previousClockHighTime = micros();
   }
 
   // Keypads and modules send data while the clock is low
   else {
-    clockHighTime = micros() - previousClockHighTime; // Tracks the clock high time to find the reset between commands
-
     // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
-    if (clockHighTime > 1000) {
+    if (micros() - previousClockHighTime > 1000) { // Tracks the clock high time to find the reset between commands
       keybusTime = millis();
       // Skips incomplete and redundant data from status commands - these are sent constantly on the keybus at a high
       // rate, so they are always skipped.  Checking is required in the ISR to prevent flooding the buffer.
@@ -608,7 +604,8 @@ dscKeybusInterface::dscClockInterrupt() {
        }
       }
       // Stores new panel data in the panel buffer
-      if (panelBufferLength == dscBufferSize) bufferOverflow = true;
+      if (panelBufferLength == dscBufferSize) 
+          bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         //for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
         memcpy((void*)&panelBuffer[panelBufferLength],(void*)isrPanelData,dscReadSize);       
@@ -795,7 +792,7 @@ dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int bit,by
   writeDataBit = bit;
   writeBufferIdx = 0;
   writeAlarm = alarm;
-  starKeyCheck = false;
+ // starKeyCheck = false;
   writePartition=partition;
   writeBuffer=src;
   writeDataPending = true; //set flag to send it  

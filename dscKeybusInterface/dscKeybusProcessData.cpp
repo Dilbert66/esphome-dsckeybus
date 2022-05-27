@@ -326,11 +326,11 @@ void dscKeybusInterface::processPanelStatus() {
       case 0x9E:
       case 0xB8: {
           
-       if ( starKeyCheck) {  // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
+     /*  if ( starKeyCheck) {  // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
           starKeyCheck = false;
           writeDataPending = false;
         }
-        
+        */
         processReadyStatus(partitionIndex, false);
         break;
       }
