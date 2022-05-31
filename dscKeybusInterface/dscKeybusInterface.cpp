@@ -292,10 +292,12 @@ bool dscKeybusInterface::loop() {
 }
 
 bool dscKeybusInterface::handleModule() {
-  if (!moduleDataCaptured) return false;
+  if (!moduleDataCaptured) 
+      return false;
   moduleDataCaptured = false;
 
-  if (moduleBitCount < 8) return false;
+  if (moduleBitCount < 8) 
+      return false;
 
   // Determines if a keybus message is a response to a panel command
   switch (moduleCmd) {
@@ -389,10 +391,11 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       break;
     case '*':
       writeKey = 0x28;
+      /*
       if (status[partition - 1] < 0x9E)  {
           isStar = true;
            // starWaitTime=millis();            
-      }
+      }*/
       break;
     case '#':
       writeKey = 0x2D;
@@ -589,14 +592,14 @@ dscKeybusInterface::dscClockInterrupt() {
       if (pcmd!=NULL) {
         if (redundantPanelData(pcmd, isrPanelData, isrPanelByteCount)) {
 #ifdef DEBOUNCE            
-          if (skipFirst) {
+          if (skipFirst) 
             skipFirst = false;
-          } else 
+           else 
 #endif              
               skipData = true;
         } 
 #ifdef DEBOUNCE        
-        else { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported on a pc5005
+       else { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported on a pc5005
           skipData = true;
           skipFirst = true;
         }  

@@ -3,12 +3,14 @@
 #ifndef dscalarm_h
 #define dscalarm_h
 
+#if !defined(ARDUINO_MQTT)
 #include "esphome.h"
-
+using namespace esphome;
+#endif
 
 #include "dscKeybusInterface.h"
 
-using namespace esphome;
+
 
 #ifdef ESP32
 
@@ -26,8 +28,9 @@ using namespace esphome;
 
 #define maxZonesDefault 32 //set to 64 if your system supports it
 
+#if !defined(ARDUINO_MQTT) && !defined(ESPHOME_MQTT)
 #define get_dsckeybus(constructor) static_cast<DSCkeybushome *>(const_cast<custom_component::CustomComponentConstructor *>(&constructor)->get_component(0))
-
+#endif
 
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
 bool forceDisconnect;
@@ -49,7 +52,12 @@ enum panelStatus {
   armStatus
 };
 
-
+#if defined(ESPHOME_MQTT)
+const char sendkeypresstopic[] PROGMEM = "/Set/Keypress";
+const char setalarmstatetopic[] PROGMEM = "/Set/AlarmState";
+const char setdatetimetopic[] PROGMEM = "/Set/DateTime";
+const char setzonefaulttopic[] PROGMEM = "/Set/ZoneFault";
+#endif
 
 const char mm0[] PROGMEM = "Press # to exit";
 const char mm1[] PROGMEM = "Zone Bypass";
@@ -185,10 +193,14 @@ const char STATUS_TRIGGERED[] PROGMEM = "triggered";
 const char STATUS_READY[] PROGMEM = "ready";
 const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
 
-#if defined(ESP32)
+#if defined(ESPHOME_MQTT)
+class DSCkeybushome: public CustomMQTTDevice, public Component { 
+#elif defined(ARDUINO_MQTT)
+class DSCkeybushome { 
+#elif defined(ESP32)
 class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
-#else
-class DSCkeybushome: public CustomAPIDevice, public Component {    
+#elif defined(ESP8266)
+class DSCkeybushome: public CustomAPIDevice, public Component {  
 #endif
   public: DSCkeybushome(byte dscClockPin = 0, byte dscReadPin = 0, byte dscWritePin = 0): dscClockPin(dscClockPin),
   dscReadPin(dscReadPin),
@@ -253,7 +265,7 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
     beepsCallback = callback;
   }
   
-#ifdef ESP32
+#if defined(ESP32) && !defined(ARDUINO_MQTT)
   void set_panel_time() {
     ESP_LOGD("info","Setting panel time...");
     ESPTime rtc = now();
@@ -262,7 +274,9 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   }
   #else
   void set_panel_time(int year,int month,int day,int hour,int minute) {
-    ESP_LOGD("info","Setting panel time...");      
+      #if !defined(ARDUINO_MQTT)
+    ESP_LOGD("info","Setting panel time..."); 
+    #endif
     dsc.setDateTime(year, month, day, hour, minute);
   }  
 #endif   
@@ -279,9 +293,13 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   int defaultPartition = 1;
   int activePartition = 1;
   byte maxZones = maxZonesDefault;
+  const char * systemName;
 
+#if defined(ARDUINO_MQTT)
+  const char * userCodes;
+#endif
   private: 
-  
+
   uint8_t zone;
   byte dscClockPin,
   dscReadPin,
@@ -338,18 +356,30 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   previousBeeps;
   bool refresh;
   
-
-
+#if defined(ARDUINO_MQTT)
+public:
+void begin() {
+#else
   void setup() override {
+#endif      
     eventStatusMsg.reserve(64);
     
     zoneStatus = new zoneType[maxZones];
     
     if (debug > 2)
       Serial.begin(115200);
-#if defined(ESP32)
+#if defined(ESP32) && !defined(ARDUINO_MQTT)     
     set_update_interval(16);
 #endif
+
+   
+#if defined(ESPHOME_MQTT)
+   std::string t=systemName;
+   subscribe_json(t + String(FPSTR(setalarmstatetopic)).c_str(),&DSCkeybushome::on_json_message);   
+   subscribe_json(t + String(FPSTR(sendkeypresstopic)).c_str(),&DSCkeybushome::on_json_message);   
+   subscribe_json(t + String(FPSTR(setzonefaulttopic)).c_str(),&DSCkeybushome::on_json_message); 
+   subscribe_json(t + String(FPSTR(setdatetimetopic)).c_str(),&DSCkeybushome::on_json_message); 
+#elif !defined(ARDUINO_MQTT)
     register_service( & DSCkeybushome::set_alarm_state, "set_alarm_state", {
       "state",
       "code",
@@ -386,6 +416,10 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
     register_service( & DSCkeybushome::set_default_partition, "set_default_partition", {
       "partition"
     });
+#endif
+
+
+
 
     firstrun = true;
     systemStatusChangeCallback(String(FPSTR(STATUS_OFFLINE)).c_str());
@@ -423,11 +457,16 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
     system1 = 0;
     system0 = 0;
   }
-  
+ private:  
 std::string getUserName(char * code) {
   std::string name = code;
+#if defined(ARDUINO_MQTT)
+  if (userCodes != "") {
+    std::string s=userCodes;
+#else    
   if (userCodes -> value() != "") {
     std::string s = userCodes -> value();
+#endif    
     std::string token1, token2, token3;
     size_t pos, pos1;
     char buf[4];
@@ -446,6 +485,7 @@ std::string getUserName(char * code) {
   }
   return name;
 }
+public:
   void set_default_partition(int partition) {
     if (partition > 0 && partition < dscPartitions) {
       defaultPartition = partition;
@@ -455,7 +495,7 @@ std::string getUserName(char * code) {
   }
 
   void set_zone_fault(int zone, bool fault) {
-#if defined(EXPANDER)      
+#if defined(EXPANDER)  && !defined(ARDUINO_MQTT)     
     ESP_LOGD("Debug", "Setting Zone Fault: %d,%d", zone, fault);
     dsc.setZoneFault(zone, fault);
 #endif
@@ -497,6 +537,7 @@ std::string getUserName(char * code) {
 
   }
 
+private:
   void processMenu(byte key, byte partition = -1) {
 
     if (partition < 1) partition = defaultPartition;
@@ -796,6 +837,7 @@ std::string getUserName(char * code) {
 
   }
 
+public:
   void alarm_keypress(std::string keystring) {
     alarm_keypress_partition(keystring, defaultPartition);
   }
@@ -804,7 +846,9 @@ std::string getUserName(char * code) {
     if (!partition) partition = defaultPartition;
     if (dsc.disabled[partition - 1]) return;
     const char * keys = strcpy(new char[keystring.length() + 1], keystring.c_str());
+#if !defined(ARDUINO_MQTT)         
     if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d", keystring.c_str(), partition);
+#endif    
     partitionStatus[partition - 1].keyPressTime = millis();
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
@@ -812,6 +856,41 @@ std::string getUserName(char * code) {
         if (!partitionStatus[partition].locked) dsc.write(keys, partition);
     }
   }
+#if defined(ESPHOME_MQTT) 
+private:
+    void on_json_message(const std::string &topic, JsonObject payload) {
+       int p=0;
+       std::string s="";
+       std::string c="";
+     if (topic.find(String(FPSTR(sendkeypresstopic)).c_str()) != std::string::npos ) {
+        if (!payload.containsKey("keys")) return;
+        s=std::string(payload["keys"]);
+        if (payload.containsKey("partition")) 
+          p=payload["partition"];
+        alarm_keypress_partition(s,p);
+      } else if (topic.find(String(FPSTR(setalarmstatetopic)).c_str())!=std::string::npos) { 
+        if (!payload.containsKey("state") ) return;
+        
+        if (payload.containsKey("partition"))
+          p=payload["partition"];
+        
+        if (payload.containsKey("code"))
+            c=std::string(payload["code"]);
+        
+        s=std::string(payload["state"]);  
+
+        set_alarm_state(s,c,p);
+      } else if (topic.find(String(FPSTR(setzonefaulttopic)).c_str())!=std::string::npos) { 
+          if (!payload.containsKey("zone") || !payload.containsKey("fault")) return;
+          int z=payload["zone"];
+          bool f=payload["fault"] > 0?1:0;
+          set_zone_fault(z,f);
+      
+      } else if (topic.find(String(FPSTR(setdatetimetopic)).c_str())!=std::string::npos) { 
+      
+      }      
+  }
+#endif
 
   bool isInt(std::string s, int base) {
     if (s.empty() || std::isspace(s[0])) return false;
@@ -819,7 +898,7 @@ std::string getUserName(char * code) {
     strtol(s.c_str(), & p, base);
     return ( * p == 0);
   }
-
+public:
   void set_alarm_state(std::string state, std::string code = "", int partition = 0) {
 
     if (code.length() != 4 || !isInt(code, 10)) code = ""; // ensure we get a numeric 4 digit code
@@ -861,6 +940,7 @@ std::string getUserName(char * code) {
     partitionStatus[partition-1].keyPressTime = millis();    
   }
 
+private:
   void printPacket(const char * label, char cmd, volatile byte cbuf[], int len) {
     char s1[4];
     char s[70];
@@ -1193,11 +1273,17 @@ std::string getUserName(char * code) {
     }
     setStatus(partition, true);
   }
+#if defined(ARDUINO_MQTT)
+  public:
+  void loop()  {
+#else   
+  
 #if defined(ESP32)
 void update() override {
 #else     
   void loop() override {
-#endif      
+#endif 
+#endif     
 
     if ((millis() - beepTime > 2000 && beeps > 0)) {
       beeps = 0;
@@ -1276,19 +1362,20 @@ void update() override {
         setStatus(partition, true);
 
       }
-
+#if !defined(ARDUINO_MQTT)     
       if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
+#endif      
       dsc.bufferOverflow = false;
 
       // Checks if the interface is connected to the Keybus
-      if (dsc.keybusChanged || forceRefresh) {
+      if (dsc.keybusChanged ) {
         dsc.keybusChanged = false; // Resets the Keybus data status flag
         if (dsc.keybusConnected) {
           systemStatusChangeCallback( String(FPSTR(STATUS_ONLINE)).c_str());
         } else systemStatusChangeCallback( String(FPSTR(STATUS_OFFLINE)).c_str());
       }
 
-      if (dsc.powerChanged || forceRefresh) {
+      if (dsc.powerChanged ) {
         dsc.powerChanged = false;
         if (dsc.powerTrouble) {
           panelStatusChangeCallback(acStatus, false, 0); //no ac
@@ -1298,7 +1385,7 @@ void update() override {
 
       }
 
-      if (dsc.batteryChanged || forceRefresh) {
+      if (dsc.batteryChanged ) {
         dsc.batteryChanged = false;
         if (dsc.batteryTrouble) {
           panelStatusChangeCallback(batStatus, true, 0);
@@ -1318,7 +1405,7 @@ void update() override {
       }
 
       // Publishes trouble status
-      if (dsc.troubleChanged || forceRefresh) {
+      if (dsc.troubleChanged ) {
         dsc.troubleChanged = false; // Resets the trouble status flag
         if (dsc.trouble) {
             panelStatusChangeCallback(trStatus, true, 0); // Trouble alarm tripped
@@ -1344,7 +1431,6 @@ void update() override {
 
         // Publishes alarm status
         if (dsc.alarmChanged[partition] ) {
-          //ESP_LOGD("test","dsc alarm=%d",dsc.alarm[partition]);
           dsc.alarmChanged[partition] = false; // Resets the partition alarm status flag
           if (dsc.alarm[partition]) {
             dsc.readyChanged[partition] = false; //if we are triggered no need to trigger a ready state change
@@ -1403,7 +1489,7 @@ void update() override {
         }
 
         // Publishes fire alarm status
-        if (dsc.fireChanged[partition] || forceRefresh) {
+        if (dsc.fireChanged[partition] ) {
           dsc.fireChanged[partition] = false; // Resets the fire status flag
           if (dsc.fire[partition]) fireStatusChangeCallback(partition + 1, true); // Fire alarm tripped
           else fireStatusChangeCallback(partition + 1, false); // Fire alarm restored
@@ -1518,8 +1604,9 @@ void update() override {
         if (systemMsg != "") systemMsg.append(",");
         systemMsg.append(String(PSTR("BAT")).c_str());
         panelStatusChangeCallback(batStatus, true, 0);
-      } else
+      } else {
         panelStatusChangeCallback(batStatus, false, 0);
+      }
       if (bitRead(system1, 1)) {
         if (systemMsg != "") systemMsg.append(",");
         systemMsg.append(String(PSTR("BELL")).c_str());
@@ -1623,7 +1710,8 @@ void update() override {
     firstrun = false;
 
   }
-
+  
+private:
   void setStatus(byte partition, bool force = false, bool skip = false) {
 
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
@@ -1635,8 +1723,9 @@ void update() override {
     partitionStatus[partition].digits = 0;
     partitionStatus[partition].hex = false;
     partitionStatus[partition].decimalInput = false;
-
+#if !defined(ARDUINO_MQTT)     
     ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip);
+#endif    
     switch (dsc.status[partition]) {
     case 0x01:
       lcdLine1 = F("Partition ready");
