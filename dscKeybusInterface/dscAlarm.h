@@ -340,12 +340,12 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   partitionType partitionStatus[dscPartitions];
   byte  lastStatus[dscPartitions];  
   
-  std::string previousZoneStatusMsg,eventStatusMsg,previousTroubleMsg;
+  std::string previousZoneStatusMsg,eventStatusMsg;
   bool relayStatus[16],
   previousRelayStatus[16];
   bool sendCmd,forceRefresh,system0Changed,system1Changed;
   byte system0,
-  system1;
+  system1,previousSystem0,previousSystem1;
   byte programZones[dscZones];
   char decimalInputBuffer[6];
   byte line2Digit,
@@ -1312,7 +1312,7 @@ void update() override {
       static unsigned long startWait = millis();
       if (millis() - startWait > 10000 && delayedStart) {
         delayedStart = false;
-        troubleMsgStatusCallback(previousTroubleMsg);
+        troubleMsgStatusCallback("");
         if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
           partitionStatus[defaultPartition-1].keyPressTime = millis();
           dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery
@@ -1600,7 +1600,11 @@ void update() override {
        std::string system0Msg="";
        std::string system1Msg="";  
        
-       if (system1Changed) {
+       if (!system1Changed) 
+           system1=previousSystem1;
+       else
+           previousSystem1=system1; 
+       
       if (bitRead(system1, 0)) {
         system1Msg.append(String(PSTR("BAT ")).c_str());
         panelStatusChangeCallback(batStatus, true, 0);
@@ -1630,10 +1634,12 @@ void update() override {
         system1Msg.append(String(PSTR("A4 ")).c_str());
       }
 
-      }
       
-      if (system0Changed) {
-
+      if (!system0Changed) 
+          system0=previousSystem0;
+      else
+          previousSystem0=system0;
+      
       if (bitRead(system0, 1)) {
         system0Msg.append(String(PSTR("AC ")).c_str());
       }
@@ -1655,11 +1661,9 @@ void update() override {
       if (bitRead(system0, 7)) {
         system0Msg.append(String(PSTR("TIME ")).c_str());
       }
-   
-      }
+      
      if (system0Changed || system1Changed) {
          troubleMsgStatusCallback(system0Msg.append(system1Msg));
-         previousTroubleMsg=system0Msg;
      }
      system0Changed=false;
      system1Changed=false;
