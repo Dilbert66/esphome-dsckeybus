@@ -340,14 +340,12 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   partitionType partitionStatus[dscPartitions];
   byte  lastStatus[dscPartitions];  
   
-  std::string previousZoneStatusMsg,eventStatusMsg;
+  std::string previousZoneStatusMsg,eventStatusMsg,previousTroubleMsg;
   bool relayStatus[16],
   previousRelayStatus[16];
   bool sendCmd,forceRefresh,system0Changed,system1Changed;
   byte system0,
-  system1,
-  previousSystem0,
-  previousSystem1;
+  system1;
   byte programZones[dscZones];
   char decimalInputBuffer[6];
   byte line2Digit,
@@ -1314,6 +1312,7 @@ void update() override {
       static unsigned long startWait = millis();
       if (millis() - startWait > 10000 && delayedStart) {
         delayedStart = false;
+        troubleMsgStatusCallback(previousTroubleMsg);
         if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
           partitionStatus[defaultPartition-1].keyPressTime = millis();
           dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery
@@ -1660,7 +1659,7 @@ void update() override {
       }
      if (system0Changed || system1Changed) {
          troubleMsgStatusCallback(system0Msg.append(system1Msg));
-         
+         previousTroubleMsg=system0Msg;
      }
      system0Changed=false;
      system1Changed=false;
