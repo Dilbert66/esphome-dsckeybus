@@ -340,10 +340,10 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   partitionType partitionStatus[dscPartitions];
   byte  lastStatus[dscPartitions];  
   
-  std::string previousZoneStatusMsg,previousSystemMsg,eventStatusMsg;
+  std::string previousZoneStatusMsg,eventStatusMsg;
   bool relayStatus[16],
   previousRelayStatus[16];
-  bool sendCmd,forceRefresh;
+  bool sendCmd,forceRefresh,system0Changed,system1Changed;
   byte system0,
   system1,
   previousSystem0,
@@ -1598,78 +1598,72 @@ void update() override {
 
       previousZoneStatusMsg = zoneStatusMsg;
 
-      std::string systemMsg;
-      systemMsg  = "";
+       std::string system0Msg="";
+       std::string system1Msg="";  
+       
+       if (system1Changed) {
       if (bitRead(system1, 0)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("BAT")).c_str());
+        system1Msg.append(String(PSTR("BAT ")).c_str());
         panelStatusChangeCallback(batStatus, true, 0);
-      } else {
+      } 
+      else {
         panelStatusChangeCallback(batStatus, false, 0);
       }
       if (bitRead(system1, 1)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("BELL")).c_str());
+        system1Msg.append(String(PSTR("BELL ")).c_str());
       }
       if (bitRead(system1, 2)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("SYS")).c_str());
+        system1Msg.append(String(PSTR("SYS ")).c_str());
       }
       if (bitRead(system1, 3)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("TAMP")).c_str());
+        system1Msg.append(String(PSTR("TAMP ")).c_str());
       }
       if (bitRead(system1, 4)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("SUP")).c_str());
+        system1Msg.append(String(PSTR("SUP ")).c_str());
       }
       if (bitRead(system1, 5)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("RF")).c_str());
+        system1Msg.append(String(PSTR("RF ")).c_str());
       }
       if (bitRead(system1, 6)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("B4")).c_str());
+        system1Msg.append(String(PSTR("B4 ")).c_str());
       }
       if (bitRead(system1, 7)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("A4")).c_str());
+        system1Msg.append(String(PSTR("A4 ")).c_str());
       }
 
+      }
       
+      if (system0Changed) {
+
       if (bitRead(system0, 1)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("AC")).c_str());
+        system0Msg.append(String(PSTR("AC ")).c_str());
       }
       if (bitRead(system0, 2)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("TEL")).c_str());
+        system0Msg.append(String(PSTR("TEL ")).c_str());
       }
       if (bitRead(system0, 3)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("COM")).c_str());
+        system0Msg.append(String(PSTR("COM ")).c_str());
       }
       if (bitRead(system0, 4)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("ZF")).c_str());
+        system0Msg.append(String(PSTR("ZF ")).c_str());
       }
       if (bitRead(system0, 5)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("ZT")).c_str());
+        system0Msg.append(String(PSTR("ZT ")).c_str());
       }
       if (bitRead(system0, 6)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("DBAT")).c_str());
+        system0Msg.append(String(PSTR("DBAT ")).c_str());
       }
       if (bitRead(system0, 7)) {
-        if (systemMsg != "") systemMsg.append(",");
-        systemMsg.append(String(PSTR("TIME")).c_str());
+        system0Msg.append(String(PSTR("TIME ")).c_str());
       }
-      if (systemMsg == "") systemMsg = "OK";
-
-      if (previousSystemMsg != systemMsg || forceRefresh)
-        troubleMsgStatusCallback(systemMsg);
-      previousSystemMsg = systemMsg;
+   
+      }
+     if (system0Changed || system1Changed) {
+         troubleMsgStatusCallback(system0Msg.append(system1Msg));
+         
+     }
+     system0Changed=false;
+     system1Changed=false;
 
     }
 
@@ -2330,9 +2324,11 @@ private:
         processLowBatteryZones();
       if (dsc.panelData[3] == 0xA1) { //system status
         system0 = dsc.panelData[4];
+        system0Changed=true;
       }
       if (dsc.panelData[3] == 0xC8) { //service required menu
         system1 = dsc.panelData[4];
+        system1Changed=true;
       }
 
       break;
