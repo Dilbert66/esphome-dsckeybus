@@ -1607,10 +1607,11 @@ void update() override {
        
       if (bitRead(system1, 0)) {
         system1Msg.append(String(PSTR("BAT ")).c_str());
-        panelStatusChangeCallback(batStatus, true, 0);
-      } 
-      else {
-        panelStatusChangeCallback(batStatus, false, 0);
+        if (system1Changed) 
+            panelStatusChangeCallback(batStatus, true, 0);
+      } else {
+          if (system1Changed)
+            panelStatusChangeCallback(batStatus, false, 0);
       }
       if (bitRead(system1, 1)) {
         system1Msg.append(String(PSTR("BELL ")).c_str());
