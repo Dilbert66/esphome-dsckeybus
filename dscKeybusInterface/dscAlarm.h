@@ -1412,6 +1412,10 @@ void update() override {
         else {
             panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
         }
+        if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
+          partitionStatus[defaultPartition-1].keyPressTime = millis();
+          dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
+        }          
       }
 
       // Publishes status per partition
@@ -1600,10 +1604,12 @@ void update() override {
        std::string system0Msg="";
        std::string system1Msg="";  
        
-       if (!system1Changed) 
-           system1=previousSystem1;
+     if (system0Changed || system1Changed) {
+           
+       if (system1Changed) 
+           previousSystem1=system1;   
        else
-           previousSystem1=system1; 
+           system1=previousSystem1;
        
       if (bitRead(system1, 0)) {
         system1Msg.append(String(PSTR("BAT ")).c_str());
@@ -1636,10 +1642,10 @@ void update() override {
       }
 
       
-      if (!system0Changed) 
-          system0=previousSystem0;
-      else
+      if (system0Changed) 
           previousSystem0=system0;
+        else
+          system0=previousSystem0;
       
       if (bitRead(system0, 1)) {
         system0Msg.append(String(PSTR("AC ")).c_str());
@@ -1663,7 +1669,7 @@ void update() override {
         system0Msg.append(String(PSTR("TIME ")).c_str());
       }
       
-     if (system0Changed || system1Changed) {
+
          troubleMsgStatusCallback(system0Msg.append(system1Msg));
      }
      system0Changed=false;
