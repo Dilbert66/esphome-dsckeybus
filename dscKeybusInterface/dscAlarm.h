@@ -3,6 +3,8 @@
 #ifndef dscalarm_h
 #define dscalarm_h
 
+#define TROUBLEFETCH
+
 #if !defined(ARDUINO_MQTT)
 #include "esphome.h"
 using namespace esphome;
@@ -1412,10 +1414,12 @@ void update() override {
         else {
             panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
         }
+        #if defined(TROUBLEFETCH)
         if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
           partitionStatus[defaultPartition-1].keyPressTime = millis();
           dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
-        }          
+        }       
+        #endif
       }
 
       // Publishes status per partition
