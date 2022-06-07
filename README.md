@@ -52,7 +52,8 @@ I've also added a custom alarm panel card with new  functions from the library t
 
 The returned statuses for Home Assistant are: armed_away, armed_home, armed_night, pending, disarmed,triggered and unavailable.  
 
-Sample Home Assistant Template Alarm Control Panel configuration with simple services (defaults to partition 1):
+	
+Sample Home Assistant Template Alarm Control Panel configuration with simple services (defaults to partition 1).
 
 ```
 alarm_control_panel:
@@ -81,7 +82,7 @@ alarm_control_panel:
 
 ```
 
-Alternative Home assistant configuration using specified partition with set_alarm_state service
+Alternative Home assistant configuration using specified partition with set_alarm_state service.
 
 ```
 alarm_control_panel:
@@ -302,8 +303,14 @@ view_bottom: true
 ```	
 
 ## MQTT Support
-If you would like to use MQTT communications with Homeassistant or alternatively use ESPHOME with other platforms that can support MQTT, you can modify the configuration to use the MQTT protocol instead of the native HA API integration.  This simply involves the addtion of an mqtt: configuration section in the yaml and to remove the api: section.   Please see the ESPHOME MQTT documentation more details: https://esphome.io/components/mqtt.html .  Please see the lovelace.yaml file for an example on how to configure the alarm-panel-card to use MQTT services.
+If you would like to use MQTT communications with Homeassistant or alternatively use ESPHOME with other platforms that can support MQTT, you can modify the configuration to use the MQTT protocol instead of the native HA API integration.  This simply involves the addtion of an mqtt: configuration section in the yaml and to remove the api: section.   Please see the ESPHOME MQTT documentation more details: https://esphome.io/components/mqtt.html .  Please see the lovelace.yaml file for an example on how to configure the alarm-panel-card to use MQTT services.  
 	
+Command topic is "<yoursystemnameinesphome>/alarm/set"
+Command payload for sending key commands: {"keys":"<sequenceofkeys>","partition":<partition#>}
+Command payload to set an expander fault status: {"zone":<zone#>,"fault":<on:off or 0:1>}
+Command payload to set an alarm state: {"state":"<alarmstate>","partition":<partition#>,"code":"<accesscode>"} - see set_alarm_state api command above for more details
+
+Sensor data will follow the HA MQTT discovery format. See here for details: https://www.home-assistant.io/docs/mqtt/discovery/
 	
 ## Wiring
 ### Isolated version
