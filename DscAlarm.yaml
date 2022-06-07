@@ -64,10 +64,19 @@ logger:
   baud_rate: 115200
   level: DEBUG
 
+##API communications - ensure the mqtt: section is commented if using this protocol
 api:
    password: !secret api_password  
    #encryption:         
      #key: !secret encryption_key
+     
+##MQTT communications - ensure the api: section is commented if using this protocol
+## also add #define ESPHOME_MQTT to top of dscalarm.h     
+#mqtt:
+  #broker: 192.168.2.175
+  #port: 1883  
+  #username: mqttuser
+  #password: mqttuser
   
 ota:
    password: !secret ota_password

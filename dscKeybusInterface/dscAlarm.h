@@ -3,11 +3,15 @@
 #ifndef dscalarm_h
 #define dscalarm_h
 
+
 //#define TROUBLEFETCH
 
 #if !defined(ARDUINO_MQTT)
 #include "esphome.h"
 using namespace esphome;
+#if defined(USE_MQTT)
+#define ESPHOME_MQTT
+#endif
 #endif
 
 #include "dscKeybusInterface.h"
@@ -55,10 +59,7 @@ enum panelStatus {
 };
 
 #if defined(ESPHOME_MQTT)
-const char sendkeypresstopic[] PROGMEM = "/Set/Keypress";
-const char setalarmstatetopic[] PROGMEM = "/Set/AlarmState";
-const char setdatetimetopic[] PROGMEM = "/Set/DateTime";
-const char setzonefaulttopic[] PROGMEM = "/Set/ZoneFault";
+const char setalarmcommandtopic[] PROGMEM = "/alarm/set"; 
 #endif
 
 const char mm0[] PROGMEM = "Press # to exit";
@@ -295,7 +296,6 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   int defaultPartition = 1;
   int activePartition = 1;
   byte maxZones = maxZonesDefault;
-  const char * systemName;
 
 #if defined(ARDUINO_MQTT)
   const char * userCodes;
@@ -355,6 +355,9 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   byte beeps,
   previousBeeps;
   bool refresh;
+  #if defined(ESPHOME_MQTT)
+  std::string topic,topic_prefix;
+  #endif
   
 #if defined(ARDUINO_MQTT)
 public:
@@ -374,11 +377,10 @@ void begin() {
 
    
 #if defined(ESPHOME_MQTT)
-   std::string t=systemName;
-   subscribe_json(t + String(FPSTR(setalarmstatetopic)).c_str(),&DSCkeybushome::on_json_message);   
-   subscribe_json(t + String(FPSTR(sendkeypresstopic)).c_str(),&DSCkeybushome::on_json_message);   
-   subscribe_json(t + String(FPSTR(setzonefaulttopic)).c_str(),&DSCkeybushome::on_json_message); 
-   subscribe_json(t + String(FPSTR(setdatetimetopic)).c_str(),&DSCkeybushome::on_json_message); 
+
+   topic_prefix = mqtt_mqttclientcomponent->get_topic_prefix();
+   topic="homeassistant/alarm_control_panel/"+ topic_prefix + "/config"; 
+   subscribe_json(topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str(),&DSCkeybushome::on_json_message);   
 #elif !defined(ARDUINO_MQTT)
     register_service( & DSCkeybushome::set_alarm_state, "set_alarm_state", {
       "state",
@@ -862,33 +864,31 @@ private:
        int p=0;
        std::string s="";
        std::string c="";
-     if (topic.find(String(FPSTR(sendkeypresstopic)).c_str()) != std::string::npos ) {
-        if (!payload.containsKey("keys")) return;
-        s=std::string(payload["keys"]);
-        if (payload.containsKey("partition")) 
-          p=payload["partition"];
-        alarm_keypress_partition(s,p);
-      } else if (topic.find(String(FPSTR(setalarmstatetopic)).c_str())!=std::string::npos) { 
-        if (!payload.containsKey("state") ) return;
-        
+
+      if (topic.find(String(FPSTR(setalarmcommandtopic)).c_str())!=std::string::npos) { 
         if (payload.containsKey("partition"))
           p=payload["partition"];
-        
+      
         if (payload.containsKey("code"))
-            c=std::string(payload["code"]);
+            c=std::string(payload["code"]);      
+      
+        if (payload.containsKey("state") )  {
+            s=std::string(payload["state"]);  
+            set_alarm_state(s,c,p); 
+        } else if (payload.containsKey("keys")) {
+            s=std::string(payload["keys"]); 
+            alarm_keypress_partition(s,p);
+        } else if (payload.containsKey("fault")) {
+            if (!payload.containsKey("zone")) return;
+            s=std::string(payload["fault"]);
+            bool b=false;
+            if (s=="ON" || s=="on" || s=="1")
+                b=true;
+            p = atoi((char * ) std::string(payload["zone"]).c_str());
+            set_zone_fault(p,b);
+        }
         
-        s=std::string(payload["state"]);  
-
-        set_alarm_state(s,c,p);
-      } else if (topic.find(String(FPSTR(setzonefaulttopic)).c_str())!=std::string::npos) { 
-          if (!payload.containsKey("zone") || !payload.containsKey("fault")) return;
-          int z=payload["zone"];
-          bool f=payload["fault"] > 0?1:0;
-          set_zone_fault(z,f);
-      
-      } else if (topic.find(String(FPSTR(setdatetimetopic)).c_str())!=std::string::npos) { 
-      
-      }      
+      }    
   }
 #endif
 
@@ -1276,6 +1276,8 @@ private:
 #if defined(ARDUINO_MQTT)
   public:
   void loop()  {
+      
+
 #else   
   
 #if defined(ESP32)
@@ -1285,6 +1287,19 @@ void update() override {
 #endif 
 #endif     
 
+    if (forceDisconnect) return;
+
+#if defined(ESPHOME_MQTT)
+   static bool firstrunmqtt=true;
+   if (is_connected() && firstrunmqtt)	{
+         publish(topic,"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}",0,1);
+        ESP_LOGD("test","published %s,%s",topic.c_str(),"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}");
+         firstrunmqtt=false;
+       }
+#endif      
+
+
+    
     if ((millis() - beepTime > 2000 && beeps > 0)) {
       beeps = 0;
       for (byte partition = 1; partition <= dscPartitions; partition++) {
@@ -1308,7 +1323,7 @@ void update() override {
     }
 
 
-    if ((!forceDisconnect && dsc.loop()) || forceRefresh) { //Processes data only when a valid Keybus command has been read
+    if ( dsc.loop() || forceRefresh) { //Processes data only when a valid Keybus command has been read
  
       static bool delayedStart = true;
       static unsigned long startWait = millis();
