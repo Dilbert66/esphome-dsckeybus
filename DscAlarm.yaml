@@ -72,10 +72,10 @@ api:
      
 ##MQTT communications - ensure the api: section is commented if using this protocol
 #mqtt:
-  #broker: 192.168.2.175
+  #broker: xxx.xxx.xxx.xxx #your mqtt broker address
   #port: 1883  
-  #username: mqttuser
-  #password: mqttuser
+  #username: mqttuser #your mqtt user name
+  #password: mqttpass #your mqtt user pass
   
 ota:
    password: !secret ota_password
