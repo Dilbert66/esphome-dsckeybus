@@ -71,7 +71,6 @@ api:
      #key: !secret encryption_key
      
 ##MQTT communications - ensure the api: section is commented if using this protocol
-## also add #define ESPHOME_MQTT to top of dscalarm.h     
 #mqtt:
   #broker: 192.168.2.175
   #port: 1883  
