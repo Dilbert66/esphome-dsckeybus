@@ -300,7 +300,9 @@ view_status_2: false
 view_bottom: true
 	
 ```	
-	
+
+## MQTT Support
+If you would like to use MQTT communications with Homeassistant or alternatively use ESPHOME with other platforms that can support MQTT, you can modify the configuration to use the MQTT protocol instead of the native HA API integration.  This simply involves the addtion of an mqtt: configuration section in the yaml and to remove the api: section.   Please see the ESPHOME MQTT documentation more details: https://esphome.io/components/mqtt.html .  Please see the lovelace.yaml file for an example on how to configure the alarm-panel-card to use MQTT services.
 	
 	
 ## Wiring
