@@ -3,9 +3,6 @@
 #ifndef dscalarm_h
 #define dscalarm_h
 
-
-//#define TROUBLEFETCH
-
 #if !defined(ARDUINO_MQTT)
 #include "esphome.h"
 using namespace esphome;
@@ -196,8 +193,10 @@ const char STATUS_TRIGGERED[] PROGMEM = "triggered";
 const char STATUS_READY[] PROGMEM = "ready";
 const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
 
-#if defined(ESPHOME_MQTT)
+#if defined(ESPHOME_MQTT) && defined(ESP8266)
 class DSCkeybushome: public CustomMQTTDevice, public Component { 
+#elif defined(ESPHOME_MQTT) && defined(ESP32)
+class DSCkeybushome: public CustomMQTTDevice, public RealTimeClock {
 #elif defined(ARDUINO_MQTT)
 class DSCkeybushome { 
 #elif defined(ESP32)
@@ -289,10 +288,9 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   expanderAddr3;
   byte debug;
   const char * accessCode;
-  unsigned long cmdWaitTime,
-  beepTime,
-  eventTime;
+  unsigned long cmdWaitTime;
   bool extendedBufferFlag=false;
+  bool troubleFetch=false;
   int defaultPartition = 1;
   int activePartition = 1;
   byte maxZones = maxZonesDefault;
@@ -308,6 +306,8 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   dscWritePin;
   bool firstrun;
   bool options;
+  unsigned long beepTime,
+  eventTime;
 
   struct partitionType {
     bool locked=false;
@@ -861,34 +861,36 @@ public:
 #if defined(ESPHOME_MQTT) 
 private:
     void on_json_message(const std::string &topic, JsonObject payload) {
-       int p=0;
-       std::string s="";
-       std::string c="";
+    int p=0;
 
       if (topic.find(String(FPSTR(setalarmcommandtopic)).c_str())!=std::string::npos) { 
         if (payload.containsKey("partition"))
           p=payload["partition"];
       
-        if (payload.containsKey("code"))
-            c=std::string(payload["code"]);      
-      
         if (payload.containsKey("state") )  {
-            s=std::string(payload["state"]);  
-            set_alarm_state(s,c,p); 
+            const char *c="";             
+            if (payload.containsKey("code"))
+                c=payload["code"];
+            std::string code=c;
+            std::string s=payload["state"];  
+            set_alarm_state(s,code,p); 
         } else if (payload.containsKey("keys")) {
-            s=std::string(payload["keys"]); 
+            std::string s=payload["keys"]; 
             alarm_keypress_partition(s,p);
-        } else if (payload.containsKey("fault")) {
-            if (!payload.containsKey("zone")) return;
-            s=std::string(payload["fault"]);
+        } else if (payload.containsKey("fault") && payload.containsKey("zone")) {
             bool b=false;
-            if (s=="ON" || s=="on" || s=="1")
+            std::string s1= (const char*) payload["fault"];
+            if (s1=="ON" || s1=="on" || s1=="1")
                 b=true;
-            p = atoi((char * ) std::string(payload["zone"]).c_str());
+            std::string s=payload["zone"];
+            p = atoi(s.c_str());
+           // ESP_LOGD("info","set zone fault %s,%s,%d,%d",s2.c_str(),c,b,p);            
             set_zone_fault(p,b);
+
         }
         
-      }    
+      } 
+      
   }
 #endif
 
@@ -1293,7 +1295,7 @@ void update() override {
    static bool firstrunmqtt=true;
    if (is_connected() && firstrunmqtt)	{
          publish(topic,"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}",0,1);
-        ESP_LOGD("test","published %s,%s",topic.c_str(),"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}");
+       // ESP_LOGD("test","published %s,%s",topic.c_str(),"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}");
          firstrunmqtt=false;
        }
 #endif      
@@ -1425,12 +1427,12 @@ void update() override {
         dsc.troubleChanged = false; // Resets the trouble status flag
         if (dsc.trouble) {
             panelStatusChangeCallback(trStatus, true, 0); // Trouble alarm tripped
-        #if defined(TROUBLEFETCH)
-            if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
+
+            if ( troubleFetch && !dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
                 partitionStatus[defaultPartition-1].keyPressTime = millis();
                 dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
             }          
-        #endif            
+         
         }
         
         else {

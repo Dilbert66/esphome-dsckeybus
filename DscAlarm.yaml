@@ -75,7 +75,7 @@ api:
   #broker: xxx.xxx.xxx.xxx #your mqtt broker address
   #port: 1883  
   #username: mqttuser #your mqtt user name
-  #password: mqttpass #your mqtt user pass
+  #password: !secret mqtt_password #your mqtt user pass
   
 ota:
    password: !secret ota_password
@@ -226,7 +226,7 @@ custom_component:
 #  - interval: 3600s
 #    then:
 #      - lambda: |-
-#          get_dsckeybus(id(dsckeybus))->set_panel_time();    
+#          static_cast< DSCkeybushome*> (id(dsckeybus).get_component(0))->set_panel_time();  
 
 # add or remove any zone you need. Please ensure you also add/remove the corresonponding case statement above
 # change the name to match your own zone configurations
