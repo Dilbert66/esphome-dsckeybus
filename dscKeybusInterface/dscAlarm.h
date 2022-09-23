@@ -13,8 +13,6 @@ using namespace esphome;
 
 #include "dscKeybusInterface.h"
 
-
-
 #ifdef ESP32
 
 #define dscClockPinDefault 22 // esp32: GPIO22
@@ -193,10 +191,8 @@ const char STATUS_TRIGGERED[] PROGMEM = "triggered";
 const char STATUS_READY[] PROGMEM = "ready";
 const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
 
-#if defined(ESPHOME_MQTT) && defined(ESP8266)
+#if defined(ESPHOME_MQTT) 
 class DSCkeybushome: public CustomMQTTDevice, public Component { 
-#elif defined(ESPHOME_MQTT) && defined(ESP32)
-class DSCkeybushome: public CustomMQTTDevice, public RealTimeClock {
 #elif defined(ARDUINO_MQTT)
 class DSCkeybushome { 
 #elif defined(ESP32)
@@ -267,7 +263,7 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
     beepsCallback = callback;
   }
   
-#if defined(ESP32) && !defined(ARDUINO_MQTT)
+#if defined(ESP32) && !defined(ARDUINO_MQTT) && !defined(ESPHOME_MQTT)
   void set_panel_time() {
     ESP_LOGD("info","Setting panel time...");
     ESPTime rtc = now();
@@ -371,7 +367,7 @@ void begin() {
     
     if (debug > 2)
       Serial.begin(115200);
-#if defined(ESP32) && !defined(ARDUINO_MQTT)     
+#if defined(ESP32) && !defined(ESPHOME_MQTT)   && !defined(ARDUINO_MQTT)  
     set_update_interval(16);
 #endif
 
@@ -890,7 +886,6 @@ private:
         }
         
       } 
-      
   }
 #endif
 
@@ -1282,7 +1277,7 @@ private:
 
 #else   
   
-#if defined(ESP32)
+#if defined(ESP32) && !defined(ESPHOME_MQTT)
 void update() override {
 #else     
   void loop() override {
@@ -1295,7 +1290,7 @@ void update() override {
    static bool firstrunmqtt=true;
    if (is_connected() && firstrunmqtt)	{
          publish(topic,"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}",0,1);
-       // ESP_LOGD("test","published %s,%s",topic.c_str(),"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}");
+        //ESP_LOGD("test","published %s,%s",topic.c_str(),"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}");
          firstrunmqtt=false;
        }
 #endif      
