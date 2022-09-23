@@ -37,7 +37,7 @@ Example config:
   expanderAddr1: "10" # 1st zone expander emulator address to use . Set to 0 to disable. 
   expanderAddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
 ```
-A new service is also made available in home assistant called  esphome.<yourdscsystemname>_set_zone_fault with attributes zone and fault: 
+A new service is also made available in home assistant called  esphome.\<yourdscsystemname\>_set_zone_fault with attributes zone and fault: 
 zone is 2 digit zone number and fault is 0 or 1 where 1 sets a zone as open and 0 closes it. By calling this service from a home assistant function, you can enable any event, sensor, etc to trigger any one of your emulated zones in your alarm system.
 
 Relay module support is also added.   This will give your panel the ability to trigger an event on any PGM channel output.  See the yaml file for an example configuration.  An example output for pgm 1 will show in home assistant as <systemname> PGM 1. You can add more fields in the yaml config file.
