@@ -846,11 +846,13 @@ public:
 
   void alarm_keypress_partition(std::string keystring, int partition) {
     if (!partition) partition = defaultPartition;
-    if (dsc.disabled[partition - 1]) return;
-    const char * keys = strcpy(new char[keystring.length() + 1], keystring.c_str());
 #if !defined(ARDUINO_MQTT)         
-    if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d", keystring.c_str(), partition);
-#endif    
+    if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition].locked);
+#endif
+    if (dsc.disabled[partition - 1]) return;
+
+    const char * keys = strcpy(new char[keystring.length() + 1], keystring.c_str());
+    
     partitionStatus[partition - 1].keyPressTime = millis();
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
@@ -906,22 +908,31 @@ public:
     if (code.length() != 4 || !isInt(code, 10)) code = ""; // ensure we get a numeric 4 digit code
     const char * alarmCode = strcpy(new char[code.length() + 1], code.c_str());
     if (!partition) partition = defaultPartition;
+//ESP_LOGD("test","code=%s,alarmCode=%s",code.c_str(),alarmCode);
 
+    ESP_LOGD("debug","Setting Alarm state: %s ",state.c_str());
+    
     if (partitionStatus[partition - 1].locked) return;
+ 
+        
 
     // Arm stay
     if (state.compare("S") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
+         if (debug > 1) ESP_LOGD("debug","Arming stay");        
       dsc.write('s', partition); // Virtual keypad arm stay
     }
     // Arm away
     else if (state.compare("A") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
+                if (debug > 1) ESP_LOGD("debug","Arming away");  
       dsc.write('w', partition); // Virtual keypad arm away
     }
     // Arm night  ** this depends on the accessCode setup in the yaml
     else if (state.compare("N") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
+       if (debug > 1) ESP_LOGD("debug","Arming night");          
       //ensure you have the accessCode setup correctly in the yaml for this to work
       dsc.write('n', partition); // Virtual keypad arm away
       if (code.length() == 4 && !isInt(accessCode, 10)) { // if the code is sent and the yaml code is not active use this.
+
         dsc.write(alarmCode, partition);
       }
     }
@@ -936,6 +947,7 @@ public:
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition-1] || dsc.exitDelay[partition-1])) {
       if (code.length() == 4) { // ensure we get 4 digit code
+                    if (debug > 1) ESP_LOGD("debug","Disarming ... ");  
         dsc.write(alarmCode, partition);
       }
     }
@@ -2309,8 +2321,7 @@ private:
       } else if (dsc.status[partition] == 0xC8) { //service
 
         if ( * currentSelection == 0xFF)
-          *
-          currentSelection = getNextOption(0xFF);
+          * currentSelection = getNextOption(0xFF);
         if ( * currentSelection < 9) {
           lcdLine2 = String(FPSTR(serviceMenu[ * currentSelection]));
 
@@ -2318,8 +2329,7 @@ private:
 
       } else if (dsc.status[partition] == 0xA6) { //user code
         if ( * currentSelection == 0xFF)
-          *
-          currentSelection = getNextUserCode(0xFF);
+          * currentSelection = getNextUserCode(0xFF);
         if ( * currentSelection < 96) {
           char s[16];
           char programmed = ' ';
