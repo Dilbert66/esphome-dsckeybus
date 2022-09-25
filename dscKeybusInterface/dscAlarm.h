@@ -909,26 +909,32 @@ public:
     const char * alarmCode = strcpy(new char[code.length() + 1], code.c_str());
     if (!partition) partition = defaultPartition;
 //ESP_LOGD("test","code=%s,alarmCode=%s",code.c_str(),alarmCode);
-
+#if !defined(ARDUINO_MQTT)  
     ESP_LOGD("debug","Setting Alarm state: %s ",state.c_str());
-    
+#endif
     if (partitionStatus[partition - 1].locked) return;
  
         
 
     // Arm stay
     if (state.compare("S") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
-         if (debug > 1) ESP_LOGD("debug","Arming stay");        
+#if !defined(ARDUINO_MQTT)          
+         if (debug > 1) ESP_LOGD("debug","Arming stay");   
+#endif         
       dsc.write('s', partition); // Virtual keypad arm stay
     }
     // Arm away
     else if (state.compare("A") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
-                if (debug > 1) ESP_LOGD("debug","Arming away");  
+#if !defined(ARDUINO_MQTT)          
+     if (debug > 1) ESP_LOGD("debug","Arming away");  
+#endif     
       dsc.write('w', partition); // Virtual keypad arm away
     }
     // Arm night  ** this depends on the accessCode setup in the yaml
     else if (state.compare("N") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
-       if (debug > 1) ESP_LOGD("debug","Arming night");          
+#if !defined(ARDUINO_MQTT)          
+       if (debug > 1) ESP_LOGD("debug","Arming night");  
+#endif
       //ensure you have the accessCode setup correctly in the yaml for this to work
       dsc.write('n', partition); // Virtual keypad arm away
       if (code.length() == 4 && !isInt(accessCode, 10)) { // if the code is sent and the yaml code is not active use this.
@@ -947,7 +953,9 @@ public:
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition-1] || dsc.exitDelay[partition-1])) {
       if (code.length() == 4) { // ensure we get 4 digit code
-                    if (debug > 1) ESP_LOGD("debug","Disarming ... ");  
+#if !defined(ARDUINO_MQTT)        
+      if (debug > 1) ESP_LOGD("debug","Disarming ... ");  
+#endif      
         dsc.write(alarmCode, partition);
       }
     }
