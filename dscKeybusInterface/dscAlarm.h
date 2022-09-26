@@ -910,7 +910,7 @@ public:
     if (!partition) partition = defaultPartition;
 //ESP_LOGD("test","code=%s,alarmCode=%s",code.c_str(),alarmCode);
 #if !defined(ARDUINO_MQTT)  
-    ESP_LOGD("debug","Setting Alarm state: %s ",state.c_str());
+    ESP_LOGD("debug","Setting Alarm state: %s to partition %d",state.c_str(),partition);
 #endif
     if (partitionStatus[partition - 1].locked) return;
  
