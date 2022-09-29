@@ -859,10 +859,10 @@ IRAM_ATTR
 dscKeybusInterface::processPendingQueue(byte cmd) {
 
   //process queued 05/0b/1b requests
- /* if (inIdx == outIdx || (writeQueue[outIdx].partition > 4 && (cmd == 0x05 || cmd ==
+  if (inIdx == outIdx || (writeQueue[outIdx].partition > 4 && (cmd == 0x05 || cmd ==
  0x0A) ) || (cmd == 0x1B && writeQueue[outIdx].partition < 5)) return;
- */
-   if (inIdx==outIdx) return;
+ 
+  // if (inIdx==outIdx) return;
     updateWriteBuffer((byte * ) writeQueue[outIdx].data,  writeQueue[outIdx].writeBit,writeQueue[outIdx].partition,writeQueue[outIdx].len, writeQueue[outIdx].alarm, writeQueue[outIdx].star); //populate write buffer and set ready to send flag
     outIdx = (outIdx + 1) % writeQueueSize; // advance index to next record
 }
