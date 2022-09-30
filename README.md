@@ -154,8 +154,7 @@ alarm_control_panel:
 
 
 ## Alternative ground isolated version
-
-![dscinterface-isolated](https://user-images.githubusercontent.com/7193213/135284340-49cb1df9-2527-412f-92b6-6aead3db7f7b.png)
+![image](https://user-images.githubusercontent.com/7193213/193299293-5ac6c36c-e589-4857-8854-33118530fee5.png)
 
 
 ## OTA updates
