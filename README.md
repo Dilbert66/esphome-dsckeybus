@@ -317,7 +317,7 @@ Sensor data will follow the HA MQTT discovery format. See here for details: http
 	
 ## Wiring
 ### Isolated version
-![dscinterface-isolated](https://user-images.githubusercontent.com/7193213/132961092-f89af5bd-0ca2-4330-8a35-38195d87f4b8.png)
+![image](https://user-images.githubusercontent.com/7193213/193299136-eb453cc3-6b2b-4224-a018-fefc0edb01b1.png)
 ### Non-isolated simple version	
 ![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
 
