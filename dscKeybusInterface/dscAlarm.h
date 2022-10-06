@@ -13,7 +13,7 @@ using namespace esphome;
 
 #include "dscKeybusInterface.h"
 
-
+//#define CLOCK #uncomment this to use the realtime clock to set panel
 
 #ifdef ESP32
 
@@ -30,10 +30,6 @@ using namespace esphome;
 #endif
 
 #define maxZonesDefault 32 //set to 64 if your system supports it
-
-#if !defined(ARDUINO_MQTT) && !defined(ESPHOME_MQTT)
-#define get_dsckeybus(constructor) static_cast<DSCkeybushome *>(const_cast<custom_component::CustomComponentConstructor *>(&constructor)->get_component(0))
-#endif
 
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
 bool forceDisconnect;
@@ -195,13 +191,13 @@ const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to
 
 #if defined(ESPHOME_MQTT) && defined(ESP8266)
 class DSCkeybushome: public CustomMQTTDevice, public Component { 
-#elif defined(ESPHOME_MQTT) && defined(ESP32)
+#elif defined(ESPHOME_MQTT) && defined(ESP32) && defined(CLOCK)
 class DSCkeybushome: public CustomMQTTDevice, public RealTimeClock {
 #elif defined(ARDUINO_MQTT)
 class DSCkeybushome { 
-#elif defined(ESP32)
+#elif defined(ESP32) && defined(CLOCK)
 class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
-#elif defined(ESP8266)
+#else
 class DSCkeybushome: public CustomAPIDevice, public Component {  
 #endif
   public: DSCkeybushome(byte dscClockPin = 0, byte dscReadPin = 0, byte dscWritePin = 0): dscClockPin(dscClockPin),
@@ -267,7 +263,7 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
     beepsCallback = callback;
   }
   
-#if defined(ESP32) && !defined(ARDUINO_MQTT)
+#if defined(ESP32) && !defined(ARDUINO_MQTT) && defined(CLOCK)
   void set_panel_time() {
     ESP_LOGD("info","Setting panel time...");
     ESPTime rtc = now();
@@ -371,7 +367,7 @@ void begin() {
     
     if (debug > 2)
       Serial.begin(115200);
-#if defined(ESP32) && !defined(ARDUINO_MQTT)     
+#if defined(ESP32) && !defined(ARDUINO_MQTT) && defined(CLOCK)
     set_update_interval(16);
 #endif
 
@@ -390,7 +386,7 @@ void begin() {
     register_service( & DSCkeybushome::alarm_disarm, "alarm_disarm", {
       "code"
     });
-#ifdef ESP32
+#if defined(ESP32) && defined(CLOCK)
     register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {});
 #else
     register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {
@@ -1302,7 +1298,7 @@ private:
 
 #else   
   
-#if defined(ESP32)
+#if defined(ESP32) && defined(CLOCK)
 void update() override {
 #else     
   void loop() override {
