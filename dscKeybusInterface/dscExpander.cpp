@@ -316,7 +316,7 @@ void dscKeybusInterface::setDateTime(unsigned int year,byte month,byte day,byte 
 
   int dataSum = 0;
   cmdD0buffer[0] = dec2bcd(year%100);
-  cmdD0buffer[1] = dec2bcd(month);  
+  cmdD0buffer[1] = month;  
   cmdD0buffer[2] = day;
   cmdD0buffer[3] = dec2bcd(hour);
   cmdD0buffer[4] = dec2bcd(minute);  

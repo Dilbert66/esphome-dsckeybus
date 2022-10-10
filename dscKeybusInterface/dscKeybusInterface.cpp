@@ -500,16 +500,13 @@ ICACHE_RAM_ATTR
 IRAM_ATTR
 #endif
 dscKeybusInterface::redundantPanelData(byte  previousCmd[] , volatile byte  currentCmd[], byte checkedBytes) {
-
-  bool redundantData = true;
   for (byte i = 0; i < checkedBytes; i++) {
     if (previousCmd[i] != currentCmd[i]) {
-      redundantData = false;
       memcpy((void*)previousCmd,(void*)currentCmd,dscReadSize);      
-      break;
+      return false;
     }
   }
-  return redundantData;
+  return true;
 }
 
 bool dscKeybusInterface::validCRC() {
@@ -520,7 +517,7 @@ bool dscKeybusInterface::validCRC() {
   }
   if (dataSum % 256 == panelData[byteCount]) 
       return true;
-  else 
+
       return false;
 }
 
@@ -862,7 +859,6 @@ dscKeybusInterface::processPendingQueue(byte cmd) {
   if (inIdx == outIdx || (writeQueue[outIdx].partition > 4 && (cmd == 0x05 || cmd ==
  0x0A) ) || (cmd == 0x1B && writeQueue[outIdx].partition < 5)) return;
  
-  // if (inIdx==outIdx) return;
     updateWriteBuffer((byte * ) writeQueue[outIdx].data,  writeQueue[outIdx].writeBit,writeQueue[outIdx].partition,writeQueue[outIdx].len, writeQueue[outIdx].alarm, writeQueue[outIdx].star); //populate write buffer and set ready to send flag
     outIdx = (outIdx + 1) % writeQueueSize; // advance index to next record
 }
