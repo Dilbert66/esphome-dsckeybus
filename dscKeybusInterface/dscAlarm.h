@@ -14,7 +14,6 @@ using namespace esphome;
 #include "dscKeybusInterface.h"
 
 
-
 #ifdef ESP32
 
 #define dscClockPinDefault 22 // esp32: GPIO22
@@ -36,28 +35,6 @@ using namespace esphome;
 #endif
 
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
-bool forceDisconnect;
-
-void disconnectKeybus() {
-  dsc.stop();
-  dsc.keybusConnected = false;
-  dsc.statusChanged = false;
-  forceDisconnect = true;
-
-}
-enum panelStatus {
-  acStatus,
-  batStatus,
-  trStatus,
-  fireStatus,
-  panicStatus,
-  rdyStatus,
-  armStatus
-};
-
-#if defined(ESPHOME_MQTT)
-const char setalarmcommandtopic[] PROGMEM = "/alarm/set"; 
-#endif
 
 const char mm0[] PROGMEM = "Press # to exit";
 const char mm1[] PROGMEM = "Zone Bypass";
@@ -112,6 +89,21 @@ const char am5[] PROGMEM = "Open Zones:Scroll to view <>";
 
 const char ml0[] PROGMEM = "System is Ready:Ready to Arm <>";
 const char ml1[] PROGMEM = "Secure System:Before Arming <>";
+
+const char STATUS_PENDING[] PROGMEM = "pending";
+const char STATUS_ARM[] PROGMEM = "armed_away";
+const char STATUS_STAY[] PROGMEM = "armed_home";
+const char STATUS_NIGHT[] PROGMEM = "armed_night";
+const char STATUS_OFF[] PROGMEM = "disarmed";
+const char STATUS_ONLINE[] PROGMEM = "online";
+const char STATUS_OFFLINE[] PROGMEM = "offline";
+const char STATUS_TRIGGERED[] PROGMEM = "triggered";
+const char STATUS_READY[] PROGMEM = "ready";
+const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
+
+#if defined(ESPHOME_MQTT)
+const char setalarmcommandtopic[] PROGMEM = "/alarm/set"; 
+#endif
 
 const char *
   const mainMenu[] PROGMEM = {
@@ -182,16 +174,25 @@ const char *
     ml1
   };
 
-const char STATUS_PENDING[] PROGMEM = "pending";
-const char STATUS_ARM[] PROGMEM = "armed_away";
-const char STATUS_STAY[] PROGMEM = "armed_home";
-const char STATUS_NIGHT[] PROGMEM = "armed_night";
-const char STATUS_OFF[] PROGMEM = "disarmed";
-const char STATUS_ONLINE[] PROGMEM = "online";
-const char STATUS_OFFLINE[] PROGMEM = "offline";
-const char STATUS_TRIGGERED[] PROGMEM = "triggered";
-const char STATUS_READY[] PROGMEM = "ready";
-const char STATUS_NOT_READY[] PROGMEM = "unavailable"; //ha alarm panel likes to see "unavailable" instead of not_ready when the system can't be armed
+bool forceDisconnect;
+
+void disconnectKeybus() {
+  dsc.stop();
+  dsc.keybusConnected = false;
+  dsc.statusChanged = false;
+  forceDisconnect = true;
+
+}
+enum panelStatus {
+  acStatus,
+  batStatus,
+  trStatus,
+  fireStatus,
+  panicStatus,
+  rdyStatus,
+  armStatus
+};
+
 
 #if defined(ESPHOME_MQTT) && defined(ESP8266)
 class DSCkeybushome: public CustomMQTTDevice, public Component { 

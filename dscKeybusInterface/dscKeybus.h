@@ -18,7 +18,7 @@
  */
 
 #define EXPANDER  //enable zone virtual zone expander functionality
-#define DEBOUNCE //filters out bad cmd05/1B's by ensuring we get 2 the same in a row to accept as valid
+//#define DEBOUNCE //filters out bad cmd05/1B's by ensuring we get 2 the same in a row to accept as valid
 
 //#define SERIALDEBUGCOMMANDS  //enable to use verbose debug cmd decoding  to serial port
 #ifndef dscKeybus_h
@@ -369,7 +369,7 @@ class dscKeybusInterface {
     static bool redundantPanelData(byte   previousCmd[], volatile byte   currentCmd[], byte checkedBytes = dscReadSize);
 
     #if defined(ESP32)
-    #if ESP_IDF_VERSION_MAJOR < 4
+    #if ESP_IDF_VERSION_MAJOR < 9
     static hw_timer_t * timer1;
     #endif
     static portMUX_TYPE timer1Mux;
