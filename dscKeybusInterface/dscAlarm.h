@@ -289,6 +289,7 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   expanderAddr3;
   byte debug;
   const char * accessCode;
+  const char * userCodes;
   unsigned long cmdWaitTime;
   bool extendedBufferFlag=false;
   bool troubleFetch=false;
@@ -296,9 +297,6 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   int activePartition = 1;
   byte maxZones = maxZonesDefault;
 
-#if defined(ARDUINO_MQTT)
-  const char * userCodes;
-#endif
   private: 
 
   uint8_t zone;
@@ -463,13 +461,9 @@ void begin() {
  private:  
 std::string getUserName(char * code) {
   std::string name = code;
-#if defined(ARDUINO_MQTT)
-  if (userCodes != "") {
+  
+  if (userCodes  && *userCodes) {
     std::string s=userCodes;
-#else    
-  if (userCodes -> value() != "") {
-    std::string s = userCodes -> value();
-#endif    
     std::string token1, token2, token3;
     size_t pos, pos1;
     char buf[4];

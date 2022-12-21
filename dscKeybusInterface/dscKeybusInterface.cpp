@@ -23,13 +23,13 @@
 #if defined(ESP32)
 portMUX_TYPE dscKeybusInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
 
-#if ESP_IDF_VERSION_MAJOR < 9
+#if ESP_IDF_VERSION_MAJOR < 444
 hw_timer_t * dscKeybusInterface::timer1 = NULL;
 
 #else // ESP-IDF 4+
 esp_timer_handle_t timer0;
 const esp_timer_create_args_t timer0Parameters = {
-  .callback = reinterpret_cast < esp_timer_cb_t > ( & dscKeybusInterface::dscDataInterrupt)
+  .callback =  & dscKeybusInterface::dscDataInterrupt
 };
 
 #endif // ESP_IDF_VERSION_MAJOR
@@ -92,7 +92,7 @@ void dscKeybusInterface::begin(Stream & _stream,byte setClockPin, byte setReadPi
 
   // esp32 timer1 calls dscDataInterrupt() from dscClockInterrupt()
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 9
+  #if ESP_IDF_VERSION_MAJOR < 444
   timer1 = timerBegin(1, 80, true);
   timerStop(timer1);
   timerAttachInterrupt(timer1, & dscDataInterrupt, true);
@@ -129,7 +129,7 @@ void dscKeybusInterface::stop() {
 
   // Disables esp32 timer0
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 9
+  #if ESP_IDF_VERSION_MAJOR < 444
   timerAlarmDisable(timer1);
   timerEnd(timer1);
   #else // ESP-IDF 4+
@@ -546,10 +546,10 @@ dscKeybusInterface::dscClockInterrupt() {
 
   // esp32 timer1 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 9
+  #if ESP_IDF_VERSION_MAJOR < 444
   timerStart(timer1);
   #else // IDF4+
-  esp_timer_start_periodic(timer0, 250);
+  esp_timer_start_once(timer0, 250);
   #endif
   portENTER_CRITICAL( & timer1Mux);
   #endif
@@ -679,12 +679,16 @@ ICACHE_RAM_ATTR
 #elif defined(ESP32)
 IRAM_ATTR
 #endif
+  #if ESP_IDF_VERSION_MAJOR < 444
 dscKeybusInterface::dscDataInterrupt() {
+    #else
+  dscKeybusInterface::dscDataInterrupt( void* arg) {      
+    #endif
   #if defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 9
+  #if ESP_IDF_VERSION_MAJOR < 444
   timerStop(timer1);
   #else // IDF 4+
-  esp_timer_stop(timer0);
+  //esp_timer_stop(timer0);
   #endif
   portENTER_CRITICAL( & timer1Mux);
   #endif

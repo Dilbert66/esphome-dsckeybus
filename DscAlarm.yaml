@@ -1,16 +1,11 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
-
-#you can enter a list of user codes mapped to their names for display in armed/disarmed event messages
-globals: 
-  - id: userCodes
-    type: std::string
-    restore_value: no
-    initial_value: '"1:John,2:Sally,3:Bob"' 
-    
 substitutions:
   # change the name to suit your needs. This is what esphome will use as the friendly name for your component.
   # also used as a prefix for all fields
   systemName: "dscalarm" 
+  
+  #you can enter a list of user codes mapped to their names for display in armed/disarmed event messages
+  userCodes: "1:John,2:Sally,3:Bob" 
   
   #Only comes into effect if a password prompt occurs when arming eg. night mode
   accessCode: !secret access_code 
@@ -99,6 +94,7 @@ custom_component:
    lambda: |-
     auto DSCkeybus = new DSCkeybushome($dscClockPin,$dscReadPin,$dscWritePin);
     DSCkeybus->accessCode="$accessCode";
+    DSCkeybus->userCodes="$userCodes";
     DSCkeybus->maxZones=$maxZones;
     DSCkeybus->defaultPartition=$defaultPartition;
     DSCkeybus->debug=2; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
