@@ -244,22 +244,22 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
   uint8_t chk2 = 0xff;
 
   if (channel < 4) { //set / reset bits according to fault value (open=11,closed=01)
-    channel = channel * 2;
-    modules[idx].fields[0] = fault ? modules[idx].fields[0] | (zoneOpen << channel) : modules[idx].fields[0] & ~(zoneClosed << channel);
+     byte c = channel * 2;
+    modules[idx].fields[0] = fault ? modules[idx].fields[0] | (zoneOpen << c) : modules[idx].fields[0] & ~(zoneClosed << c);
     chk1 = ((modules[idx].fields[0] >> 4) + (modules[idx].fields[0] & 0x0f) + (modules[idx].fields[1] >> 4) + (modules[idx].fields[1] & 0x0f)) % 0x10;
   } else {
-    channel = (channel - 4) * 2;
-    modules[idx].fields[2] = fault ? modules[idx].fields[2] | (zoneOpen << (channel)) : modules[idx].fields[2] & ~(zoneClosed << (channel));
+    byte c = (channel - 4) * 2;
+    modules[idx].fields[2] = fault ? modules[idx].fields[2] | (zoneOpen << (c)) : modules[idx].fields[2] & ~(zoneClosed << (c));
     chk2 = ((modules[idx].fields[2] >> 4) + (modules[idx].fields[2] & 0x0f) + (modules[idx].fields[3] >> 4) + (modules[idx].fields[3] & 0x0f)) % 0x10;
   }
-
+ 
   memset(modules[idx].faultBuffer, 0xFF, 5);
-
+  //stream->printf("f1=%02X,f2=%02X,f3=%02X,f4=%02X,c1=%02X,c2=%02X\n",modules[idx].fields[0],modules[idx].fields[1],modules[idx].fields[2],modules[idx].fields[3],chk1,chk2);
   if ( channel < 4) { //update fault buffer low channels
     modules[idx].faultBuffer[0] = modules[idx].fields[0]; //populate faultbuffer with response data for low channel
     modules[idx].faultBuffer[1] = modules[idx].fields[1];
     modules[idx].faultBuffer[4] = (chk1 << 4) | 0x0F;
-    if (modules[idx].fields[0] != modules[idx].fields[1])
+   if (modules[idx].fields[0] != modules[idx].fields[1])
         modules[idx].fields[1] = modules[idx].fields[0]; //copy current channel values to previous
     else
         modules[idx].fields[1]=0;
@@ -272,8 +272,26 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
     else
         modules[idx].fields[3]=0;
   }
-
+/*
+  if (modules[idx].fields[0] != modules[idx].fields[1]) { //see if our current low channels changed from previous. 
+    modules[idx].faultBuffer[0] = modules[idx].fields[0]; //populate faultbuffer with response data for low channel
+    modules[idx].faultBuffer[1] = modules[idx].fields[1];
+    modules[idx].faultBuffer[4] = (chk1 << 4) | 0x0F;
+    modules[idx].fields[1] = modules[idx].fields[0]; //copy current channel values to previous
+    change = true;
+  }
+  if (modules[idx].fields[2] != modules[idx].fields[3]) { //check high channels
+    modules[idx].faultBuffer[2] = modules[idx].fields[2];
+    modules[idx].faultBuffer[3] = modules[idx].fields[3];
+    modules[idx].faultBuffer[4] = (modules[idx].faultBuffer[4] & 0xf0) | chk2;
+    modules[idx].fields[3] = modules[idx].fields[2]; //copy current channel values to previous
+    change = true;
+  }
+  */
+  //if (!change) return;
   byte zoneupdate[maxFields05];
+  //stream->printf("buffer: address=%d, f1=%02X,f2=%02X,f3=%02X,f4=%02X,c1=%02X\n",address,modules[idx].faultBuffer[0],modules[idx].faultBuffer[1],modules[idx].faultBuffer[2],modules[idx].faultBuffer[3],modules[idx].faultBuffer[4]); 
+  
   memset(zoneupdate, 0xFF, maxFields05); //set update slots to 1's. Only zero bits indicate a request
   if (modules[idx].zoneStatusByte) {
     zoneupdate[modules[idx].zoneStatusByte] &= modules[idx].zoneStatusMask; //set update slot
@@ -293,7 +311,7 @@ dscKeybusInterface::prepareModuleResponse(byte address, int bit) {
 
   for (int idx = 0; idx < moduleIdx; idx++) { //get the buffer data from the module record that matches the address we need
     if (modules[idx].address == address) {
-      updateWriteBuffer((byte * ) modules[idx].faultBuffer, bit, 1,  5,false);
+      updateWriteBuffer((byte * ) &modules[idx].faultBuffer, bit, 1,  5,false);
       break;
     }
   }
