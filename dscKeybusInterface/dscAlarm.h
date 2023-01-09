@@ -1,7 +1,7 @@
 //for project documenation visit https://github.com/Dilbert66/esphome-dsckeybus
 
-#ifndef dscalarm_h
-#define dscalarm_h
+#ifndef _dscalarm_h
+#define _dscalarm_h
 
 #if !defined(ARDUINO_MQTT)
 #include "esphome.h"
@@ -226,7 +226,7 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   void onSystemStatusChange(std:: function < void(std::string  status) > callback) {
     systemStatusChangeCallback = callback;
   }
-  void onFireStatusChange(std:: function < void(bool isOpen, int partition) > callback) {
+  void onFireStatusChange(std:: function < void(bool isOpen,int partition) > callback) {
     fireStatusChangeCallback = callback;
   }
   void onPanelStatusChange(std:: function < void(panelStatus ts, bool isOpen, int partition) > callback) {
@@ -1542,8 +1542,8 @@ void update() override {
         // Publishes fire alarm status
         if (dsc.fireChanged[partition] ) {
           dsc.fireChanged[partition] = false; // Resets the fire status flag
-          if (dsc.fire[partition]) fireStatusChangeCallback(partition + 1, true); // Fire alarm tripped
-          else fireStatusChangeCallback(partition + 1, false); // Fire alarm restored
+          if (dsc.fire[partition]) fireStatusChangeCallback(true, partition + 1); // Fire alarm tripped
+          else fireStatusChangeCallback(false,partition + 1); // Fire alarm restored
         }
 
       }
