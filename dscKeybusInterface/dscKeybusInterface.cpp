@@ -218,9 +218,7 @@ bool dscKeybusInterface::loop() {
       if (panelByteCount == 6) keybusVersion1 = true;
       startupCycle = false;
 #if defined(EXPANDER) 
-      //start expander
       updateModules();
-      //end expander
 #endif      
 
     } else if (!validCRC()) return false;
@@ -302,7 +300,6 @@ bool dscKeybusInterface::handleModule() {
   // Determines if a keybus message is a response to a panel command
   switch (moduleCmd) {
   case 0x11:
-  case 0x28:
   case 0xD5:
     queryResponse = true;
     break;
@@ -340,7 +337,6 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
 
   bool validKey = true;
   bool isAlarm = false;
-  bool isStar = false;
   // Skips writing to disabled partitions or partitions not specified in dscKeybusInterface.h
   if (disabled[partition - 1] || dscPartitions < partition) {
     switch (receivedKey) {
@@ -391,11 +387,6 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       break;
     case '*':
       writeKey = 0x28;
-      /*
-      if (status[partition - 1] < 0x9E)  {
-          isStar = true;
-           // starWaitTime=millis();            
-      }*/
       break;
     case '#':
       writeKey = 0x2D;
@@ -485,9 +476,9 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
 
    if (validKey) {
     if (isAlarm)
-      writeCharsToQueue((byte * ) & writeKey, 0,1, isAlarm, false);
+      writeCharsToQueue((byte * ) & writeKey, 0,1, true);
     else
-      writeCharsToQueue((byte * ) & writeKey, partition, 1, false, isStar);
+      writeCharsToQueue((byte * ) & writeKey, partition, 1, false);
 
   }
 
@@ -688,7 +679,7 @@ dscKeybusInterface::dscDataInterrupt() {
   #if ESP_IDF_VERSION_MAJOR < 444
   timerStop(timer1);
   #else // IDF 4+
-  //esp_timer_stop(timer0);
+  esp_timer_stop(timer0);
   #endif
   portENTER_CRITICAL( & timer1Mux);
   #endif
@@ -771,7 +762,7 @@ ICACHE_RAM_ATTR
 #elif defined(ESP32)
 IRAM_ATTR
 #endif
-dscKeybusInterface::writeCharsToQueue(byte * keys,byte partition, byte len, bool alarm, bool star) {
+dscKeybusInterface::writeCharsToQueue(byte * keys,byte partition, byte len, bool alarm) {
   writeQueueType req;
   req.len = len;
   memcpy(req.data,keys,len);
@@ -783,20 +774,18 @@ dscKeybusInterface::writeCharsToQueue(byte * keys,byte partition, byte len, bool
  
 }
 
-
 void
 #if defined(ESP8266)
 ICACHE_RAM_ATTR
 #elif defined(ESP32)
 IRAM_ATTR
 #endif
-dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int bit,byte partition,int len,  bool alarm, bool star) {
+dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int bit,byte partition,int len,  bool alarm) {
 
   writeBufferLength = len;
   writeDataBit = bit;
   writeBufferIdx = 0;
   writeAlarm = alarm;
- // starKeyCheck = false;
   writePartition=partition;
   writeBuffer=src;
   writeDataPending = true; //set flag to send it  
@@ -863,7 +852,7 @@ dscKeybusInterface::processPendingQueue(byte cmd) {
   if (inIdx == outIdx || (writeQueue[outIdx].partition > 4 && (cmd == 0x05 || cmd ==
  0x0A) ) || (cmd == 0x1B && writeQueue[outIdx].partition < 5)) return;
  
-    updateWriteBuffer((byte * ) writeQueue[outIdx].data,  writeQueue[outIdx].writeBit,writeQueue[outIdx].partition,writeQueue[outIdx].len, writeQueue[outIdx].alarm, writeQueue[outIdx].star); //populate write buffer and set ready to send flag
+    updateWriteBuffer((byte * ) writeQueue[outIdx].data,  writeQueue[outIdx].writeBit,writeQueue[outIdx].partition,writeQueue[outIdx].len, writeQueue[outIdx].alarm); //populate write buffer and set ready to send flag
     outIdx = (outIdx + 1) % writeQueueSize; // advance index to next record
 }
 

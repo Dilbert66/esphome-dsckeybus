@@ -91,7 +91,6 @@ struct writeQueueType {
     char data[6];
     byte len;
     bool alarm;
-    bool star;
     byte writeBit;
     int partition;
 };
@@ -407,8 +406,6 @@ class dscKeybusInterface {
     static char writeKey;
     static byte panelBitCount, panelByteCount;
     static volatile bool writeAlarm;
-   // static volatile bool starKeyCheck;
-//    starKeyWait[dscPartitions];
     static volatile bool moduleDataDetected, moduleDataCaptured;
     static volatile unsigned long keybusTime;
     static volatile byte panelBufferLength;
@@ -447,14 +444,13 @@ class dscKeybusInterface {
     static void processPendingResponses(byte cmd);
     static void processPendingResponses_0xE6(byte cmd);  
     static void processPendingQueue(byte cmd);    
-    static void updateWriteBuffer(byte* src, int bit=9, byte partition=-1,int len=1, bool alarm=false,bool star=false);     
+    static void updateWriteBuffer(byte* src, int bit=9, byte partition=-1,int len=1, bool alarm=false);     
     static byte writeDataBit;
     volatile static byte writeBufferLength,writeBufferIdx;
     volatile static bool writeDataPending;
     static writeQueueType writeQueue[writeQueueSize];
-    static void writeCharsToQueue(byte* keys,byte partition=1,byte len=1,bool alarm=false,bool star=false);
+    static void writeCharsToQueue(byte* keys,byte partition=1,byte len=1,bool alarm=false);
     byte getWriteBitFromPartition(byte partition);
-   // unsigned long starWaitTime;
     //end new command handling    
  
 };

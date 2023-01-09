@@ -244,7 +244,7 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
   uint8_t chk2 = 0xff;
 
   if (channel < 4) { //set / reset bits according to fault value (open=11,closed=01)
-     byte c = channel * 2;
+    byte c = channel * 2;
     modules[idx].fields[0] = fault ? modules[idx].fields[0] | (zoneOpen << c) : modules[idx].fields[0] & ~(zoneClosed << c);
     chk1 = ((modules[idx].fields[0] >> 4) + (modules[idx].fields[0] & 0x0f) + (modules[idx].fields[1] >> 4) + (modules[idx].fields[1] & 0x0f)) % 0x10;
   } else {
@@ -254,7 +254,7 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
   }
  
   memset(modules[idx].faultBuffer, 0xFF, 5);
-  //stream->printf("f1=%02X,f2=%02X,f3=%02X,f4=%02X,c1=%02X,c2=%02X\n",modules[idx].fields[0],modules[idx].fields[1],modules[idx].fields[2],modules[idx].fields[3],chk1,chk2);
+  
   if ( channel < 4) { //update fault buffer low channels
     modules[idx].faultBuffer[0] = modules[idx].fields[0]; //populate faultbuffer with response data for low channel
     modules[idx].faultBuffer[1] = modules[idx].fields[1];
@@ -272,26 +272,8 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
     else
         modules[idx].fields[3]=0;
   }
-/*
-  if (modules[idx].fields[0] != modules[idx].fields[1]) { //see if our current low channels changed from previous. 
-    modules[idx].faultBuffer[0] = modules[idx].fields[0]; //populate faultbuffer with response data for low channel
-    modules[idx].faultBuffer[1] = modules[idx].fields[1];
-    modules[idx].faultBuffer[4] = (chk1 << 4) | 0x0F;
-    modules[idx].fields[1] = modules[idx].fields[0]; //copy current channel values to previous
-    change = true;
-  }
-  if (modules[idx].fields[2] != modules[idx].fields[3]) { //check high channels
-    modules[idx].faultBuffer[2] = modules[idx].fields[2];
-    modules[idx].faultBuffer[3] = modules[idx].fields[3];
-    modules[idx].faultBuffer[4] = (modules[idx].faultBuffer[4] & 0xf0) | chk2;
-    modules[idx].fields[3] = modules[idx].fields[2]; //copy current channel values to previous
-    change = true;
-  }
-  */
-  //if (!change) return;
+
   byte zoneupdate[maxFields05];
-  //stream->printf("buffer: address=%d, f1=%02X,f2=%02X,f3=%02X,f4=%02X,c1=%02X\n",address,modules[idx].faultBuffer[0],modules[idx].faultBuffer[1],modules[idx].faultBuffer[2],modules[idx].faultBuffer[3],modules[idx].faultBuffer[4]); 
-  
   memset(zoneupdate, 0xFF, maxFields05); //set update slots to 1's. Only zero bits indicate a request
   if (modules[idx].zoneStatusByte) {
     zoneupdate[modules[idx].zoneStatusByte] &= modules[idx].zoneStatusMask; //set update slot

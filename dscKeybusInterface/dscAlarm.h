@@ -30,10 +30,6 @@ using namespace esphome;
 
 #define maxZonesDefault 32 //set to 64 if your system supports it
 
-#if !defined(ARDUINO_MQTT) && !defined(ESPHOME_MQTT)
-#define get_dsckeybus(constructor) static_cast<DSCkeybushome *>(const_cast<custom_component::CustomComponentConstructor *>(&constructor)->get_component(0))
-#endif
-
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
 
 const char mm0[] PROGMEM = "Press # to exit";
@@ -213,7 +209,7 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   std:: function < void(std::string ) > systemStatusChangeCallback;
   std:: function < void(panelStatus, bool, int) > panelStatusChangeCallback;
   std:: function < void(bool, int) > fireStatusChangeCallback;
-  std::function<void (std::string,int)> partitionStatusChangeCallback;   
+  std::function  <void (std::string,int)> partitionStatusChangeCallback;   
   std:: function < void(std::string, int) > partitionMsgChangeCallback;
   std:: function < void(std::string) > zoneMsgStatusCallback;
   std:: function < void(std::string) > troubleMsgStatusCallback;
@@ -279,6 +275,8 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   void set_panel_time(int year,int month,int day,int hour,int minute) {
       #if !defined(ARDUINO_MQTT)
     ESP_LOGD("info","Setting panel time..."); 
+    #else
+          Serial.printf("Setting panel time...\n");   
     #endif
     dsc.setDateTime(year, month, day, hour, minute);
   }  
@@ -843,6 +841,8 @@ public:
     if (!partition) partition = defaultPartition;
 #if !defined(ARDUINO_MQTT)         
     if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition].locked);
+    #else
+          if (debug > 0) Serial.printf("Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d\n", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition].locked);  
 #endif
     if (dsc.disabled[partition - 1]) return;
 
@@ -968,7 +968,11 @@ private:
       x+=3;
     }
     s[x]=0;
+    #if !defined(ARDUINO_MQTT)
     ESP_LOGI(label, "%02X: %s", cmd, s);
+    #else
+    Serial.printf("%02X: %s\n", cmd, s); 
+    #endif
   }
 
   byte getPanelBitNumber(byte panelByte, byte startNumber) {
@@ -1356,7 +1360,7 @@ void update() override {
           beepsCallback("0", partition);
         }
 #if defined(EXPANDER)          
-        dsc.clearZoneRanges(); // start with clear expanded zones
+       // dsc.clearZoneRanges(); // start with clear expanded zones
 #endif
       }
 
@@ -1397,6 +1401,8 @@ void update() override {
       }
 #if !defined(ARDUINO_MQTT)     
       if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
+      #else
+                if (dsc.bufferOverflow) Serial.printf( "Keybus buffer overflow\n");
 #endif      
       dsc.bufferOverflow = false;
 
@@ -1769,8 +1775,12 @@ private:
     partitionStatus[partition].digits = 0;
     partitionStatus[partition].hex = false;
     partitionStatus[partition].decimalInput = false;
-#if !defined(ARDUINO_MQTT)     
+#if !defined(ARDUINO_MQTT) 
+    if (debug > 1)     
     ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip);
+   #else
+         if (debug > 1)     
+    Serial.printf("status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d\n", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip);  
 #endif    
     switch (dsc.status[partition]) {
     case 0x01:
@@ -3977,5 +3987,7 @@ if (showEvent)
   }  
 
 };
-
+#if !defined(ARDUINO_MQTT)
+DSCkeybushome * DSCkeybus;
+#endif
 #endif
