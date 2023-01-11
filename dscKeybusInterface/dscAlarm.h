@@ -490,9 +490,14 @@ public:
   }
 
   void set_zone_fault(int zone, bool fault) {
-#if defined(EXPANDER)  && !defined(ARDUINO_MQTT)     
+#if defined(EXPANDER) 
+ #if !defined(ARDUINO_MQTT)     
     ESP_LOGD("Debug", "Setting Zone Fault: %d,%d", zone, fault);
+ #else
+      Serial.printf("Setting Zone Fault: %d,%d\n", zone, fault);
+ #endif
     dsc.setZoneFault(zone, fault);
+    
 #endif
   }
 
@@ -969,9 +974,11 @@ private:
     }
     s[x]=0;
     #if !defined(ARDUINO_MQTT)
-    ESP_LOGI(label, "%02X: %s", cmd, s);
+    if (debug > 0)
+        ESP_LOGI(label, "%02X: %s", cmd, s);
     #else
-    Serial.printf("%02X: %s\n", cmd, s); 
+    if (debug > 0)
+        Serial.printf("%02X: %s\n", cmd, s); 
     #endif
   }
 
@@ -1407,14 +1414,14 @@ void update() override {
       dsc.bufferOverflow = false;
 
       // Checks if the interface is connected to the Keybus
-      if (dsc.keybusChanged ) {
+      if (dsc.keybusChanged || forceRefresh ) {
         dsc.keybusChanged = false; // Resets the Keybus data status flag
         if (dsc.keybusConnected) {
           systemStatusChangeCallback( String(FPSTR(STATUS_ONLINE)).c_str());
         } else systemStatusChangeCallback( String(FPSTR(STATUS_OFFLINE)).c_str());
       }
 
-      if (dsc.powerChanged ) {
+      if (dsc.powerChanged || forceRefresh ) {
         dsc.powerChanged = false;
         if (dsc.powerTrouble) {
           panelStatusChangeCallback(acStatus, false, 0); //no ac
@@ -1424,7 +1431,7 @@ void update() override {
 
       }
 
-      if (dsc.batteryChanged ) {
+      if (dsc.batteryChanged || forceRefresh ) {
         dsc.batteryChanged = false;
         if (dsc.batteryTrouble) {
           panelStatusChangeCallback(batStatus, true, 0);
@@ -1433,18 +1440,18 @@ void update() override {
         }
       }
 
-      if (dsc.keypadFireAlarm) {
+      if (dsc.keypadFireAlarm ) {
         dsc.keypadFireAlarm = false;
-        partitionMsgChangeCallback("Keypad Fire Alarm",defaultPartition);
+        //partitionMsgChangeCallback("Keypad Fire Alarm",defaultPartition);
       }
 
-      if (dsc.keypadPanicAlarm) {
+      if (dsc.keypadPanicAlarm ) {
         dsc.keypadPanicAlarm = false;
-        partitionMsgChangeCallback("Keypad Panic Alarm",defaultPartition);
+        //partitionMsgChangeCallback("Keypad Panic Alarm",defaultPartition);
       }
 
       // Publishes trouble status
-      if (dsc.troubleChanged ) {
+      if (dsc.troubleChanged || forceRefresh ) {
         dsc.troubleChanged = false; // Resets the trouble status flag
         if (dsc.trouble) {
             panelStatusChangeCallback(trStatus, true, 0); // Trouble alarm tripped
@@ -1481,7 +1488,7 @@ void update() override {
         
 
         // Publishes alarm status
-        if (dsc.alarmChanged[partition] ) {
+        if (dsc.alarmChanged[partition] || forceRefresh) {
           dsc.alarmChanged[partition] = false; // Resets the partition alarm status flag
           if (dsc.alarm[partition]) {
             dsc.readyChanged[partition] = false; //if we are triggered no need to trigger a ready state change
@@ -1540,7 +1547,7 @@ void update() override {
         }
 
         // Publishes fire alarm status
-        if (dsc.fireChanged[partition] ) {
+        if (dsc.fireChanged[partition] || forceRefresh) {
           dsc.fireChanged[partition] = false; // Resets the fire status flag
           if (dsc.fire[partition]) fireStatusChangeCallback(true, partition + 1); // Fire alarm tripped
           else fireStatusChangeCallback(false,partition + 1); // Fire alarm restored
@@ -1556,11 +1563,11 @@ void update() override {
       //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
       
    
-      if (dsc.openZonesStatusChanged) {
+      if (dsc.openZonesStatusChanged || forceRefresh) {
         char s1[4];
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
           for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-            if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) { // Checks an individual open zone status flag
+            if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit) || forceRefresh) { // Checks an individual open zone status flag
               bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0); // Resets the individual open zone status flag
               zone = zoneBit + (zoneGroup * 8);
               if (zone >= maxZones) continue;
@@ -1582,7 +1589,7 @@ void update() override {
       //   ...
       //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64	
 
-      if (dsc.alarmZonesStatusChanged ) {
+      if (dsc.alarmZonesStatusChanged || forceRefresh) {
         dsc.alarmZonesStatusChanged = false; // Resets the alarm zones status flag
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
           for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
@@ -1609,9 +1616,7 @@ void update() override {
 
         //if (!zoneStatus[x].enabled) continue;   
         
-        if (forceRefresh ) 
-            zoneStatusChangeCallback(x+1,zoneStatus[x].open);
-            
+          
         if (zoneStatus[x].open) {
           sprintf(s1, PSTR("OP:%d"), x + 1);
           if (zoneStatusMsg != "") zoneStatusMsg.append(",");
@@ -1652,7 +1657,7 @@ void update() override {
        std::string system0Msg="";
        std::string system1Msg="";  
        
-     if (system0Changed || system1Changed) {
+     if (system0Changed || system1Changed || forceRefresh) {
            
        if (system1Changed) 
            previousSystem1=system1;   

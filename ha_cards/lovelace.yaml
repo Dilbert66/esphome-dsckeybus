@@ -113,8 +113,8 @@ view_bottom: true
 type: custom:alarm-keypad-card
 title: DSCALARM_MQTT
 unique_id: dsc2
-disp_line1: sensor.dscalalarmmqtt_line1
-disp_line2: sensor.dscalalarmmqtt_line2
+disp_line1: sensor.displayline1
+disp_line2: sensor.displayline2
 scale: 1
 service_type: mqtt
 service: publish
@@ -126,10 +126,10 @@ status_E: ''
 status_F: ''
 status_G: ''
 status_H: ''
-sensor_A: binary_sensor.dscalalarmmqtt_partition_1_ready
-sensor_B: binary_sensor.dscalalarmmqtt_partition_1_armed
-sensor_C: binary_sensor.dscalalarmmqtt_trouble_status
-sensor_D: binary_sensor.dscalalarmmqtt_ac_status
+sensor_A: sensor.dscready
+sensor_B: sensor.dscarmed
+sensor_C: sensor.dsctrouble
+sensor_D: sensor.dscac
 button_A: STAY
 button_B: AWAY
 button_C: DISARM
@@ -139,64 +139,63 @@ button_G: '>'
 button_E: ''
 button_H: ''
 cmd_A:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"/S","partition":"1"}'
 cmd_B:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"/W","partition":"1"}'
 cmd_C:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"1234","partition":"1"}'
 cmd_D:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"/1N","partition":"1"}'
 cmd_E:
   keys: null
 cmd_H:
   keys: null
 cmd_F:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"<","partition":"1"}'
 cmd_G:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":">","partition":"1"}'
 key_0:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"0","partition":"1"}'
 key_1:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"1","partition":"1"}'
 key_2:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"2","partition":"1"}'
 key_3:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"3","partition":"1"}'
 key_4:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"4","partition":"1"}'
 key_5:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"5","partition":"1"}'
 key_6:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"6","partition":"1"}'
 key_7:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"7","partition":"1"}'
 key_8:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"8","partition":"1"}'
 key_9:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"9","partition":"1"}'
 key_star:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"*","partition":"1"}'
 key_pound:
-  topic: dscalalarmmqtt/alarm/set
+  topic: DSC/Set
   payload: '{"keys":"#","partition":"1"}'
-beep: sensor.dscalalarmmqtt_beeps
 view_pad: true
 view_display: true
 view_status: true
