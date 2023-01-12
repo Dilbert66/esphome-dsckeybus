@@ -62,7 +62,7 @@ const char * mqttServer = "<yourmqttserveraddress>"; // MQTT server domain name 
 const char * mqttUsername = "<mqttuser>"; // Optional, leave blank if not required
 const char * mqttPassword = "<mqttpass>"; // Optional, leave blank if not required
 
-const int dscClockPin=2;
+const int dscClockPin=22;
 const int dscReadPin=21;
 const int dscWritePin=18;
 
