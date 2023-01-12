@@ -2528,42 +2528,12 @@ private:
   }
 
 
-<<<<<<< HEAD
-void disconnectKeybus() {
-  dsc.stop();
-  dsc.keybusConnected = false;
-  dsc.statusChanged = false;
-  forceDisconnect = true;
- 
-}
-enum troubleStatus {acStatus,batStatus,trStatus,fireStatus,panicStatus};
-
-namespace esphome {
-class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
- public:
-   DSCkeybushome( const char *accessCode="",  unsigned long cmdWaitTime=0)
-   : accessCode(accessCode)
-   , cmdWaitTime(cmdWaitTime)
-  {}
- 
-  std::function<void (uint8_t, bool)> zoneStatusChangeCallback;
-  std::function<void (std::string)> systemStatusChangeCallback;
-  std::function<void (troubleStatus,bool)> troubleStatusChangeCallback;
-  std::function<void (uint8_t, bool)> fireStatusChangeCallback;
-  std::function<void (uint8_t,std::string)> partitionStatusChangeCallback; 
-  std::function<void (uint8_t,std::string)> partitionMsgChangeCallback; 
-  std::function<void (std::string)> zoneMsgStatusCallback; 
-  std::function<void (std::string)> troubleMsgStatusCallback; 
-  std::function<void (uint8_t,bool)> relayChannelChangeCallback;    
-  
-=======
   void printPanel_0x6E() {
     if (dsc.pgmBuffer.partition) {
       if (dsc.pgmBuffer.idx == dsc.pgmBuffer.len) 
           setStatus(dsc.pgmBuffer.partition - 1, true);
     }
   }
->>>>>>> new
 
   void processLowBatteryZones() {
     for (byte panelByte = 4; panelByte < 8; panelByte++) {
@@ -3347,39 +3317,6 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
       decoded = true;
     }
 
-<<<<<<< HEAD
-    
-    if (!forceDisconnect && dsc.handleModule()) {
-      
-       if (dsc.panelData[0]==0x41) { 
-        if (debug == 1) 
-            printPacket("Moduledata:",dsc.panelData[0],dsc.moduleData,16);
-        for (byte zoneByte = 0; zoneByte < 4; zoneByte++) {
-            byte zoneBit=0;
-            for (int x = 7; x >=0; x--) {
-                zone=zoneBit + (zoneByte * 8);
-                if (!bitRead(dsc.moduleData[zoneByte+2], x)) {  // Checks an individual zone battery status flag for low
-                   if (zone < MAXZONES)                
-                        zoneStatus[zone].batteryLow=true;                    
-                } else if (!bitRead(dsc.moduleData[zoneByte+6], x)) {  // Checks an individual zone battery status flag for restore
-                   if (zone < MAXZONES)                
-                        zoneStatus[zone].batteryLow=false;
-                }
-                zoneBit++;
-           }
-        }
-      } 
-      
-      if (debug > 2) {
-        printPacket("Moduledata:",dsc.moduleCmd,dsc.moduleData,16);
-        printTimestamp();
-        Serial.print("[MODULE] ");Serial.print(dsc.currentCmd,HEX);Serial.print(": ");
-        dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
-        Serial.print(" ");
-        dsc.printModuleMessage();  // Prints the decoded message
-        Serial.println();
-      }
-=======
     if (dsc.panelData[panelByte] >= 0x9E && dsc.panelData[panelByte] <= 0xC2) {
       byte dscCode = dsc.panelData[panelByte] - 0x9D;
       lcdLine1 = F("*1: ");
@@ -3694,7 +3631,6 @@ class DSCkeybushome : public PollingComponent, public CustomAPIDevice {
     if (!decoded) {
       lcdLine1 = F("Unknown data4");
       lcdLine2 = F(" ");
->>>>>>> new
     }
 
     if (showEvent)
@@ -4056,11 +3992,7 @@ if (showEvent)
   }  
 
 };
-<<<<<<< HEAD
-}
-=======
 #if !defined(ARDUINO_MQTT)
 DSCkeybushome * DSCkeybus;
 #endif
->>>>>>> new
 #endif
