@@ -1,0 +1,40 @@
+mqtt:
+  sensor:
+    - name: "DisplayLine1"
+      state_topic: "DSC/Get/Partition1/DisplayLine1"
+
+    - name: "DisplayLine2"
+      state_topic: "DSC/Get/Partition1/DisplayLine2"
+
+    - name: "dscarmed"
+      state_topic: "DSC/Get/Partition1/Armed
+
+    - name: "dscready"
+      state_topic: "DSC/Get/Partition1/Ready
+
+    - name: "dsctrouble"
+      state_topic: "DSC/Get/Trouble
+
+    - name: "dscac"
+      state_topic: "DSC/Get/AC 
+
+    - name: "dscbattery"
+      state_topic: "DSC/Get/Battery
+      
+    - name: "dscextstatus"
+      state_topic: "DSC/Get/ZoneExtStatus  
+      
+    - name: "dscmessage"
+      state_topic: "DSC/Get/Partition1/Message    
+
+    - name: "Front Window"
+      state_topic: "DSC/Get/Zone1"    
+
+##Commands
+    command_topic: DSC/Set
+    Arm home payload: {"state:"S","partition":1} 
+    Arm away payload: {"state:"A","partition":1} 
+    Arm night payload: {"state:"N","partition":1} 
+    Command payload:  {"keys":"1234","partition":1} #send keys 1234 to panel
+    Set/Clear Fault payload: {"zone":17,"fault":1} #set virtual extended zone 17 as open
+      

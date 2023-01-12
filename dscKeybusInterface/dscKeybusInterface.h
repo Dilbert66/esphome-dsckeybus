@@ -20,75 +20,11 @@
 #ifndef dscKeybusInterface_h
 #define dscKeybusInterface_h
 
-#include <Arduino.h>
-
-
-#if defined(__AVR__)
-const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
-const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
-const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
-const byte maxModules = 4;
-const byte updateQueueSize=5; //zone pending update queue
-#elif defined(ESP8266) || defined(ESP32)
-const byte dscPartitions = 8;
-const byte dscZones = 8;
-const byte dscBufferSize = 50;
-const byte maxModules = 4;
-const byte updateQueueSize=10; //zone pending update queue
-
+#if defined ESP32 && ESP_IDF_VERSION_MAJOR >= 4
+#include "esp_timer.h"
 #endif
-const byte zoneOpen=3; //fault 
-const byte zoneClosed=2;// Normal 
-// Maximum bytes of a Keybus command
-const byte dscReadSize = 16;
-const byte cmd11msgsize = 6; //5 on some systems
-const byte cmd05msgsize = 6; //4 on some systems
 
-// Exit delay target states
-#define DSC_EXIT_STAY 1
-#define DSC_EXIT_AWAY 2
-#define DSC_EXIT_NO_ENTRY_DELAY 3
-
-struct zoneMaskType {
-    byte idx;
-    byte mask;
-};
-
-
-struct moduleType {
-    byte address;
-    byte fields[4];
-    byte faultBuffer[5];
-    byte zoneStatusMask;
-    byte zoneStatusByte;
-};
-
-
-class dscKeybusInterface {
-
-  public:
-
-    // Initializes writes as disabled by default
-    dscKeybusInterface(byte setClockPin, byte setReadPin, byte setWritePin = 255);
-
-    // Interface control
-    void begin(Stream &_stream = Serial);             // Initializes the stream output to Serial by default
-    bool loop();                                      // Returns true if valid panel data is available
-    void stop();                                      // Disables the clock hardware interrupt and data timer interrupt
-    void resetStatus();                               // Resets the state of all status components as changed for sketches to get the current status
-
-    // Writes a single key - nonblocking unless a previous write is in progress
-    void write(const char receivedKey);
-
-    // Writes multiple keys from a char array
-    //
-    // By default, this is nonblocking unless there is a previous write in progress - in this case, the sketch must keep the char
-    // array defined at least until the write is complete.
-    //
-    // If the char array is ephemeral, check if the write is complete by checking writeReady or set blockingWrite to true to
-    // block until the write is complete.
-    void write(const char * receivedKeys, bool blockingWrite = false);
-
+<<<<<<< HEAD
     // Write control
     static byte writePartition;                       // Set to a partition number for virtual keypad
     bool writeReady;                                  // True if the library is ready to write a key
@@ -333,5 +269,207 @@ class dscKeybusInterface {
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };
+=======
+// DSC Classic Series
+#if defined dscClassicSeries
+#include "dscClassic.h"
 
+byte dscClassicInterface::dscClockPin;
+byte dscClassicInterface::dscReadPin;
+byte dscClassicInterface::dscPC16Pin;
+byte dscClassicInterface::dscWritePin;
+char dscClassicInterface::writeKey;
+byte dscClassicInterface::writePartition;
+bool dscClassicInterface::virtualKeypad;
+bool dscClassicInterface::processModuleData;
+byte dscClassicInterface::panelData[dscReadSize];
+byte dscClassicInterface::pc16Data[dscReadSize];
+byte dscClassicInterface::panelByteCount;
+byte dscClassicInterface::panelBitCount;
+volatile bool dscClassicInterface::writeKeyWait;
+volatile byte dscClassicInterface::moduleData[dscReadSize];
+volatile bool dscClassicInterface::moduleDataCaptured;
+volatile byte dscClassicInterface::moduleByteCount;
+volatile byte dscClassicInterface::moduleBitCount;
+volatile bool dscClassicInterface::writeAlarm;
+volatile bool dscClassicInterface::bufferOverflow;
+volatile byte dscClassicInterface::panelBufferLength;
+volatile byte dscClassicInterface::panelBuffer[dscBufferSize][dscReadSize];
+volatile byte dscClassicInterface::pc16Buffer[dscBufferSize][dscReadSize];
+volatile byte dscClassicInterface::panelBufferBitCount[dscBufferSize];
+volatile byte dscClassicInterface::panelBufferByteCount[dscBufferSize];
+volatile byte dscClassicInterface::isrPanelData[dscReadSize];
+volatile byte dscClassicInterface::isrPC16Data[dscReadSize];
+volatile byte dscClassicInterface::isrPanelByteCount;
+volatile byte dscClassicInterface::isrPanelBitCount;
+volatile byte dscClassicInterface::isrPanelBitTotal;
+volatile byte dscClassicInterface::isrModuleData[dscReadSize];
+volatile byte dscClassicInterface::isrModuleByteCount;
+volatile byte dscClassicInterface::isrModuleBitCount;
+volatile byte dscClassicInterface::isrModuleBitTotal;
+volatile byte dscClassicInterface::moduleCmd;
+volatile bool dscClassicInterface::readyLight;
+volatile bool dscClassicInterface::lightBlink;
+//volatile unsigned long dscClassicInterface::clockHighTime;
+volatile unsigned long dscClassicInterface::keybusTime;
+volatile unsigned long dscClassicInterface::writeCompleteTime;
+
+// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
+// dscDataInterrupt() to read the data line
+#if defined(__AVR__)
+ISR(TIMER1_OVF_vect) {
+  TCCR1B = 0;  // Disables Timer1
+  dscClassicInterface::dscDataInterrupt();
+}
+#endif  // __AVR__
+
+
+// DSC Keypad Interface
+#elif defined dscKeypad
+
+#include "dscKeypad.h"
+
+byte dscKeypadInterface::dscClockPin;
+byte dscKeypadInterface::dscReadPin;
+byte dscKeypadInterface::dscWritePin;
+int  dscKeypadInterface::clockInterval;
+volatile byte dscKeypadInterface::keyData;
+volatile byte dscKeypadInterface::keyBufferLength;
+volatile byte dscKeypadInterface::keyBuffer[dscBufferSize];
+volatile bool dscKeypadInterface::bufferOverflow;
+volatile bool dscKeypadInterface::commandReady;
+volatile bool dscKeypadInterface::moduleDataDetected;
+volatile bool dscKeypadInterface::alarmKeyDetected;
+volatile bool dscKeypadInterface::alarmKeyResponsePending;
+volatile byte dscKeypadInterface::clockCycleCount;
+volatile byte dscKeypadInterface::clockCycleTotal;
+volatile byte dscKeypadInterface::panelCommand[dscReadSize];
+volatile byte dscKeypadInterface::isrPanelBitTotal;
+volatile byte dscKeypadInterface::isrPanelBitCount;
+volatile byte dscKeypadInterface::panelCommandByteCount;
+volatile byte dscKeypadInterface::isrModuleData[dscReadSize];
+volatile byte dscKeypadInterface::isrModuleBitTotal;
+volatile byte dscKeypadInterface::isrModuleBitCount;
+volatile byte dscKeypadInterface::isrModuleByteCount;
+volatile byte dscKeypadInterface::panelCommandByteTotal;
+volatile byte dscKeypadInterface::moduleData[dscReadSize];
+
+#if defined(__AVR__)
+ISR(TIMER1_OVF_vect) {
+  dscKeypadInterface::dscClockInterrupt();
+}
+#endif  // __AVR__
+
+// DSC Classic Keypad Interface
+#elif defined dscClassicKeypad
+
+#include "dscClassicKeypad.h"
+
+byte dscClassicKeypadInterface::dscClockPin;
+byte dscClassicKeypadInterface::dscReadPin;
+byte dscClassicKeypadInterface::dscWritePin;
+int  dscClassicKeypadInterface::clockInterval;
+volatile byte dscClassicKeypadInterface::keyData;
+volatile byte dscClassicKeypadInterface::keyBufferLength;
+volatile byte dscClassicKeypadInterface::keyBuffer[dscBufferSize];
+volatile bool dscClassicKeypadInterface::bufferOverflow;
+volatile bool dscClassicKeypadInterface::commandReady;
+volatile bool dscClassicKeypadInterface::moduleDataDetected;
+volatile bool dscClassicKeypadInterface::alarmKeyDetected;
+volatile bool dscClassicKeypadInterface::alarmKeyResponsePending;
+volatile byte dscClassicKeypadInterface::clockCycleCount;
+volatile byte dscClassicKeypadInterface::clockCycleTotal;
+volatile byte dscClassicKeypadInterface::panelCommand[dscReadSize];
+volatile byte dscClassicKeypadInterface::isrPanelBitTotal;
+volatile byte dscClassicKeypadInterface::isrPanelBitCount;
+volatile byte dscClassicKeypadInterface::panelCommandByteCount;
+volatile byte dscClassicKeypadInterface::isrModuleData[dscReadSize];
+volatile byte dscClassicKeypadInterface::isrModuleBitTotal;
+volatile byte dscClassicKeypadInterface::isrModuleBitCount;
+volatile byte dscClassicKeypadInterface::isrModuleByteCount;
+volatile byte dscClassicKeypadInterface::panelCommandByteTotal;
+volatile byte dscClassicKeypadInterface::moduleData[dscReadSize];
+volatile unsigned long dscClassicKeypadInterface::intervalStart;
+volatile unsigned long dscClassicKeypadInterface::beepInterval;
+volatile unsigned long dscClassicKeypadInterface::repeatInterval;
+volatile unsigned long dscClassicKeypadInterface::keyInterval;
+volatile unsigned long dscClassicKeypadInterface::alarmKeyTime;
+volatile unsigned long dscClassicKeypadInterface::alarmKeyInterval;
+>>>>>>> new
+
+#if defined(__AVR__)
+ISR(TIMER1_OVF_vect) {
+  dscClassicKeypadInterface::dscClockInterrupt();
+}
+#endif  // __AVR__
+
+
+// DSC PowerSeries
+#else
+#include "dscKeybus.h"
+
+byte dscKeybusInterface::dscClockPin;
+byte dscKeybusInterface::dscReadPin;
+byte dscKeybusInterface::dscWritePin;
+char dscKeybusInterface::writeKey;
+bool dscKeybusInterface::virtualKeypad;
+bool dscKeybusInterface::processModuleData;
+byte dscKeybusInterface::panelData[dscReadSize];
+byte dscKeybusInterface::panelByteCount;
+byte dscKeybusInterface::panelBitCount;
+volatile byte dscKeybusInterface::moduleData[dscReadSize];
+volatile bool dscKeybusInterface::moduleDataCaptured;
+volatile bool dscKeybusInterface::moduleDataDetected;
+volatile byte dscKeybusInterface::moduleByteCount;
+volatile byte dscKeybusInterface::moduleBitCount;
+volatile bool dscKeybusInterface::writeAlarm;
+volatile bool dscKeybusInterface::bufferOverflow;
+volatile byte dscKeybusInterface::panelBufferLength;
+volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
+volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
+volatile byte dscKeybusInterface::panelBufferByteCount[dscBufferSize];
+volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
+volatile byte dscKeybusInterface::isrPanelByteCount;
+volatile byte dscKeybusInterface::isrPanelBitCount;
+volatile byte dscKeybusInterface::isrPanelBitTotal;
+volatile byte dscKeybusInterface::isrModuleData[dscReadSize];
+volatile byte dscKeybusInterface::moduleCmd;
+volatile byte dscKeybusInterface::moduleSubCmd;
+volatile unsigned long dscKeybusInterface::keybusTime;
+byte dscKeybusInterface::moduleSlots[6];
+moduleType dscKeybusInterface::modules[maxModules];
+byte dscKeybusInterface::moduleIdx;
+bool dscKeybusInterface::enableModuleSupervision;
+byte dscKeybusInterface::maxFields05; 
+byte dscKeybusInterface::maxFields11;
+
+writeQueueType dscKeybusInterface::writeQueue[writeQueueSize];
+Stream* dscKeybusInterface::stream;
+
+
+byte * dscKeybusInterface::writeBuffer;
+byte dscKeybusInterface::cmdD0buffer[6];
+bool dscKeybusInterface::pendingD0;
+bool dscKeybusInterface::pending70;
+bool dscKeybusInterface::pending6E;
+
+volatile byte dscKeybusInterface::writePartition;
+volatile byte dscKeybusInterface::writeBufferIdx;
+volatile byte dscKeybusInterface::writeBufferLength;
+volatile bool dscKeybusInterface::writeDataPending;
+byte dscKeybusInterface::writeDataBit;
+volatile pgmBufferType dscKeybusInterface::pgmBuffer;
+volatile byte dscKeybusInterface::inIdx;
+volatile byte dscKeybusInterface::outIdx;
+byte dscKeybusInterface::maxZones;
+byte dscKeybusInterface::panelVersion;
+// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
+// dscDataInterrupt() to read the data line
+#if defined(__AVR__)
+ISR(TIMER1_OVF_vect) {
+  TCCR1B = 0;  // Disables Timer1
+  dscKeybusInterface::dscDataInterrupt();
+}
+#endif  // __AVR__
+#endif  // dscClassicSeries, dscKeypadInterface
 #endif  // dscKeybusInterface_h
