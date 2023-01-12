@@ -68,8 +68,9 @@ const int dscWritePin=18;
 
 const int defaultPartition=1;
 const int maxZones=32;
-const int expanderAddr1=10;
-const int expanderAddr2=11;
+
+const int expanderAddr1=0;
+const int expanderAddr2=0;
 
 const char * userCodes = "1:User1,2:User2";
 
