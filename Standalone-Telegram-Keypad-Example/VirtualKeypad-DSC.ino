@@ -123,6 +123,7 @@ std::list<int> notifyZones = {}; //comma separated list of zones that you want p
 
 
 
+
 const int dscClockPin=22;
 const int dscReadPin=21;
 const int dscWritePin=18;
@@ -141,7 +142,8 @@ const char * userCodes = "1:User1,2:User2";
 
 
 
-const char * const telegramMenu[] PROGMEM ={"/help - this command","/armstay - arm in stay mode","/bypass - turn on full bypass","/reboot - reboot esp","/!<keys> - send cmds direct to panel","/getstatus - get zone/system/light statuses","/getstats - get memory useage stats","/stopbus - stop dsc bus","/startbus - start dsc bus","/stopnotify - pause notifications","/startnotify - unpause notifications","/setpartition=<partition> - set default partition","/&<p><keys> - send cmds to partition p","/addzone=<zone> - add zone to monitor list","/removezone=<zone> - remove zone from notify list","/addid=<id> - add telegramid to allowed control list","/removeid=<id> - remove telegramid from allowed list","/getip - get url of keypad","/getcfg - list notify and telegram ids"};
+const char * const telegramMenu[] PROGMEM ={"/help - this command","/armstay - arm in stay mode","/bypass - turn on full bypass","/reboot - reboot esp","/!<keys> - send cmds direct to panel","/getstatus - get zone/system/light statuses","/getstats - get memory useage stats","/stopbus - stop dsc bus","/startbus - start dsc bus","/stopnotify - pause notifications","/startnotify - unpause notifications","/setpartition=<partition> - set default partition","/&<p><keys> - send cmds to partition p","/addzones=<zone>,<zone> - add zones to notify list","/removezones=<zone>,<zone> - remove zones from notify list","/addids=<id>,<id> - add telegram ids to allowed control list","/removeids=<id>,<id> - remove telegram ids from allowed list","/getip - get url of keypad","/getcfg - list notify and telegram ids"};
+
 
 std::string accessCodeStr=accessCode;
 #if defined(VIRTUALKEYPAD)
@@ -982,11 +984,15 @@ void cmdHandler(rx_message_t * msg) {
       pushlib.sendMessageDoc(doc);
     }
     
-  } else if (msg -> text.startsWith("/addzone")) {
+  } else if (msg -> text.startsWith("/addzones")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
-    int z;
-    sscanf(pstr.c_str(), "%d", & z);
-    if (z > 0 && z < maxZones) {
+
+    char * token = strtok((char *)pstr.c_str(), ",");
+   // loop through the string to extract all other tokens
+   while( token != NULL ) {
+      int z;
+      sscanf(token, "%d", & z);       
+     if (z > 0 && z < maxZones) {
       if (!inListZone(z)) {
       notifyZones.push_back(z);
       writeConfig();
@@ -995,14 +1001,19 @@ void cmdHandler(rx_message_t * msg) {
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
       }
-      sendCurrentConfig(doc);
-    }    
-    
-  } else if (msg -> text.startsWith("/removezone")) {
+    }
+      token = strtok(NULL, ",");
+   }      
+     sendCurrentConfig(doc);
+
+  } else if (msg -> text.startsWith("/removezones")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
-    int z;
-    sscanf(pstr.c_str(), "%d", & z);
-    if (z > 0 && z < maxZones) {
+       char * token = strtok((char *)pstr.c_str(), ",");
+   // loop through the string to extract all other tokens
+   while( token != NULL ) {
+       int z;
+      sscanf(token, "%d", & z);       
+     if (z > 0 && z < maxZones) {
       if (inListZone(z)) {
       notifyZones.remove(z);
       writeConfig();
@@ -1011,37 +1022,48 @@ void cmdHandler(rx_message_t * msg) {
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
       }
-      sendCurrentConfig(doc);
-    }    
-    
-  } else if (msg -> text.startsWith("/removeid")) {
+    }
+      token = strtok(NULL, ",");
+   }  
+   sendCurrentConfig(doc);
+       
+  } else if (msg -> text.startsWith("/removeids")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
-    if (pstr !="") {
-      if (inListTelegramID(pstr)) {
-      telegramAllowedIDs.remove(pstr);
+    char * token = strtok((char *)pstr.c_str(), ",");
+   // loop through the string to extract all other tokens
+   while( token != NULL ) {
+    if (token !="") {
+      if (inListTelegramID(String(token))) {
+      telegramAllowedIDs.remove(String(token));
       writeConfig();
       char out[40];
-      sprintf(out, "Removed id %s from ID list\n", pstr);
+      sprintf(out, "Removed id %s from ID list\n", token);
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
       }
-      sendCurrentConfig(doc);
-    }    
+    }
+     token = strtok(NULL, ",");
+   }
+   sendCurrentConfig(doc);
     
-  } else if (msg -> text.startsWith("/addid")) {
+  } else if (msg -> text.startsWith("/addids")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
-    Serial.printf("pstr=%s\n",pstr);
-    if (pstr !="") {
-    if (!inListTelegramID(pstr)) {
-      telegramAllowedIDs.push_back(pstr);
+   char * token = strtok((char *)pstr.c_str(), ",");
+   // loop through the string to extract all other tokens
+   while( token != NULL ) {
+     if (token !="") {
+      if (!inListTelegramID(String(token))) {
+      telegramAllowedIDs.push_back(String(token));
       writeConfig();
       char out[40];
-      sprintf(out, "Added id %s to ID list\n", pstr);
+      sprintf(out, "Added id %s to ID list\n", token);
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
+      }
     }
-      sendCurrentConfig(doc);
-    } 
+     token = strtok(NULL, ",");
+    }      
+   sendCurrentConfig(doc);
     
   } else if (msg -> text.startsWith("/getcfg")) {
       sendCurrentConfig(doc);
