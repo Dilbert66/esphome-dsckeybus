@@ -371,14 +371,12 @@ class dscKeybusInterface {
     void writeKeys(const char * writeKeysArray);
     static void dscClockInterrupt();
     static bool redundantPanelData(byte   previousCmd[], volatile byte   currentCmd[], byte checkedBytes = dscReadSize);
-
     #if defined(ESP32)
     #if ESP_IDF_VERSION_MAJOR < 444
     static hw_timer_t * timer1;
     #endif
     static portMUX_TYPE timer1Mux;
     #endif
-
     static Stream* stream;
     //const char* writeKeysArray;
    // bool writeKeysPending;

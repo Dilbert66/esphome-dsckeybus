@@ -15,7 +15,12 @@
  *    5. Setup your home control software to process the MQTT topics
  *
  * 
-
+ Once the sketch is loaded and running, any following updates can be done via OTA updates for initial testing.  
+        See here for an example:  https://randomnerdtutorials.com/esp8266-ota-updates-with-arduino-ide-over-the-air/
+        
+        NOTE: I do not normally recommended leaving the ability to do OTA updates active on a production system. Once done testing, you should either disable it by commenting out "useOTA" or set a good long passcode.
+        Be aware that for uploading sketch data (web server files) via OTA, you cannot have a password set. Once all testing is done, you can then set your password of choice or disable the feature. 
+ */       
 /*NOTE: Only use SSL with an ESP32.  The ESP8266 will get out of memory errors with the bear ssl library*/
 
 //#define useMQTTSSL /*set this to use SSL with a supported mqtt broker.  */
@@ -244,7 +249,7 @@ void setup() {
         mqttPublish(mqttZoneStatusTopic,zone,open);
 
     });
-        DSCkeybus->onRelayChannelChange([&](uint8_t channel, bool state) {
+    DSCkeybus->onRelayChannelChange([&](uint8_t channel, bool state) {
         mqttPublish(mqttRelayStatusTopic,channel,state);
     });
    
@@ -358,7 +363,6 @@ bool mqttConnect() {
 
 void mqttPublish(const char * publishTopic,  const char * value) {
   mqtt.publish(publishTopic, value);
-
 }
 
 void mqttPublish(const char * topic, const char * suffix,  const char * value) {
@@ -366,12 +370,18 @@ void mqttPublish(const char * topic, const char * suffix,  const char * value) {
   strcpy(publishTopic, topic);
   strcat(publishTopic, suffix);
   mqtt.publish(publishTopic, value);
-
 }
+
+void mqttPublish(const char * topic,const char * suffix , bool bvalue) {
+  const char * value = bvalue ? "ON" : "OFF";
+  mqttPublish(topic,suffix,value);
+}
+
+
 
 void mqttPublish(const char * topic,const char * suffix , byte srcNumber,  const char * value) {
   char publishTopic[strlen(topic) + 10 + strlen(suffix)];
-  char dstNumber[3];
+ char dstNumber[3];
   strcpy(publishTopic, topic);
   itoa(srcNumber, dstNumber, 10);
   strcat(publishTopic, dstNumber);  
@@ -381,13 +391,7 @@ void mqttPublish(const char * topic,const char * suffix , byte srcNumber,  const
 
 void mqttPublish(const char * topic,const char * suffix , byte srcNumber,  bool bvalue) {
   const char * value = bvalue ? "ON" : "OFF";
-  char publishTopic[strlen(topic) + 10 + strlen(suffix)];
-  char dstNumber[3];
-  strcpy(publishTopic, topic);
-  itoa(srcNumber, dstNumber, 10);
-  strcat(publishTopic, dstNumber);  
-  strcat(publishTopic, suffix);  
-  mqtt.publish(publishTopic, value);
+  mqttPublish(topic,suffix,srcNumber,value);
 }
 
 void mqttPublish(const char * topic, byte srcNumber,  bool bvalue) {
@@ -401,14 +405,6 @@ void mqttPublish(const char * topic, byte srcNumber,  bool bvalue) {
 
 }
 
-void mqttPublish(const char * topic,const char * suffix , bool bvalue) {
-  const char * value = bvalue ? "ON" : "OFF";
-  char publishTopic[strlen(topic) + strlen(suffix)+2];
-  strcpy(publishTopic, topic);
-  strcat(publishTopic, suffix);  
-  mqtt.publish(publishTopic, value);
-
-}
 
 
 

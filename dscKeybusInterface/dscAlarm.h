@@ -186,7 +186,8 @@ enum panelStatus {
   fireStatus,
   panicStatus,
   rdyStatus,
-  armStatus
+  armStatus,
+  chimeStatus
 };
 
 
@@ -307,42 +308,48 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   eventTime;
 
   struct partitionType {
-    bool locked=false;
+
     unsigned long keyPressTime;
     byte lastStatus;
     byte status;
-    bool inprogram=false;
     byte digits;
-    bool newData;
-    bool hexMode;
     byte editIdx;
-    bool decimalInput;
-    bool hex;
-    bool eventViewer;
-    bool submitted;
     byte currentSelection;
     byte selectedZone;
+    byte locked:1;    
+    byte inprogram:1;    
+    byte decimalInput:1;
+    byte hex:1;
+    byte eventViewer:1;
+    byte submitted:1;  
+    byte newData:1;
+    byte hexMode:1;
+    byte chime:1;
   };
 
   struct zoneType {
-    bool tamper;
-    bool batteryLow;
-    bool open;
-    bool alarm;
-    bool enabled;
     byte partition;
-    bool bypassed;
+    byte tamper:1;
+    byte batteryLow:1;
+    byte open:1;
+    byte alarm:1;
+    byte enabled:1;
+    byte bypassed:1;
+   
 
   };
-  
+
+  public:
   zoneType * zoneStatus;
   partitionType partitionStatus[dscPartitions];
-  byte  lastStatus[dscPartitions];  
+  bool forceRefresh;
+  std::string previousZoneStatusMsg,eventStatusMsg; 
   
-  std::string previousZoneStatusMsg,eventStatusMsg;
+  private:
+  byte  lastStatus[dscPartitions];  
   bool relayStatus[16],
   previousRelayStatus[16];
-  bool sendCmd,forceRefresh,system0Changed,system1Changed;
+  bool sendCmd,system0Changed,system1Changed;
   byte system0,
   system1,previousSystem0,previousSystem1;
   byte programZones[dscZones];
@@ -845,9 +852,9 @@ public:
   void alarm_keypress_partition(std::string keystring, int partition) {
     if (!partition) partition = defaultPartition;
 #if !defined(ARDUINO_MQTT)         
-    if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition].locked);
+    if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition-1].locked);
     #else
-          if (debug > 0) Serial.printf("Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d\n", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition].locked);  
+          if (debug > 0) Serial.printf("Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d\n", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition-1].locked);  
 #endif
     if (dsc.disabled[partition - 1]) return;
 
@@ -857,7 +864,7 @@ public:
     if (keystring.length() == 1) {
       processMenu(keys[0], partition);
     } else {
-        if (!partitionStatus[partition].locked) dsc.write(keys, partition);
+        if (!partitionStatus[partition-1].locked) dsc.write(keys, partition);
     }
   }
 #if defined(ESPHOME_MQTT) 
@@ -1428,7 +1435,6 @@ void update() override {
         } else {
             panelStatusChangeCallback(acStatus, true, 0);
         }
-
       }
 
       if (dsc.batteryChanged || forceRefresh ) {
@@ -1672,6 +1678,7 @@ void update() override {
           if (system1Changed)
             panelStatusChangeCallback(batStatus, false, 0);
       }
+      
       if (bitRead(system1, 1)) {
         system1Msg.append(String(PSTR("BELL ")).c_str());
       }
@@ -1721,8 +1728,6 @@ void update() override {
       if (bitRead(system0, 7)) {
         system0Msg.append(String(PSTR("TIME ")).c_str());
       }
-      
-
          troubleMsgStatusCallback(system0Msg.append(system1Msg));
      }
      system0Changed=false;
@@ -1768,7 +1773,7 @@ void update() override {
 
   }
   
-private:
+
   void setStatus(byte partition, bool force = false, bool skip = false) {
 
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
@@ -1935,10 +1940,14 @@ private:
     case 0xA3:
       lcdLine1 = F("Door         ");
       lcdLine2 = F("chime enabled   ");
+      partitionStatus[partition].chime=true;      
+      panelStatusChangeCallback(chimeStatus, true, partition+1);       
       break;
     case 0xA4:
       lcdLine1 = F("Door         ");
       lcdLine2 = F("chime disabled  ");
+      partitionStatus[partition].chime=false;        
+      panelStatusChangeCallback(chimeStatus, false, partition+1);        
       break;
     case 0xA5:
       lcdLine1 = F("Enter        ");
@@ -2376,6 +2385,7 @@ private:
     partitionStatus[partition].lastStatus = dsc.status[partition];
     
   }
+
 
   // Processes status data not natively handled within the library
   void processStatus() {
