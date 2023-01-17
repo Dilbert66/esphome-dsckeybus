@@ -471,7 +471,6 @@ std::string getUserName(char * code) {
     std::string s=userCodes;
     std::string token1, token2, token3;
     size_t pos, pos1;
-    char buf[4];
     s.append(",");
     while ((pos = s.find(',')) != std::string::npos) {
       token1 = s.substr(0, pos); // store the substring   
@@ -667,7 +666,7 @@ private:
         dsc.write(key, partition);
         char s[5];
         sprintf(s, "%d", * currentSelection % 10);
-        const char * out = strcpy(new char[3], s);
+        //const char * out = strcpy(new char[3], s);
         * currentSelection = 0xFF;
         dsc.write(s, partition);
       } else {
@@ -678,9 +677,9 @@ private:
       if (key == '*' && * currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", * currentSelection);
-        const char * out = strcpy(new char[3], s);
+       // const char * out = strcpy(new char[3], s);
         * currentSelection = 0xFF;
-        dsc.write(out, partition);
+        dsc.write(s, partition);
       } else if (key == '>') {
         * currentSelection = getNextOption( * currentSelection);
         if ( * currentSelection < 9)
@@ -697,9 +696,9 @@ private:
       if (key == '*' && * currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", * currentSelection);
-        const char * out = strcpy(new char[3], s);
+        //const char * out = strcpy(new char[3], s);
         * currentSelection = 0xFF;
-        dsc.write(out, partition);
+        dsc.write(s, partition);
       } else if (key == '>') {
         * currentSelection = getNextOption( * currentSelection);
         if ( * currentSelection < 9)
@@ -730,7 +729,7 @@ private:
           dsc.write('b', partition);
         } else {
           sprintf(s, "%d", * currentSelection % 6);
-          const char * out = strcpy(new char[3], s);
+          //const char * out = strcpy(new char[3], s);
           * currentSelection = 0xFF;
           dsc.write(s, partition);
         }
@@ -753,8 +752,8 @@ private:
       if (key == '*') {
         char s[5];
         sprintf(s, "%02d", * currentSelection);
-        const char * out = strcpy(new char[3], s);
-        dsc.write(out, partition);
+        //const char * out = strcpy(new char[3], s);
+        dsc.write(s, partition);
       } else if (key == '>') {
         * currentSelection = getNextUserCode( * currentSelection);
         dsc.write(key, partition);
@@ -782,8 +781,8 @@ private:
       if (key == '*') {
         char s[5];
         sprintf(s, "%02d", * currentSelection);
-        const char * out = strcpy(new char[3], s);
-        dsc.write(out, partition);
+        //const char * out = strcpy(new char[3], s);
+        dsc.write(s, partition);
       } else if (key == '>') {
         * currentSelection = getNextEnabledZone( * currentSelection, partition);
         dsc.write(key, partition);
@@ -809,7 +808,7 @@ private:
       } else if (key == '*' && * currentSelection > 0) {
         char s[5];
         sprintf(s, "%d", * currentSelection);
-        const char * out = strcpy(new char[3], s);
+       // const char * out = strcpy(new char[3], s);
         * currentSelection = 0xFF;
         dsc.write(s, partition);
       } else {
@@ -829,7 +828,7 @@ private:
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx > 0 ? partitionStatus[partition - 1].editIdx - 1 : partitionStatus[partition - 1].digits - 1;
       count++;
-       byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
+     //  byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count <= partitionStatus[partition - 1].digits);
 
   }
@@ -839,7 +838,7 @@ private:
     do {
       partitionStatus[partition - 1].editIdx = partitionStatus[partition - 1].editIdx + 1 < partitionStatus[partition - 1].digits ? partitionStatus[partition - 1].editIdx + 1 : 0;
       count++;
-       byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
+       //byte b = (partitionStatus[partition - 1].editIdx / 2) + (partitionStatus[partition - 1].editIdx % 2);  
     } while (tpl[partitionStatus[partition - 1].editIdx] != 'X' && count <= partitionStatus[partition - 1].digits);
 
   }
@@ -1101,8 +1100,8 @@ private:
     byte s;
     s = start >= maxZones || start == 0 ? maxZones : start;
     byte r=0;
-    for (byte optionGroup = dscZones - 1; optionGroup >= 0 && optionGroup < dscZones; optionGroup--) {
-      for (byte optionBit = 7; optionBit >= 0 && optionBit < 8; optionBit--) {
+    for (int optionGroup = dscZones - 1; optionGroup >= 0 && optionGroup < dscZones; optionGroup--) {
+      for (int optionBit = 7; optionBit >= 0 && optionBit < 8; optionBit--) {
         byte option = optionBit + 1 + (optionGroup * 8);
         if (bitRead(programZones[optionGroup], optionBit)) {
           if (option < s){
@@ -1570,7 +1569,6 @@ void update() override {
       
    
       if (dsc.openZonesStatusChanged || forceRefresh) {
-        char s1[4];
         for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
           for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
             if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit) || forceRefresh) { // Checks an individual open zone status flag
@@ -2306,7 +2304,6 @@ void update() override {
         if ( * currentSelection < maxZones && * currentSelection > 0) {
           char s[16];
           lcdLine2 = "";
-          char bypassStatus = ' ';
 
           sprintf(s, PSTR("zone %02d"), * currentSelection);
           lcdLine2 = s;
@@ -2390,7 +2387,6 @@ void update() override {
   // Processes status data not natively handled within the library
   void processStatus() {
     #ifndef dscClassicSeries
-    byte partition = 0;
     switch (dsc.panelData[0]) {
     case 0x0F:
     case 0x0A:
@@ -3000,7 +2996,7 @@ void update() override {
     if (dsc.panelData[panelByte] >= 0x29 && dsc.panelData[panelByte] <= 0x48) {
       lcdLine1 = F("Zone alarm");
       strcpy_P(lcdMessage, PSTR(" restored:"));
-      byte zone = dsc.panelData[panelByte] - 40;
+      //byte zone = dsc.panelData[panelByte] - 40;
       // if (zone > 0 && zone < maxZones) 
       // zoneStatus[zone-1].alarm=false;      
       itoa(dsc.panelData[panelByte] - 40, charBuffer, 10);
@@ -3609,7 +3605,7 @@ void update() override {
     } else if (dsc.panelData[panelByte] >= 0x20 && dsc.panelData[panelByte] <= 0x3F) {
       lcdLine1 = F("Zone alarm");
       strcpy_P(lcdMessage, PSTR(" rest: "));
-      byte zone = dsc.panelData[panelByte] + 1;
+     // byte zone = dsc.panelData[panelByte] + 1;
       //   if (zone > 0 && zone < maxZones) 
       //    zoneStatus[zone-1].alarm=false;      
       itoa(dsc.panelData[panelByte] + 1, charBuffer, 10);

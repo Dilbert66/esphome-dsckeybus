@@ -43,10 +43,10 @@ void PushLib::saveMsgToQueue(String msg) {
 }
 
 uint8_t PushLib::msgAvailable() {
-  uint8_t avail = inMsgIdx - outMsgIdx;
-  if (avail < 0) {
+  int avail = inMsgIdx - outMsgIdx;
+  if (avail < 0)
     avail += msgQueueSize;
-  }
+ 
   return avail;
 }
 
@@ -69,13 +69,13 @@ void PushLib::loop() {
 }
 
 //stringfied json with all parameters
-bool PushLib::sendMessageJson(String msg) {
+void PushLib::sendMessageJson(String msg) {
   if (DEBUG_PUSHLIB > 0) printf("queueing msg %s\n", msg.c_str());
   saveMsgToQueue(msg);
 }
 
 //json document
-bool PushLib::sendMessageDoc(JsonDocument &  doc) {
+void PushLib::sendMessageDoc(JsonDocument &  doc) {
   String msg;
   serializeJson(doc, msg);  
   if (DEBUG_PUSHLIB > 0) printf("queueing msg %s\n", msg.c_str());  

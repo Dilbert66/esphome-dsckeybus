@@ -41,8 +41,8 @@ PushLib(const char * token, const char * userID, const char * prefix);
 void loop();
 void begin();
 void stop();
-bool sendMessageJson(String msg);
-bool sendMessageDoc(JsonDocument &  doc);
+void sendMessageJson(String msg);
+void sendMessageDoc(JsonDocument &  doc);
 bool isSending();
 void addCmdHandler(std:: function < void(rx_message_t * msg) > callback);
 

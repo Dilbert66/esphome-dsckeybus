@@ -214,6 +214,7 @@ void setup() {
            case panicStatus: strcat(psvalue,PSTR("/Panic"));break;
            case rdyStatus: strcat(psvalue,PSTR("/Ready"));break;
            case armStatus: strcat(psvalue,PSTR("/Armed"));break;
+           default: break;
             } 
            if (!partition) 
            mqttPublish(mqttPanelTopic,psvalue,open);

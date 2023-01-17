@@ -1,5 +1,5 @@
 /*
-    Virtual Keypad/Telegram client for the DSC Power832 and variants alarm systems (ESP32 Only)
+    Virtual Keypad/Telegram client for the DSC Power832 alarm system family and variants  (ESP32 Only)
     
     Provides a virtual keypad web interface and push notification  using the ESP32 as a standalone web server using
     AES encrypted web socket communications. All keypad functionality provided.
@@ -15,41 +15,45 @@
     to having push capability.  All this at no cost!
 
    Usage:
-   
+     1. Copy the sketch file VirtualKeypad-DSC.ino into a new sketch directory of the same name.
    
    If using the Virtualkeypad (#define  VIRTUALKEYPAD):
-   
-     1. Install the following libraries directly from each Github repository:
+
+     2. Install the following libraries directly from each Github repository:
            ESPAsyncWebServer: https://github.com/me-no-dev/ESPAsyncWebServer
            AsyncTCP: https://github.com/me-no-dev/AsyncTCP
  
-     2. Install the filesystem uploader tools to enable uploading web server files:
+     3. Install the filesystem uploader tools to enable uploading web server files:
           https://github.com/me-no-dev/arduino-esp32fs-plugin
  
-     3. Install the following libraries, available in the Arduino IDE Library Manager and
+     4. Install the following libraries, available in the Arduino IDE Library Manager and
         the Platform.io Library Registry:
           AESLib: https://github.com/suculent/thinx-aes-lib
  
      5. If desired, update the DNS hostname in the sketch.  By default, this is set to
         "dsckeypad" and the web interface will be accessible at: http://dsckeypad.local
 
-     6. Upload the SPIFFS data containing the web server files (the "data" subdirectory contents):
-          Arduino IDE: Tools > ESP32 Sketch Data Upload
-          
-      7. Upload the sketch. Recommended to use board "ESP32 Dev Module with Minimal SPIFFS partition scheme (190K SPIFFS   partition) to get the maximum flash storage for program storage if using OTA.
+
  
 
-     If not using the VirtualKeypad, start at here step 8. Comment out the #define VIRTUALKEYPAD line.
+     If not using the VirtualKeypad, start at here step 6. Comment out the #define VIRTUALKEYPAD line.
      
       
-     8.  Install the ArduinoJson library available in the Arduino IDE Library Manager and
+     6.  Install the ArduinoJson library available in the Arduino IDE Library Manager and
         the Platform.io Library Registry:  https://github.com/bblanchon/ArduinoJson    
         
-      9. Copy all .h and cpp files from the respository at: https://github.com/Dilbert66/esphome-dsckeybus/tree/dev/dscKeybusInterface
-      repository location to your sketch directory or into a subdirectory within your arduino libraries folder.        
+     7. Copy all .h and cpp files from the repository at: https://github.com/Dilbert66/esphome-dsckeybus/tree/dev/dscKeybusInterface
+       to your sketch directory or into a subdirectory within your arduino libraries folder.        
         
-     10.  Set all configuration variables below for your system such as WIFI settings, password, teleggramids, aes password,etc.        
-           
+     8.  Set all configuration variables in the sketch to match your local setup such as WIFI settings, password, teleggramids, aes password,etc.    
+     
+     9. Compile and upload the sketch. Recommended to use board "ESP32 Dev Module with Minimal SPIFFS partition scheme (190K SPIFFS   partition) to get the maximum flash storage for program storage if using OTA.    
+
+     if using the VirtualKeypad:
+     10. Upload the SPIFFS data containing the web server files (the "data" subdirectory contents):
+          Arduino IDE: Tools > ESP32 Sketch Data Upload
+
+       
      11. Configure Telegram:   
      
     a. Start a  conversation with @BotFather or go to url: https://telegram.me/botfather
@@ -68,7 +72,7 @@
         a. I do not normally recommended leaving the ability to do OTA updates active on a production system. Once done testing, you should either disable it by commenting out "useOTA" or set a good long passcode.
         Be aware that for uploading sketch data (web server files) via OTA, you cannot have a password set. Once all testing is done, you can then set your password of choice or disable the feature. 
         
-        b. You can the virtual keypad web interface by the IP address displayed through
+        b. You can access the virtual keypad web interface by the IP address displayed through
         the serial output or http://dsckeypad.local (for clients and networks that support mDNS).
         You can also talk to your telegram bot from the bot chat window created above. Send /help for a list of commands. On boot, the system will send all status to your bot channel.
       
@@ -120,8 +124,6 @@ const char * telegramUserID="1234567890"; // Set the default Telegram chat recip
 const char * telegramMsgPrefix="[Alarm Panel] "; // Set a prefix for all messages
 std::list<String> telegramAllowedIDs = {};
 std::list<int> notifyZones = {}; //comma separated list of zones that you want push notifications on change
-
-
 
 
 const int dscClockPin=22;
@@ -292,7 +294,7 @@ void setup() {
   }
   //WiFi.setAutoReconnect(true);
   //WiFi.persistent(true);
-  
+   SPIFFS.begin(); 
 #if defined(VIRTUALKEYPAD)
   if (!MDNS.begin(clientName)) {
     Serial.println(F("Error setting up MDNS responder."));
@@ -300,8 +302,6 @@ void setup() {
       delay(1000);
     }
   }
-  SPIFFS.begin();
-
   File root = SPIFFS.open("/");
 
   File file = root.openNextFile();
@@ -355,6 +355,8 @@ void setup() {
     else if (error == OTA_CONNECT_ERROR) Serial.println(F("Connect Failed"));
     else if (error == OTA_RECEIVE_ERROR) Serial.println(F("Receive Failed"));
     else if (error == OTA_END_ERROR) Serial.println(F("End Failed"));
+    DSCkeybus->begin();
+    pushlib.begin();    
   });
 
   ArduinoOTA.begin();
@@ -409,7 +411,8 @@ void setup() {
            case panicStatus: publishStatus("panic_status",open);snprintf(msg, 30, "Panic status is %s",open?"ON":"OFF");break;
            case rdyStatus: publishStatus("ready_status",open);snprintf(msg, 30, "Ready status is %s",open?"ON":"OFF");break;
            case armStatus: publishStatus("armed_status",open);snprintf(msg, 30, "Armed status is %s",open?"ON":"OFF");break;
-           case chimeStatus: publishStatus("chime_status",open);snprintf(msg, 30, "Chime status is %s",open?"ON":"OFF");break;           
+           case chimeStatus: publishStatus("chime_status",open);snprintf(msg, 30, "Chime status is %s",open?"ON":"OFF");break; 
+           default: break;
             }
           
            if (!DSCkeybus->forceRefresh && !pauseNotifications)
@@ -478,8 +481,6 @@ void setup() {
   pushlib.addCmdHandler( & cmdHandler);
   #endif
   pushlib.begin();
-
-  char buf[100];
   pushNotification("System restarted");
 
 }
@@ -578,7 +579,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
               * sep_at = '\0';
 
               char * v = sep_at + 1;
-              if (dsc.keybusConnected)
+              if (dsc.keybusConnected) {
 
                 if (strcmp(v, "s") == 0) {
                   DSCkeybus->alarm_keypress_partition("S",activePartition);
@@ -595,6 +596,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
               } else if (strcmp(v, "p3") == 0) {  
                   setActivePartition(3);
               }  else DSCkeybus->alarm_keypress_partition(v,activePartition);
+              }
               Serial.printf("got key %s\n", v);
             }
           }
@@ -967,7 +969,7 @@ void cmdHandler(rx_message_t * msg) {
 
   } else if (msg -> text == "/getstats") {
     char buf[100];
-    snprintf(buf, 100, "\n<b>Memory Useage</b>\nFreeheap=%d\n%MinFreeHeap=%d\nHeapSize=%d\nMaxAllocHeap=%d\n", ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
+    snprintf(buf, 100, "\n<b>Memory Useage</b>\nFreeheap=%d\nMinFreeHeap=%d\nHeapSize=%d\nMaxAllocHeap=%d\n", ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
     doc["parse_mode"] = "HTML";
     doc["text"] = String(buf);
     pushlib.sendMessageDoc(doc);
@@ -1032,7 +1034,7 @@ void cmdHandler(rx_message_t * msg) {
     char * token = strtok((char *)pstr.c_str(), ",");
    // loop through the string to extract all other tokens
    while( token != NULL ) {
-    if (token !="") {
+    if (strcmp(token,"")!=0) {
       if (inListTelegramID(String(token))) {
       telegramAllowedIDs.remove(String(token));
       writeConfig();
@@ -1051,7 +1053,7 @@ void cmdHandler(rx_message_t * msg) {
    char * token = strtok((char *)pstr.c_str(), ",");
    // loop through the string to extract all other tokens
    while( token != NULL ) {
-     if (token !="") {
+    if (strcmp(token,"")!=0) {
       if (!inListTelegramID(String(token))) {
       telegramAllowedIDs.push_back(String(token));
       writeConfig();

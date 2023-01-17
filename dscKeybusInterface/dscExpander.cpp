@@ -201,7 +201,6 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
 
   byte address = 0;
   byte channel = 0;
-  bool change = false;
 
   //we try and do as much setup here so that the ISR functions do the mimimal work.
   if (zone > maxZones) return;
