@@ -413,15 +413,15 @@ void setup() {
 
         if (partition==activePartition || !partition)   { 
           
-           char msg[30]="";        
+           char msg[40]="";        
            switch (ps) {
-           case trStatus:publishStatus("trouble_status",open);snprintf(msg, 30, "Partition:%d Trouble status is %s",partition,open?"ON":"OFF");break ;       
-           case batStatus: publishStatus("battery_status",open);snprintf(msg, 30, "Partition:%d Battery status is %s",partition,open?"ON":"OFF");break;
-           case acStatus: publishStatus("power_status",open);snprintf(msg, 30, "Partition:%d AC status is %s",partition,open?"ON":"OFF");break;
-           case panicStatus: publishStatus("panic_status",open);snprintf(msg, 30, "Partition:%d Panic status is %s",partition,open?"ON":"OFF");break;
-           case rdyStatus: publishStatus("ready_status",open);snprintf(msg, 30, "Partition:%d Ready status is %s",partition,open?"ON":"OFF");break;
-           case armStatus: publishStatus("armed_status",open);snprintf(msg, 30, "Partition:%d Armed status is %s",partition,open?"ON":"OFF");break;
-           case chimeStatus: publishStatus("chime_status",open);snprintf(msg, 30, "Partition:%d Chime status is %s",partition,open?"ON":"OFF");break; 
+           case trStatus:publishStatus("trouble_status",open);snprintf(msg, 40, "Partition:%d Trouble status is %s",partition,open?"ON":"OFF");break ;       
+           case batStatus: publishStatus("battery_status",open);snprintf(msg, 40, "Partition:%d Battery status is %s",partition,open?"ON":"OFF");break;
+           case acStatus: publishStatus("power_status",open);snprintf(msg, 40, "Partition:%d AC status is %s",partition,open?"ON":"OFF");break;
+           case panicStatus: publishStatus("panic_status",open);snprintf(msg, 40, "Partition:%d Panic status is %s",partition,open?"ON":"OFF");break;
+           case rdyStatus: publishStatus("ready_status",open);snprintf(msg, 40, "Partition:%d Ready status is %s",partition,open?"ON":"OFF");break;
+           case armStatus: publishStatus("armed_status",open);snprintf(msg, 40, "Partition:%d Armed status is %s",partition,open?"ON":"OFF");break;
+           case chimeStatus: publishStatus("chime_status",open);snprintf(msg, 40, "Partition:%d Chime status is %s",partition,open?"ON":"OFF");break; 
            default: break;
             }
           
