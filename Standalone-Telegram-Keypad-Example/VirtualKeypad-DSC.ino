@@ -143,7 +143,7 @@ const int maxZones=32;
   # 14 - zones 49-56 (for systems with 64 zone support)
   # 16 - zones 57-64 (for systems with 64 zone support)  
   */
-const int expanderAddr1=0; //1st zone expander emulator address to use . Set to 0 to disable. 
+const int expanderAddr1=8; //1st zone expander emulator address to use . Set to 0 to disable. 
 const int expanderAddr2=0;
 
 const char * userCodes = "1:User1,2:User2,40:master";
@@ -167,7 +167,7 @@ unsigned long pingTime;
 bool pauseNotifications;
 uint8_t activePartition=defaultPartition;
 
-
+struct 
 PushLib pushlib(telegramBotToken, telegramUserID, telegramMsgPrefix);
 
 DSCkeybushome * DSCkeybus;
@@ -425,7 +425,7 @@ void setup() {
            default: break;
             }
           
-           if (!DSCkeybus->forceRefresh && !pauseNotifications && (notificationFlag & 16))
+           if (!DSCkeybus->forceRefresh && !pauseNotifications && (notificationFlag & 8))
             pushNotification(msg);
         }
     });
@@ -817,55 +817,50 @@ String getZoneStatus() {
   return s;
 }
 
-String getSystemStatus() {
+String getPartitionStatus() {
   String s="";
    for (int p=1;p<=maxPartitions;p++) {
-      s = s + String(F("<b>Partition ")) + (String) p + String(F(" system status:</b> \n"));
-      if (dsc.disabled[p-1])
+      s = s + F("<b>Partition ") + (String) p + F(" status:</b>\n");
+      if (DSCkeybus->partitionStatus[p-1].disabled)
           s=s+F("Partition is disabled\n");
-      else if (dsc.armed[p-1])
-          s=s+F("Partition is armed\n");
-      else if (dsc.ready[p-1])
+      else if (DSCkeybus->partitionStatus[p-1].armed) {
+          if (DSCkeybus->partitionStatus[p-1].armedNight)
+            s=s+F("Partition is armed Night\n");          
+          else if (DSCkeybus->partitionStatus[p-1].armedAway)
+            s=s+F("Partition is armed Away\n");
+          else if (DSCkeybus->partitionStatus[p-1].armedStay)
+            s=s+F("Partition is armed Stay\n");
+          else
+            s=s+F("Partition is armed\n");
+      } else if (DSCkeybus->partitionStatus[p-1].exitdelay)
+             s=s+F("Partition is in exit delay\n");
+       else if (DSCkeybus->partitionStatus[p-1].ready)
            s=s+F("Partition is ready\n");
       else 
           s=s+F("Partition is not ready\n");
+       if (DSCkeybus->partitionStatus[p-1].chime && !DSCkeybus->partitionStatus[p-1].disabled)
+            s=s+F("Chime is ") + String(DSCkeybus->partitionStatus[p-1].chime?"ON\n":"OFF\n");
+      s=s+"\n";
    }
   
   return s;
   
 }
 
-String getSystemLights() {
+String getPanelStatus() {
   String s="";
-  /*
- for (int p=1;p<4;p++ ) {
-     if (!partitionStates[p-1].active) continue;
-  s = s + "<b>Partition "+ (String) p +" System lights: </b>\n";
-  if (partitionStates[p-1].previousLightState.ready)
-    s = s + "Ready|";
-  else if (partitionStates[p-1].previousLightState.armed)
-    s = s + "Armed|";
-  else
-    s = s + "NotReady|";
-  if (partitionStates[p-1].previousLightState.trouble)
-    s = s + "Trouble|";
-  if (partitionStates[p-1].previousLightState.fire)
-    s = s + "Fire|";
-  if (partitionStates[p-1].previousLightState.bypass)
-    s = s + "Bypass|";
-  if (partitionStates[p-1].previousLightState.ac)
-    s = s + "ACOK|";
-  else
-    s = s + "NOAC|";
-  if (partitionStates[p-1].previousLightState.bat)
-    s = s + "BAT|";
-  if (partitionStates[p-1].previousLightState.chime)
-    s = s + "CHM|";
-  if (vista.statusFlags.programMode)
-    s = s + "Program|";
-  s = s + "\n\n";
- }
- */
+    s = s + F("<b>Panel Lights</b>\n");
+  if (dsc.powerTrouble)
+      s=s+F("AC is off |");
+  
+  if (!dsc.batteryTrouble) //if 1 then battery is ok
+      s=s+F("Battery is low\n");
+ 
+  if (dsc.trouble)
+      s=s+F("Trouble is on\n");
+
+  s = s + "\n"; 
+
   return s;
 }
 
@@ -917,29 +912,25 @@ void cmdHandler(rx_message_t * msg) {
         doc["text"] = F("Sending bypass...");
         pushlib.sendMessageDoc(doc);
         DSCkeybus->alarm_keypress_partition("*199#",activePartition);
-
     }
-
   } else if (msg -> text == "/reboot" && !firstRun) {
     doc["text"] = F("Rebooting...");
     pushlib.sendMessageDoc(doc);
     delay(5000);
     ESP.restart();
   } else if (msg -> text == "/getstatus") {
-    String s = "\n" + getSystemStatus();
+    String s = "\n" + getPanelStatus();
     s += String(F("------------------------------\n"));
-    s += getSystemLights();
-
+    s += getPartitionStatus();
     s += String(F("------------------------------\n"));
     s += getZoneStatus();
-    
+    s += String(F("------------------------------\n"));    
     if (pauseNotifications)
       s += String(F("Notifications are DISABLED\n"));
     else
       s += String(F("Notifications are ACTIVE\n"));
      s += String(F("Notification flag is ")) + (String) notificationFlag + "\n";
     s += "Active partition is " + (String) activePartition + " \n";
-   // s += "Local IP address: http://" + (String) WiFi.localIP().toString().c_str() + "\n";
     doc["parse_mode"] = "HTML";
     doc["text"] = s;
     doc.remove("reply_markup"); //msg too long for markup        
@@ -1009,7 +1000,7 @@ void cmdHandler(rx_message_t * msg) {
       notificationFlag=p;
       writeConfig();      
       char out[40];
-      sprintf(out, "Nofitification flags set to %d\n", p);
+      sprintf(out, "Nofitification flag set to %d\n", p);
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
     }

@@ -308,7 +308,6 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   eventTime;
 
   struct partitionType {
-
     unsigned long keyPressTime;
     byte lastStatus;
     byte status;
@@ -325,6 +324,15 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
     byte newData:1;
     byte hexMode:1;
     byte chime:1;
+    byte armedAway:1;
+    byte armedStay:1;
+    byte armedNight:1;
+    byte armed:1;
+    byte disabled:1;
+    byte ready:1;
+    byte exitdelay:1;
+    byte fire:1;
+    byte alarm:1;
   };
 
   struct zoneType {
@@ -1480,7 +1488,11 @@ void update() override {
 
       // Publishes status per partition
       for (byte partition = 0; partition < dscPartitions; partition++) {
-
+        if (dsc.disabled[partition])
+            partitionStatus[partition].disabled=true;
+         else
+             partitionStatus[partition].disabled=false;
+         
         if (dsc.disabled[partition] || partitionStatus[partition].locked) continue;
 
          if (lastStatus[partition] != dsc.status[partition]  ) {
@@ -1499,7 +1511,9 @@ void update() override {
             dsc.readyChanged[partition] = false; //if we are triggered no need to trigger a ready state change
             dsc.armedChanged[partition] = false; // no need to display armed changed
             partitionStatusChangeCallback( String(FPSTR(STATUS_TRIGGERED)).c_str(), partition + 1);
-          }
+            partitionStatus[partition].alarm=true;
+          } else
+              partitionStatus[partition].alarm=false;
         }
 
         // Publishes armed/disarmed status
@@ -1508,21 +1522,39 @@ void update() override {
 
           if (dsc.armed[partition]) {
             panelStatusChangeCallback(armStatus, true, partition + 1);
+            partitionStatus[partition].armed=true;
             if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) { 
-                partitionStatusChangeCallback( String(FPSTR(STATUS_NIGHT)).c_str(), partition + 1);
+              partitionStatusChangeCallback( String(FPSTR(STATUS_NIGHT)).c_str(), partition + 1);
+              partitionStatus[partition].armedStay=false;   
+              partitionStatus[partition].armedNight=true;
+              partitionStatus[partition].armedAway=false;
+              partitionStatus[partition].exitdelay=false;              
             }
-            else if (dsc.armedStay[partition])
+            else if (dsc.armedStay[partition]) {
               partitionStatusChangeCallback( String(FPSTR(STATUS_STAY)).c_str(), partition + 1);
-            else {
+              partitionStatus[partition].armedStay=true;   
+              partitionStatus[partition].armedNight=false;
+              partitionStatus[partition].armedAway=false;
+              partitionStatus[partition].exitdelay=false;              
+            } else {
                 partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
                 clearZoneAlarms(partition + 1);
+              partitionStatus[partition].armedStay=false;   
+              partitionStatus[partition].armedNight=false;
+              partitionStatus[partition].armedAway=true;
+              partitionStatus[partition].exitdelay=false;
             }
           } else if (!dsc.exitDelay[partition]) {
             if (!forceRefresh) {
                 clearZoneBypass(partition + 1);
                // partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
             } 
-                panelStatusChangeCallback(armStatus, false, partition + 1);
+              partitionStatus[partition].armed=false; 
+              panelStatusChangeCallback(armStatus, false, partition + 1);
+              partitionStatus[partition].armedStay=false;   
+              partitionStatus[partition].armedNight=false;
+              partitionStatus[partition].armedAway=false;  
+              partitionStatus[partition].exitdelay=false;                
           }
         }
         // Publishes exit delay status
@@ -1530,7 +1562,12 @@ void update() override {
           dsc.exitDelayChanged[partition] = false; // Resets the exit delay status flag
           if (dsc.exitDelay[partition]) {
               partitionStatusChangeCallback( String(FPSTR(STATUS_PENDING)).c_str(), partition + 1);
-          } 
+              partitionStatus[partition].exitdelay=true;   
+              partitionStatus[partition].armedStay=false;   
+              partitionStatus[partition].armedNight=false;
+              partitionStatus[partition].armedAway=false;  
+          } else
+              partitionStatus[partition].exitdelay=false;
         } 
 
         // Publishes ready status
@@ -1540,13 +1577,18 @@ void update() override {
           if (dsc.ready[partition]  && !dsc.exitDelay[partition]) {
             partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
             panelStatusChangeCallback(rdyStatus, true, partition + 1);
+              partitionStatus[partition].ready=true;  
           } else if (!dsc.exitDelay[partition]) {
             if (!dsc.armed[partition] ) {
                 partitionStatusChangeCallback( String(FPSTR(STATUS_NOT_READY)).c_str(), partition + 1);
-                panelStatusChangeCallback(armStatus, false, partition + 1);                
+                panelStatusChangeCallback(armStatus, false, partition + 1);
+               partitionStatus[partition].exitdelay=false;   
+              partitionStatus[partition].armedStay=false;   
+              partitionStatus[partition].armedNight=false;
+              partitionStatus[partition].armedAway=false;
             }
             panelStatusChangeCallback(rdyStatus, false, partition + 1);
-          
+            partitionStatus[partition].ready=false;                
           }
 
         }
@@ -1554,8 +1596,13 @@ void update() override {
         // Publishes fire alarm status
         if (dsc.fireChanged[partition] || forceRefresh) {
           dsc.fireChanged[partition] = false; // Resets the fire status flag
-          if (dsc.fire[partition]) fireStatusChangeCallback(true, partition + 1); // Fire alarm tripped
-          else fireStatusChangeCallback(false,partition + 1); // Fire alarm restored
+          if (dsc.fire[partition]) {
+              fireStatusChangeCallback(true, partition + 1); // Fire alarm tripped
+               partitionStatus[partition].fire=true;
+          } else {
+              fireStatusChangeCallback(false,partition + 1); // Fire alarm restored
+              partitionStatus[partition].fire=false;             
+          }
         }
 
       }
@@ -1650,8 +1697,8 @@ void update() override {
           zoneStatusMsg.append(s1);
         }
       }
-      if (zoneStatusMsg == "")
-        zoneStatusMsg = "OK";
+      //if (zoneStatusMsg == "")
+        //zoneStatusMsg = "Pending";
 
       if (zoneStatusMsg != previousZoneStatusMsg || forceRefresh)
         zoneMsgStatusCallback(zoneStatusMsg);
