@@ -134,7 +134,17 @@ const int defaultPartition=1;
 const int maxPartitions=3;
 const int maxZones=32;
 
-const int expanderAddr1=0;
+/*
+  #zone expander addresses:
+  # 9  - zones 9-16
+  # 10 - zones 17-24
+  # 11 - zones 25-32
+  # 12 - zones 33-40 (for systems with 64 zone support)
+  # 13 - zones 41-48 (for systems with 64 zone support)
+  # 14 - zones 49-56 (for systems with 64 zone support)
+  # 16 - zones 57-64 (for systems with 64 zone support)  
+  */
+const int expanderAddr1=0; //1st zone expander emulator address to use . Set to 0 to disable. 
 const int expanderAddr2=0;
 
 const char * userCodes = "1:User1,2:User2,40:master";
