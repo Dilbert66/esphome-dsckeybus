@@ -125,7 +125,6 @@ const char * telegramMsgPrefix="[Alarm Panel] "; // Set a prefix for all message
 std::list<String> telegramAllowedIDs = {}; //list of additional telegram ids with access to bot.  Can include channel id.
 std::list<int> notifyZones = {}; //comma separated list of zones that you want push notifications on change
 
-
 const int dscClockPin=22;
 const int dscReadPin=21;
 const int dscWritePin=18;
@@ -397,7 +396,7 @@ void setup() {
     DSCkeybus->onPartitionStatusChange([&](std::string statusCode, int partition) {
         if (!DSCkeybus->forceRefresh && !pauseNotifications && statusCode!="" && (notificationFlag & 2))  {      
          char msg[40];
-         snprintf(msg, 40, "Partition %d status: %s",partition,statusCode.c_str());            
+         snprintf(msg, 40, "Partition:%d status: %s",partition,statusCode.c_str());            
          pushNotification(msg);   
         }
     });
@@ -405,7 +404,7 @@ void setup() {
     DSCkeybus->onPartitionMsgChange([&](std::string pmsg,uint8_t partition) {
         if (!DSCkeybus->forceRefresh && pmsg!="" && !pauseNotifications && (notificationFlag & 8))   {     
          char msg[100];
-         snprintf(msg, 100, "Partition %d msg: %s",partition,pmsg.c_str());            
+         snprintf(msg, 100, "Partition:%d msg: %s",partition,pmsg.c_str());            
          pushNotification(msg);   
         }
     });      
@@ -416,13 +415,13 @@ void setup() {
           
            char msg[30]="";        
            switch (ps) {
-           case trStatus:publishStatus("trouble_status",open);snprintf(msg, 30, "Trouble status is %s",open?"ON":"OFF");break ;       
-           case batStatus: publishStatus("battery_status",open);snprintf(msg, 30, "Battery status is %s",open?"ON":"OFF");break;
-           case acStatus: publishStatus("power_status",open);snprintf(msg, 30, "AC status is %s",open?"ON":"OFF");break;
-           case panicStatus: publishStatus("panic_status",open);snprintf(msg, 30, "Panic status is %s",open?"ON":"OFF");break;
-           case rdyStatus: publishStatus("ready_status",open);snprintf(msg, 30, "Ready status is %s",open?"ON":"OFF");break;
-           case armStatus: publishStatus("armed_status",open);snprintf(msg, 30, "Armed status is %s",open?"ON":"OFF");break;
-           case chimeStatus: publishStatus("chime_status",open);snprintf(msg, 30, "Chime status is %s",open?"ON":"OFF");break; 
+           case trStatus:publishStatus("trouble_status",open);snprintf(msg, 30, "Partition:%d Trouble status is %s",partition,open?"ON":"OFF");break ;       
+           case batStatus: publishStatus("battery_status",open);snprintf(msg, 30, "Partition:%d Battery status is %s",partition,open?"ON":"OFF");break;
+           case acStatus: publishStatus("power_status",open);snprintf(msg, 30, "Partition:%d AC status is %s",partition,open?"ON":"OFF");break;
+           case panicStatus: publishStatus("panic_status",open);snprintf(msg, 30, "Partition:%d Panic status is %s",partition,open?"ON":"OFF");break;
+           case rdyStatus: publishStatus("ready_status",open);snprintf(msg, 30, "Partition:%d Ready status is %s",partition,open?"ON":"OFF");break;
+           case armStatus: publishStatus("armed_status",open);snprintf(msg, 30, "Partition:%d Armed status is %s",partition,open?"ON":"OFF");break;
+           case chimeStatus: publishStatus("chime_status",open);snprintf(msg, 30, "Partition:%d Chime status is %s",partition,open?"ON":"OFF");break; 
            default: break;
             }
           
@@ -455,16 +454,17 @@ void setup() {
     DSCkeybus->onFireStatusChange([&](bool open, int partition) {
            if (partition==activePartition) {
             publishStatus("fire_status",open);
-            if (!DSCkeybus->forceRefresh && !pauseNotifications) {
+           }              
+            if (!DSCkeybus->forceRefresh && !pauseNotifications && (notificationFlag & 2)) {
                 char msg[100];
-                snprintf(msg, 100, "Fire status is now %s",open?"ON":"OFF"); 
+                snprintf(msg, 100, "Partition:%d Fire status is now %s",partition,open?"ON":"OFF"); 
                 pushNotification(msg);
-            }   
+ 
            }        
     }); 
     
     DSCkeybus->onTroubleMsgStatus([&](std::string tmsg) {
-        if (!DSCkeybus->forceRefresh && tmsg!="" && !pauseNotifications) {
+        if (!DSCkeybus->forceRefresh && tmsg!="" && !pauseNotifications && (notificationFlag & 8)) {
             char msg[100];
             snprintf(msg, 100, "Trouble: %s",tmsg.c_str()); 
             pushNotification(msg);
