@@ -89,6 +89,7 @@ void PushLib::postMessage(WiFiClientSecure *ipClient, String *msg) {
     ipClient -> connect("api.telegram.org", 443);
 
     if (ipClient -> connected()) {
+    ipClient->setHandshakeTimeout(30);         
     sending = true;
     if (DEBUG_PUSHLIB > 1) printf("Sending message: %s\n", msg -> c_str());
     ipClient -> print(F("POST /bot"));
@@ -194,6 +195,7 @@ void PushLib::getUpdatesSendTask(void * args) {
       if (!ipClient.connected()) ipClient.connect("api.telegram.org", 443);
 
       if (ipClient.connected()) {
+        ipClient.setHandshakeTimeout(30); 
         UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
         if (DEBUG_PUSHLIB > 0) printf("\nTaskupdates free stack memory: %5d\n", (uint16_t) uxHighWaterMark);
         //if (DEBUG_PUSHLIB > 1) printf("FreeHeap: %6d, MaxBlock: %6d\n\n", heap_caps_get_free_size(0), heap_caps_get_largest_free_block(0));

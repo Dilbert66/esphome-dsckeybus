@@ -122,7 +122,7 @@ const char * password = "!YourSecretPass123"; // login and AES encryption/decryp
 const char * telegramBotToken=""; // Set the Telegram bot access token
 const char * telegramUserID="1234567890"; // Set the default Telegram chat recipient user/group ID
 const char * telegramMsgPrefix="[Alarm Panel] "; // Set a prefix for all messages
-std::list<String> telegramAllowedIDs = {};
+std::list<String> telegramAllowedIDs = {}; //list of additional telegram ids with access to bot.  Can include channel id.
 std::list<int> notifyZones = {}; //comma separated list of zones that you want push notifications on change
 
 
@@ -137,14 +137,15 @@ const int maxZones=32;
 const int expanderAddr1=0;
 const int expanderAddr2=0;
 
-const char * userCodes = "1:User1,2:User2";
+const char * userCodes = "1:User1,2:User2,40:master";
 
+uint8_t notificationFlag=1+2+4; //which events; bit 1=zones, bit 2=status, bit 3= events, bit 4 = messages, bit 5=light states
 
 //end user config
 
 
 
-const char * const telegramMenu[] PROGMEM ={"/help - this command","/armstay - arm in stay mode","/bypass - turn on full bypass","/reboot - reboot esp","/!<keys> - send cmds direct to panel","/getstatus - get zone/system/light statuses","/getstats - get memory useage stats","/stopbus - stop dsc bus","/startbus - start dsc bus","/stopnotify - pause notifications","/startnotify - unpause notifications","/setpartition=<partition> - set default partition","/&<p><keys> - send cmds to partition p","/addzones=<zone>,<zone> - add zones to notify list","/removezones=<zone>,<zone> - remove zones from notify list","/addids=<id>,<id> - add telegram ids to allowed control list","/removeids=<id>,<id> - remove telegram ids from allowed list","/getip - get url of keypad","/getcfg - list notify and telegram ids"};
+const char * const telegramMenu[] PROGMEM ={"/help - this command","/armstay - arm in stay mode","/bypass - turn on full bypass","/reboot - reboot esp","/!<keys> - send cmds direct to panel","/getstatus - get zone/system/light statuses","/getstats - get memory useage stats","/stopbus - stop dsc bus","/startbus - start dsc bus","/stopnotify - pause notifications","/startnotify - unpause notifications","/setpartition=<partition> - set default partition","/&<p><keys> - send cmds to partition p","/addzones=<zone>,<zone> - add zones to notify list","/removezones=<zone>,<zone> - remove zones from notify list","/addids=<id>,<id> - add telegram ids to allowed control list","/removeids=<id>,<id> - remove telegram ids from allowed list","/getip - get url of keypad","/getcfg - list notify and telegram ids","/setnotifyflag=<flag> - sum of digits: zones = 1 , status = 2 , messages = 4 , events = 8 , light statues = 16"};
 
 
 std::string accessCodeStr=accessCode;
@@ -384,7 +385,7 @@ void setup() {
     });
     
     DSCkeybus->onPartitionStatusChange([&](std::string statusCode, int partition) {
-        if (!DSCkeybus->forceRefresh && !pauseNotifications && statusCode!="")  {      
+        if (!DSCkeybus->forceRefresh && !pauseNotifications && statusCode!="" && (notificationFlag & 2))  {      
          char msg[40];
          snprintf(msg, 40, "Partition %d status: %s",partition,statusCode.c_str());            
          pushNotification(msg);   
@@ -392,7 +393,7 @@ void setup() {
     });
     
     DSCkeybus->onPartitionMsgChange([&](std::string pmsg,uint8_t partition) {
-        if (!DSCkeybus->forceRefresh && pmsg!="" && !pauseNotifications)   {     
+        if (!DSCkeybus->forceRefresh && pmsg!="" && !pauseNotifications && (notificationFlag & 8))   {     
          char msg[100];
          snprintf(msg, 100, "Partition %d msg: %s",partition,pmsg.c_str());            
          pushNotification(msg);   
@@ -415,7 +416,7 @@ void setup() {
            default: break;
             }
           
-           if (!DSCkeybus->forceRefresh && !pauseNotifications)
+           if (!DSCkeybus->forceRefresh && !pauseNotifications && (notificationFlag & 16))
             pushNotification(msg);
         }
     });
@@ -433,10 +434,9 @@ void setup() {
     });
     DSCkeybus->onEventInfo([&](std::string msg) {
         
-      if (!DSCkeybus->forceRefresh && msg !="" && !pauseNotifications)     
+      if (!DSCkeybus->forceRefresh && msg !="" && !pauseNotifications && (notificationFlag & 4) )     
         pushNotification(msg.c_str());
-    
-        publishMsg("event_info",msg.c_str());
+            publishMsg("event_info",msg.c_str());
     });  
 
     DSCkeybus->onBeeps([&](std::string beep,int partition) {
@@ -462,7 +462,7 @@ void setup() {
     });
     
     DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
-        if (inListZone(zone) && !DSCkeybus->forceRefresh && !pauseNotifications) {
+        if (inListZone(zone) && !DSCkeybus->forceRefresh && !pauseNotifications && (notificationFlag & 1)) {
             char msg[100];
             snprintf(msg, 100, "Zone %d is now %s ", zone,open?"OPEN":"CLOSED"); 
             pushNotification(msg);
@@ -748,6 +748,9 @@ void readConfig(){
     }    
     
    }
+   if (doc.containsKey("notificationflag")) {
+       notificationFlag=(uint8_t) doc["notificationflag"];
+   }
    if (file) file.close();
 
 
@@ -779,6 +782,7 @@ void writeConfig(){
 
    doc["zones"]=zones;
    doc["ids"]=ids;
+   doc["notificationflag"]=notificationFlag;
      String out;
      serializeJson(doc, out);
      Serial.printf("Serialized=%s\n",out.c_str());
@@ -864,6 +868,7 @@ void sendCurrentConfig(JsonDocument & doc) {
       for (String id : telegramAllowedIDs) {
         config=config +  id + "\n";
       }
+      config = config + "\nNotification Flag=" + (String) notificationFlag + "\n";
       doc["text"] = config;
       pushlib.sendMessageDoc(doc);
 }
@@ -922,7 +927,7 @@ void cmdHandler(rx_message_t * msg) {
       s += String(F("Notifications are DISABLED\n"));
     else
       s += String(F("Notifications are ACTIVE\n"));
-  
+     s += String(F("Notification flag is ")) + (String) notificationFlag + "\n";
     s += "Active partition is " + (String) activePartition + " \n";
    // s += "Local IP address: http://" + (String) WiFi.localIP().toString().c_str() + "\n";
     doc["parse_mode"] = "HTML";
@@ -962,6 +967,7 @@ void cmdHandler(rx_message_t * msg) {
     doc["text"] = F("Notifications paused..");
     pushlib.sendMessageDoc(doc);
 
+
   } else if (msg -> text == "/startnotify") {
     pauseNotifications = false;
     doc["text"] = F("Notifications un-paused..");
@@ -985,7 +991,19 @@ void cmdHandler(rx_message_t * msg) {
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
     }
-    
+   } else if (msg -> text.startsWith("/setnotifyflag")) {
+    String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
+    int p;
+    sscanf(pstr.c_str(), "%d", & p);
+    if (p >= 0 && p <256) {
+      notificationFlag=p;
+      writeConfig();      
+      char out[40];
+      sprintf(out, "Nofitification flags set to %d\n", p);
+      doc["text"] = String(out);
+      pushlib.sendMessageDoc(doc);
+    }
+      
   } else if (msg -> text.startsWith("/addzones")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
 

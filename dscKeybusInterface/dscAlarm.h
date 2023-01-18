@@ -1520,9 +1520,9 @@ void update() override {
           } else if (!dsc.exitDelay[partition]) {
             if (!forceRefresh) {
                 clearZoneBypass(partition + 1);
-                partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
-            }
-            panelStatusChangeCallback(armStatus, false, partition + 1);
+               // partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
+            } 
+                panelStatusChangeCallback(armStatus, false, partition + 1);
           }
         }
         // Publishes exit delay status
