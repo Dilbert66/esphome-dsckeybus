@@ -16,7 +16,7 @@
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
 #define ASYNC_CORE 0 // which core to run async tasks on
-#define TASK_STACK_SIZE 6700 // how much stack task is assigned in words 
+#define TASK_STACK_SIZE 7700 // how much stack task is assigned in words 
 #define LONG_POLL_TIMEOUT 120 //how many seconds to keep the connection open for a long poll get updates session
 #define TELEGRAM_PUSH
 #define DEBUG_PUSHLIB 2
@@ -25,12 +25,18 @@
 struct rx_message_t {
   String text;
   String chat_id;
+  String message_id;
+  String id;
   String sender;
+  bool is_callback;
   String date;
 };
 
-//url encoded default option string.  This sets a button to send the /getstatus  cmd
-//#define DEFAULT_PUSH_OPTIONS "{'reply_markup':{'inline_keyboard':[[{'text':'View System State','callback_data':'/getstatus'}]]}}" 
+struct msgType {
+    String msg_text;
+    String method;
+
+};
 
 class PushLib {
 public:
@@ -41,8 +47,8 @@ PushLib(const char * token, const char * userID, const char * prefix);
 void loop();
 void begin();
 void stop();
-void sendMessageJson(String msg);
-void sendMessageDoc(JsonDocument &  doc);
+void sendMessageJson(String & msg, String method = "/sendMessage");
+void sendMessageDoc(JsonDocument &  doc,  String method = "/sendMessage");
 bool isSending();
 void addCmdHandler(std:: function < void(rx_message_t * msg) > callback);
 
@@ -92,20 +98,18 @@ bool resetTask;
 bool sending = false;
 uint8_t inMsgIdx, outMsgIdx;
 const uint8_t msgQueueSize = 10;
-String msgQueue[10];
-String getNextMsg();
-String peekNextMsg();
-void saveMsgToQueue(String msg);
+msgType msgQueue[10];
+msgType getNextMsg();
+msgType peekNextMsg();
+void saveMsgToQueue(String & msg_text,String  method);
 uint8_t msgAvailable();
-void handleCommands(rx_message_t m);
+void handleCommands(rx_message_t  m);
 const int telegramCheckInterval = 2000;
 rx_message_t getmessage;
 int lastMsgReceived = 0;
 static void getUpdatesSendTask(void * args);
-void postMessage(WiFiClientSecure * ipClient, String * msg);
+void postMessage(WiFiClientSecure * ipClient, String * msg,String *method);
 std:: function < void(rx_message_t * msg) > cmdHandlerCallback;
 };
-
-
 
 #endif

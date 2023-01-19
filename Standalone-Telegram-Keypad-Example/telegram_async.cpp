@@ -24,20 +24,27 @@ bool PushLib::isSending() {
   return sending;
 }
 
-String PushLib::peekNextMsg() {
-  if (inMsgIdx == outMsgIdx) return "";
+msgType PushLib::peekNextMsg() {
+  msgType t;
+  t.msg_text="";
+  if (inMsgIdx == outMsgIdx) return t;
   return msgQueue[outMsgIdx];
 }
 
-String PushLib::getNextMsg() {
-  if (inMsgIdx == outMsgIdx) return "";
+msgType PushLib::getNextMsg() {
+    msgType t;
+    t.msg_text="";
+  if (inMsgIdx == outMsgIdx) return t;
   uint8_t currentMsgIdx = outMsgIdx;
   outMsgIdx = (outMsgIdx + 1) % msgQueueSize;
   return msgQueue[currentMsgIdx];
 }
 
-void PushLib::saveMsgToQueue(String msg) {
+void PushLib::saveMsgToQueue(String &  msg_text,String  method) {
   if (msgAvailable() + 1 == msgQueueSize) return; //overflow so can't save
+  msgType msg;
+  msg.msg_text=msg_text;
+  msg.method=method;
   msgQueue[inMsgIdx] = msg;
   inMsgIdx = (inMsgIdx + 1) % msgQueueSize;
 }
@@ -46,8 +53,7 @@ uint8_t PushLib::msgAvailable() {
   int avail = inMsgIdx - outMsgIdx;
   if (avail < 0)
     avail += msgQueueSize;
- 
-  return avail;
+   return avail;
 }
 
 void PushLib::begin() {
@@ -69,20 +75,20 @@ void PushLib::loop() {
 }
 
 //stringfied json with all parameters
-void PushLib::sendMessageJson(String msg) {
+void PushLib::sendMessageJson(String & msg, String  method) {
   if (DEBUG_PUSHLIB > 0) printf("queueing msg %s\n", msg.c_str());
-  saveMsgToQueue(msg);
+  saveMsgToQueue(msg,method);
 }
 
 //json document
-void PushLib::sendMessageDoc(JsonDocument &  doc) {
+void PushLib::sendMessageDoc(JsonDocument &  doc, String  method) {
   String msg;
   serializeJson(doc, msg);  
-  if (DEBUG_PUSHLIB > 0) printf("queueing msg %s\n", msg.c_str());  
-  saveMsgToQueue(msg);
+  if (DEBUG_PUSHLIB > 0) printf("queueing send message text %s\n", msg.c_str());  
+  saveMsgToQueue(msg,method);
 }
 
-void PushLib::postMessage(WiFiClientSecure *ipClient, String *msg) {
+void PushLib::postMessage(WiFiClientSecure *ipClient, String *msg, String  *method) {
 
 
   if (WiFi.status() == WL_CONNECTED && !ipClient -> connected()) 
@@ -91,15 +97,15 @@ void PushLib::postMessage(WiFiClientSecure *ipClient, String *msg) {
     if (ipClient -> connected()) {
     ipClient->setHandshakeTimeout(30);         
     sending = true;
-    if (DEBUG_PUSHLIB > 1) printf("Sending message: %s\n", msg -> c_str());
+    if (DEBUG_PUSHLIB > 1) printf("Sending message: %s\n", msg->c_str());
     ipClient -> print(F("POST /bot"));
     ipClient -> print(telegramBotToken);
-    ipClient -> print(F("/sendMessage"));
+    ipClient -> print(*method);
     ipClient -> println(F(" HTTP/1.1"));
     ipClient -> println(F("Host: api.telegram.org"));
     ipClient -> println(F("Content-Type: application/json"));
     ipClient -> print(F("Content-Length: "));
-    ipClient -> println(msg -> length());
+    ipClient -> println(msg->length());
     ipClient -> println();
     ipClient -> print( *msg);
 
@@ -185,8 +191,8 @@ void PushLib::getUpdatesSendTask(void * args) {
 
     String payload = "";
     if (_this -> msgAvailable()) {
-        String msg = _this -> peekNextMsg();        
-      _this -> postMessage( & ipClient, & msg);
+        msgType msg = _this -> peekNextMsg();        
+      _this -> postMessage( & ipClient, & msg.msg_text,&msg.method);
       continue; //we make sure we clean out send queue first
     }
     if (millis() - checkTime > _this -> telegramCheckInterval && WiFi.status() == WL_CONNECTED) {
@@ -244,59 +250,65 @@ void PushLib::getUpdatesSendTask(void * args) {
         }
         if (payload != "") {
           if (DEBUG_PUSHLIB > 1) printf("payload=%s\n", payload.c_str());
-          StaticJsonDocument < 1000 > root;
+          StaticJsonDocument < 2000 > root;
           auto err = deserializeJson(root, payload);
           if (!err) {
             if (root["result"][0]["callback_query"]["id"]) {
               int update_id = root["result"][0]["update_id"];
               update_id = update_id + 1;
-              //we ignore the first message on initial start to avoid a reboot loop
-            //  if (_this -> lastMsgReceived == 0 && root["result"][0]["callback_query"]["data"]=="/reboot") _this -> lastMsgReceived = update_id;
               
               if (_this -> lastMsgReceived != update_id) {
                 String sender = root["result"][0]["callback_query"]["message"]["from"]["username"];
                 String text = root["result"][0]["callback_query"]["data"];
                 String chat_id = root["result"][0]["callback_query"]["message"]["chat"]["id"];
                 String date = root["result"][0]["callback_query"]["message"]["date"];
+                String message_id= root["result"][0]["callback_query"]["message"]["message_id"];
+                String id=root["result"][0]["callback_query"]["id"];
+                
                 m.sender = sender;
+                m.message_id= message_id;
                 m.text = text;
+                m.is_callback=true;
                 m.chat_id = chat_id;
+                m.id=id;
                 m.date = date;
                 _this -> lastMsgReceived = update_id;
               }
             } else if (root["result"][0]["channel_post"]["id"]) { 
               int update_id = root["result"][0]["update_id"];
               update_id = update_id + 1;
-              //we ignore the first message on initial start to avoid a reboot loop
-            //  if (_this -> lastMsgReceived == 0 && root["result"][0]["callback_query"]["data"]=="/reboot") _this -> lastMsgReceived = update_id;
-              
+     
               if (_this -> lastMsgReceived != update_id) {
                 String sender = root["result"][0]["channel_post"]["message"]["from"]["username"];
                 String text = root["result"][0]["channel_post"]["message"]["text"];
                 String chat_id = root["result"][0]["channel_post"]["message"]["chat"]["id"];
                 String date = root["result"][0]["channel_post"]["message"]["date"];
-
+                String message_id= root["result"][0]["channel_post"]["message"]["message_id"];
+                
+                m.is_callback=false;
                 m.sender = sender;
                 m.text = text;
                 m.chat_id = chat_id;
+                m.message_id= message_id;                
                 m.date = date;
                 _this -> lastMsgReceived = update_id;
               }
             } else if (root["result"][0]["message"]["text"]) {
               int update_id = root["result"][0]["update_id"];
               update_id = update_id + 1;
-              //we ignore the first message on initial start to avoid a reboot loop
-            //  if (_this -> lastMsgReceived == 0 && root["result"][0]["callback_query"]["data"]=="/reboot") _this -> lastMsgReceived = update_id;
-              
+
               if (_this -> lastMsgReceived != update_id) {
                 String sender = root["result"][0]["message"]["from"]["username"];
                 String text = root["result"][0]["message"]["text"];
                 String chat_id = root["result"][0]["message"]["chat"]["id"];
                 String date = root["result"][0]["message"]["date"];
-
+                String message_id= root["result"][0]["message"]["message_id"];
+                
+                m.is_callback=false;
                 m.sender = sender;
                 m.text = text;
                 m.chat_id = chat_id;
+                m.message_id= message_id;                
                 m.date = date;
                 _this -> lastMsgReceived = update_id;
               }
@@ -337,8 +349,8 @@ void PushLib::getUpdatesSendTask(void * args) {
 
 }
 
-void PushLib::handleCommands(rx_message_t m) {
+void PushLib::handleCommands(rx_message_t  m) {
   if (cmdHandlerCallback != NULL)
-    cmdHandlerCallback( & m);
+    cmdHandlerCallback( &m);
 }
 
