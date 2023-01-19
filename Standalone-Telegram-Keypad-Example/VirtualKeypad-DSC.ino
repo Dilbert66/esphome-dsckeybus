@@ -80,37 +80,49 @@
      
 */
 
-#define VIRTUALKEYPAD  //comment if you do not want/need the virtualkeypad functionality
+#define VIRTUALKEYPAD //comment if you do not want/need the virtualkeypad functionality
 #define useOTA //comment this to disable OTA updates. 
 
 #include <Arduino.h>
 
 #ifdef useOTA
+
 #include <ArduinoOTA.h>
+
 #endif
 
 #if defined(VIRTUALKEYPAD)
+
 #include <ESPmDNS.h>
+
 #include <AsyncTCP.h>
+
 #include <ESPAsyncWebServer.h>
+
 #include <AESLib.h>
+
 #endif
 
 #include <SPIFFS.h>
+
 #include <WiFi.h>
+
 #include <ArduinoJson.h>
+
 #include <string>
+
 #include <list>
 
 
 #define DEBUG 1
 
 #define ARDUINO_MQTT
+
 #include "dscAlarm.h"
+
 #include "telegram_async.h" //telegram notify full async plugin with inbound bot cmd capability
 
 //start user config
-
 
 
 const char * wifiSSID = ""; //name of wifi access point to connect to
@@ -125,13 +137,13 @@ const char * telegramMsgPrefix="[Alarm Panel] "; // Set a prefix for all message
 std::list<String> telegramAllowedIDs = {}; //list of additional telegram ids with access to bot.  Can include channel id.
 std::list<int> notifyZones = {}; //comma separated list of zones that you want push notifications on change
 
-const int dscClockPin=22;
-const int dscReadPin=21;
-const int dscWritePin=18;
+const int dscClockPin = 22;
+const int dscReadPin = 21;
+const int dscWritePin = 18;
 
-const int defaultPartition=1;
-const int maxPartitions=3;
-const int maxZones=32;
+const int defaultPartition = 1;
+const int maxPartitions = 3;
+const int maxZones = 32;
 
 /*
   #zone expander addresses:
@@ -141,23 +153,43 @@ const int maxZones=32;
   # 12 - zones 33-40 (for systems with 64 zone support)
   # 13 - zones 41-48 (for systems with 64 zone support)
   # 14 - zones 49-56 (for systems with 64 zone support)
-  # 16 - zones 57-64 (for systems with 64 zone support)  
+  # 16 - zones 57-64 (for systems with 64 zone support)
+
   */
-const int expanderAddr1=8; //1st zone expander emulator address to use . Set to 0 to disable. 
-const int expanderAddr2=0;
+const int expanderAddr1 = 0; //1st zone expander emulator address to use . Set to 0 to disable. 
+const int expanderAddr2 = 0;
 
 const char * userCodes = "1:User1,2:User2,40:master";
 
-uint8_t notificationFlag=1+2+4; //which events; bit 1=zones, bit 2=status, bit 3= events, bit 4 = messages, bit 5=light states
+uint8_t notificationFlag = 1 + 2 + 4; //which events; bit 1=zones, bit 2=status, bit 3= events, bit 4 = messages, bit 5=light states
 
 //end user config
 
+const char *
+  const telegramMenu[] PROGMEM = {
+    "/help - this command",
+    "/armstay - arm in stay mode",
+    "/bypass - turn on full bypass",
+    "/reboot - reboot esp",
+    "/!<keys> - send cmds direct to panel",
+    "/getstatus - get zone/system/light statuses",
+    "/getstats - get memory useage stats",
+    "/stopbus - stop dsc bus",
+    "/startbus - start dsc bus",
+    "/stopnotify - pause notifications",
+    "/startnotify - unpause notifications",
+    "/setpartition=<partition> - set default partition",
+    "/&<p><keys> - send cmds to partition p",
+    "/addzones=<zone>,<zone> - add zones to notify list",
+    "/removezones=<zone>,<zone> - remove zones from notify list",
+    "/addids=<id>,<id> - add telegram ids to allowed control list",
+    "/removeids=<id>,<id> - remove telegram ids from allowed list",
+    "/getip - get url of keypad",
+    "/getcfg - list notify and telegram ids",
+    "/setnotifyflag=<flag> - sum of digits: zones = 1 , status = 2 , messages = 4 , events = 8 , light statues = 16"
+  };
 
-
-const char * const telegramMenu[] PROGMEM ={"/help - this command","/armstay - arm in stay mode","/bypass - turn on full bypass","/reboot - reboot esp","/!<keys> - send cmds direct to panel","/getstatus - get zone/system/light statuses","/getstats - get memory useage stats","/stopbus - stop dsc bus","/startbus - start dsc bus","/stopnotify - pause notifications","/startnotify - unpause notifications","/setpartition=<partition> - set default partition","/&<p><keys> - send cmds to partition p","/addzones=<zone>,<zone> - add zones to notify list","/removezones=<zone>,<zone> - remove zones from notify list","/addids=<id>,<id> - add telegram ids to allowed control list","/removeids=<id>,<id> - remove telegram ids from allowed list","/getip - get url of keypad","/getcfg - list notify and telegram ids","/setnotifyflag=<flag> - sum of digits: zones = 1 , status = 2 , messages = 4 , events = 8 , light statues = 16"};
-
-
-std::string accessCodeStr=accessCode;
+std::string accessCodeStr = accessCode;
 #if defined(VIRTUALKEYPAD)
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
@@ -165,9 +197,9 @@ AsyncWebSocket ws("/ws");
 
 unsigned long pingTime;
 bool pauseNotifications;
-uint8_t activePartition=defaultPartition;
+uint8_t activePartition = defaultPartition;
 
-struct 
+struct
 PushLib pushlib(telegramBotToken, telegramUserID, telegramMsgPrefix);
 
 DSCkeybushome * DSCkeybus;
@@ -195,24 +227,24 @@ byte ivaes[N_BLOCK] = {
   0,
   0
 };
-#endif 
+#endif
 
 bool inListTelegramID(String id) {
 
-    auto it = std::find(telegramAllowedIDs.begin(), telegramAllowedIDs.end(), id);
-    return it == telegramAllowedIDs.end()?false:true;
+  auto it = std::find(telegramAllowedIDs.begin(), telegramAllowedIDs.end(), id);
+  return it == telegramAllowedIDs.end() ? false : true;
 
 }
 
 bool inListZone(byte zone) {
 
-    auto it = std::find(notifyZones.begin(), notifyZones.end(), zone);
-    return it == notifyZones.end()?false:true;
+  auto it = std::find(notifyZones.begin(), notifyZones.end(), zone);
+  return it == notifyZones.end() ? false : true;
 
 }
 
 void pushNotification(String text, String receiverid = "") {
-   
+
   StaticJsonDocument < 300 > doc;
   doc["chat_id"] = receiverid != "" ? receiverid : (String) telegramUserID;
   doc["text"] = text;
@@ -220,10 +252,8 @@ void pushNotification(String text, String receiverid = "") {
 
 }
 
-
-
-void publishLcd(char * line1, char * line2, uint32_t id=0) {
-#if defined(VIRTUALKEYPAD)
+void publishLcd(char * line1, char * line2, uint32_t id = 0) {
+  #if defined(VIRTUALKEYPAD)
   if (ws.count()) {
     char outas[128];
     StaticJsonDocument < 200 > doc;
@@ -233,31 +263,31 @@ void publishLcd(char * line1, char * line2, uint32_t id=0) {
       doc["lcd_lower"] = line2;
     serializeJson(doc, outas);
     String out = encrypt(outas);
-  if (id )
-    ws.text(id, out.c_str());
-  else
+    if (id)
+      ws.text(id, out.c_str());
+    else
       ws.textAll(out.c_str());
   }
-#endif
+  #endif
 
 }
 
-void publishMsg(const char * stateName,String msg, uint32_t id=0) {
-#if defined(VIRTUALKEYPAD)    
+void publishMsg(const char * stateName, String msg, uint32_t id = 0) {
+  #if defined(VIRTUALKEYPAD)
   char outas[128];
   StaticJsonDocument < 200 > doc;
   doc[stateName] = msg.c_str();
   serializeJson(doc, outas);
   String out = encrypt(outas);
-  if (id )
+  if (id)
     ws.text(id, out.c_str());
   else
-      ws.textAll(out.c_str());  
+    ws.textAll(out.c_str());
   #endif
 }
 
-void publishStatus(const char * stateName, uint8_t state, uint32_t id=0) {
-#if defined(VIRTUALKEYPAD)
+void publishStatus(const char * stateName, uint8_t state, uint32_t id = 0) {
+  #if defined(VIRTUALKEYPAD)
   if (ws.count()) {
     char outas[128];
     StaticJsonDocument < 200 > doc;
@@ -265,16 +295,15 @@ void publishStatus(const char * stateName, uint8_t state, uint32_t id=0) {
     serializeJson(doc, outas);
     String out = encrypt(outas);
     if (DEBUG > 1)
-        Serial.printf("publishstat: %s\n",out.c_str());
-  if (id )
-    ws.text(id, out.c_str());
-  else
+      Serial.printf("publishstat: %s\n", out.c_str());
+    if (id)
+      ws.text(id, out.c_str());
+    else
       ws.textAll(out.c_str());
 
   }
-#endif
+  #endif
 }
-
 
 void setup() {
 
@@ -282,16 +311,15 @@ void setup() {
   delay(1000);
   Serial.println();
 
- 
- // pinMode(LED_BUILTIN, OUTPUT); // LED pin as output.
+  // pinMode(LED_BUILTIN, OUTPUT); // LED pin as output.
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  
-#if defined(VIRTUALKEYPAD)
+
+  #if defined(VIRTUALKEYPAD)
   aes.setPadMode(paddingMode::CMS);
   aes.set_key((byte * ) aeskey, 128);
-#endif
+  #endif
 
   uint8_t checkCount = 20;
   while (WiFi.status() != WL_CONNECTED) {
@@ -304,8 +332,8 @@ void setup() {
   }
   //WiFi.setAutoReconnect(true);
   //WiFi.persistent(true);
-   SPIFFS.begin(); 
-#if defined(VIRTUALKEYPAD)
+  SPIFFS.begin();
+  #if defined(VIRTUALKEYPAD)
   if (!MDNS.begin(clientName)) {
     Serial.println(F("Error setting up MDNS responder."));
     while (1) {
@@ -316,7 +344,7 @@ void setup() {
 
   File file = root.openNextFile();
   Serial.println(F("Opening SPIFFS"));
-  
+
   while (file) {
     Serial.print(F("FILE: "));
     Serial.println(file.name());
@@ -331,10 +359,10 @@ void setup() {
   Serial.print(F("Web server started: http://"));
   Serial.print(clientName);
   Serial.println(F(".local"));
-#endif
-  
+  #endif
+
   readConfig();
-  
+
   #ifdef useOTA
   // Port defaults to 8266
   ArduinoOTA.setPort(3232); //port 3232 needed for spiffs OTA upload
@@ -365,8 +393,8 @@ void setup() {
     else if (error == OTA_CONNECT_ERROR) Serial.println(F("Connect Failed"));
     else if (error == OTA_RECEIVE_ERROR) Serial.println(F("Receive Failed"));
     else if (error == OTA_END_ERROR) Serial.println(F("End Failed"));
-    DSCkeybus->begin();
-    pushlib.begin();    
+    DSCkeybus -> begin();
+    pushlib.begin();
   });
 
   ArduinoOTA.begin();
@@ -376,117 +404,138 @@ void setup() {
   Serial.print(F("IP address: "));
   Serial.println(WiFi.localIP());
 
-   DSCkeybus = new DSCkeybushome(dscClockPin,dscReadPin,dscWritePin);
-    DSCkeybus->accessCode=accessCode;
-    DSCkeybus->maxZones=maxZones;
-    DSCkeybus->defaultPartition=defaultPartition;
-    DSCkeybus->debug=2; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
-    DSCkeybus->expanderAddr1=expanderAddr1; //zone expander
-    DSCkeybus->expanderAddr2=expanderAddr2;
-    DSCkeybus->userCodes=userCodes;
-    
-    DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
-        if (!DSCkeybus->forceRefresh && !pauseNotifications && statusCode!="") {
-         char msg[40];
-         snprintf(msg, 40, "System status: %s",statusCode.c_str());            
-         pushNotification(msg); 
-        }         
-    });
-    
-    DSCkeybus->onPartitionStatusChange([&](std::string statusCode, int partition) {
-        if (!DSCkeybus->forceRefresh && !pauseNotifications && statusCode!="" && (notificationFlag & 2))  {      
-         char msg[40];
-         snprintf(msg, 40, "Partition:%d status: %s",partition,statusCode.c_str());            
-         pushNotification(msg);   
-        }
-    });
-    
-    DSCkeybus->onPartitionMsgChange([&](std::string pmsg,uint8_t partition) {
-        if (!DSCkeybus->forceRefresh && pmsg!="" && !pauseNotifications && (notificationFlag & 8))   {     
-         char msg[100];
-         snprintf(msg, 100, "Partition:%d msg: %s",partition,pmsg.c_str());            
-         pushNotification(msg);   
-        }
-    });      
+  DSCkeybus = new DSCkeybushome(dscClockPin, dscReadPin, dscWritePin);
+  DSCkeybus -> accessCode = accessCode;
+  DSCkeybus -> maxZones = maxZones;
+  DSCkeybus -> defaultPartition = defaultPartition;
+  DSCkeybus -> debug = 2; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
+  DSCkeybus -> expanderAddr1 = expanderAddr1; //zone expander
+  DSCkeybus -> expanderAddr2 = expanderAddr2;
+  DSCkeybus -> userCodes = userCodes;
 
-    DSCkeybus->onPanelStatusChange([&](panelStatus ps,bool open,int partition) {
+  DSCkeybus -> onSystemStatusChange([ & ](std::string statusCode) {
+    if (!DSCkeybus -> forceRefresh && !pauseNotifications && statusCode != "") {
+      char msg[40];
+      snprintf(msg, 40, "System status: %s", statusCode.c_str());
+      pushNotification(msg);
+    }
+  });
 
-        if (partition==activePartition || !partition)   { 
-          
-           char msg[40]="";        
-           switch (ps) {
-           case trStatus:publishStatus("trouble_status",open);snprintf(msg, 40, "Partition:%d Trouble status is %s",partition,open?"ON":"OFF");break ;       
-           case batStatus: publishStatus("battery_status",open);snprintf(msg, 40, "Partition:%d Battery status is %s",partition,open?"ON":"OFF");break;
-           case acStatus: publishStatus("power_status",open);snprintf(msg, 40, "Partition:%d AC status is %s",partition,open?"ON":"OFF");break;
-           case panicStatus: publishStatus("panic_status",open);snprintf(msg, 40, "Partition:%d Panic status is %s",partition,open?"ON":"OFF");break;
-           case rdyStatus: publishStatus("ready_status",open);snprintf(msg, 40, "Partition:%d Ready status is %s",partition,open?"ON":"OFF");break;
-           case armStatus: publishStatus("armed_status",open);snprintf(msg, 40, "Partition:%d Armed status is %s",partition,open?"ON":"OFF");break;
-           case chimeStatus: publishStatus("chime_status",open);snprintf(msg, 40, "Partition:%d Chime status is %s",partition,open?"ON":"OFF");break; 
-           default: break;
-            }
-          
-           if (!DSCkeybus->forceRefresh && !pauseNotifications && (notificationFlag & 8))
-            pushNotification(msg);
-        }
-    });
-    DSCkeybus->onZoneMsgStatus([&](std::string msg) {
-           publishMsg("zone_info",msg.c_str());
-    });
-    DSCkeybus->onLine1Display([&](std::string msg,int partition) {
-        if (partition==activePartition)
-            publishLcd((char * )msg.c_str(),NULL);
-    });
-    DSCkeybus->onLine2Display([&](std::string msg,int partition) {
-        if (partition==activePartition && msg!="")        
-           publishLcd(NULL,(char * )msg.c_str());
+  DSCkeybus -> onPartitionStatusChange([ & ](std::string statusCode, int partition) {
+    if (!DSCkeybus -> forceRefresh && !pauseNotifications && statusCode != "" && (notificationFlag & 2)) {
+      char msg[40];
+      snprintf(msg, 40, "Partition:%d status: %s", partition, statusCode.c_str());
+      pushNotification(msg);
+    }
+  });
 
-    });
-    DSCkeybus->onEventInfo([&](std::string msg) {
-        
-      if (!DSCkeybus->forceRefresh && msg !="" && !pauseNotifications && (notificationFlag & 4) )     
-        pushNotification(msg.c_str());
-            publishMsg("event_info",msg.c_str());
-    });  
+  DSCkeybus -> onPartitionMsgChange([ & ](std::string pmsg, uint8_t partition) {
+    if (!DSCkeybus -> forceRefresh && pmsg != "" && !pauseNotifications && (notificationFlag & 8)) {
+      char msg[100];
+      snprintf(msg, 100, "Partition:%d msg: %s", partition, pmsg.c_str());
+      pushNotification(msg);
+    }
+  });
 
-    DSCkeybus->onBeeps([&](std::string beep,int partition) {
+  DSCkeybus -> onPanelStatusChange([ & ](panelStatus ps, bool open, int partition) {
 
-    });    
-    DSCkeybus->onFireStatusChange([&](bool open, int partition) {
-           if (partition==activePartition) {
-            publishStatus("fire_status",open);
-           }              
-            if (!DSCkeybus->forceRefresh && !pauseNotifications && (notificationFlag & 2)) {
-                char msg[100];
-                snprintf(msg, 100, "Partition:%d Fire status is now %s",partition,open?"ON":"OFF"); 
-                pushNotification(msg);
- 
-           }        
-    }); 
-    
-    DSCkeybus->onTroubleMsgStatus([&](std::string tmsg) {
-        if (!DSCkeybus->forceRefresh && tmsg!="" && !pauseNotifications && (notificationFlag & 8)) {
-            char msg[100];
-            snprintf(msg, 100, "Trouble: %s",tmsg.c_str()); 
-            pushNotification(msg);
-        }
-    });
-    
-    DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
-        if (inListZone(zone) && !DSCkeybus->forceRefresh && !pauseNotifications && (notificationFlag & 1)) {
-            char msg[100];
-            snprintf(msg, 100, "Zone %d is now %s ", zone,open?"OPEN":"CLOSED"); 
-            pushNotification(msg);
-        }
+    if (partition == activePartition || !partition) {
 
-    });
-    DSCkeybus->onRelayChannelChange([&](uint8_t channel, bool state) {
-        
-    });
-   
-     DSCkeybus->begin(); 
+      char msg[40] = "";
+      switch (ps) {
+      case trStatus:
+        publishStatus("trouble_status", open);
+        snprintf(msg, 40, "Partition:%d Trouble status is %s", partition, open ? "ON" : "OFF");
+        break;
+      case batStatus:
+        publishStatus("battery_status", open);
+        snprintf(msg, 40, "Partition:%d Battery status is %s", partition, open ? "ON" : "OFF");
+        break;
+      case acStatus:
+        publishStatus("power_status", open);
+        snprintf(msg, 40, "Partition:%d AC status is %s", partition, open ? "ON" : "OFF");
+        break;
+      case panicStatus:
+        publishStatus("panic_status", open);
+        snprintf(msg, 40, "Partition:%d Panic status is %s", partition, open ? "ON" : "OFF");
+        break;
+      case rdyStatus:
+        publishStatus("ready_status", open);
+        snprintf(msg, 40, "Partition:%d Ready status is %s", partition, open ? "ON" : "OFF");
+        break;
+      case armStatus:
+        publishStatus("armed_status", open);
+        snprintf(msg, 40, "Partition:%d Armed status is %s", partition, open ? "ON" : "OFF");
+        break;
+      case chimeStatus:
+        publishStatus("chime_status", open);
+        snprintf(msg, 40, "Partition:%d Chime status is %s", partition, open ? "ON" : "OFF");
+        break;
+      default:
+        break;
+      }
 
- 
-  pauseNotifications=false;
+      if (!DSCkeybus -> forceRefresh && !pauseNotifications && (notificationFlag & 8))
+        pushNotification(msg);
+    }
+  });
+  DSCkeybus -> onZoneMsgStatus([ & ](std::string msg) {
+    publishMsg("zone_info", msg.c_str());
+  });
+  DSCkeybus -> onLine1Display([ & ](std::string msg, int partition) {
+    if (partition == activePartition)
+      publishLcd((char * ) msg.c_str(), NULL);
+  });
+  DSCkeybus -> onLine2Display([ & ](std::string msg, int partition) {
+    if (partition == activePartition && msg != "")
+      publishLcd(NULL, (char * ) msg.c_str());
+
+  });
+  DSCkeybus -> onEventInfo([ & ](std::string msg) {
+
+    if (!DSCkeybus -> forceRefresh && msg != "" && !pauseNotifications && (notificationFlag & 4))
+      pushNotification(msg.c_str());
+    publishMsg("event_info", msg.c_str());
+  });
+
+  DSCkeybus -> onBeeps([ & ](std::string beep, int partition) {
+
+  });
+  DSCkeybus -> onFireStatusChange([ & ](bool open, int partition) {
+    if (partition == activePartition) {
+      publishStatus("fire_status", open);
+    }
+    if (!DSCkeybus -> forceRefresh && !pauseNotifications && (notificationFlag & 2)) {
+      char msg[100];
+      snprintf(msg, 100, "Partition:%d Fire status is now %s", partition, open ? "ON" : "OFF");
+      pushNotification(msg);
+
+    }
+  });
+
+  DSCkeybus -> onTroubleMsgStatus([ & ](std::string tmsg) {
+    if (!DSCkeybus -> forceRefresh && tmsg != "" && !pauseNotifications && (notificationFlag & 8)) {
+      char msg[100];
+      snprintf(msg, 100, "Trouble: %s", tmsg.c_str());
+      pushNotification(msg);
+    }
+  });
+
+  DSCkeybus -> onZoneStatusChange([ & ](uint8_t zone, bool open) {
+    if (inListZone(zone) && !DSCkeybus -> forceRefresh && !pauseNotifications && (notificationFlag & 1)) {
+      char msg[100];
+      snprintf(msg, 100, "Zone %d is now %s ", zone, open ? "OPEN" : "CLOSED");
+      pushNotification(msg);
+    }
+
+  });
+  DSCkeybus -> onRelayChannelChange([ & ](uint8_t channel, bool state) {
+
+  });
+
+  DSCkeybus -> begin();
+
+  pauseNotifications = false;
   #ifdef TELEGRAM_PUSH
   pushlib.addCmdHandler( & cmdHandler);
   #endif
@@ -505,29 +554,29 @@ void loop() {
     previousWifiTime = millis();
 
   }
-  
-#if defined(VIRTUALKEYPAD)
+
+  #if defined(VIRTUALKEYPAD)
   if (millis() - pingTime > 300000 && ws.count() > 0) {
     ws.pingAll();
     pingTime = millis();
   }
-#endif
+  #endif
 
-  DSCkeybus->loop();  
-/*
-  static unsigned long ledTime;
-  if (millis() - ledTime > 1000) {
-    if (lastLedState) {
-      digitalWrite(LED_BUILTIN, LOW);
-      lastLedState = 0;
-    } else {
-      digitalWrite(LED_BUILTIN, HIGH);
-      lastLedState = 1;
+  DSCkeybus -> loop();
+  /*
+    static unsigned long ledTime;
+    if (millis() - ledTime > 1000) {
+      if (lastLedState) {
+        digitalWrite(LED_BUILTIN, LOW);
+        lastLedState = 0;
+      } else {
+        digitalWrite(LED_BUILTIN, HIGH);
+        lastLedState = 1;
 
+      }
+      ledTime = millis();
     }
-    ledTime = millis();
-  }
-*/
+  */
   pushlib.loop();
 
   #ifdef useOTA
@@ -547,7 +596,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
       publishLcd((char * )
         "DSC bus", (char * )
         "connected", client -> id());
-      DSCkeybus->forceRefresh=true;
+      DSCkeybus -> forceRefresh = true;
     } else
     if (!dsc.keybusConnected && ws.count()) {
       publishLcd((char * )
@@ -592,20 +641,20 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
               if (dsc.keybusConnected) {
 
                 if (strcmp(v, "s") == 0) {
-                  DSCkeybus->alarm_keypress_partition("S",activePartition);
+                  DSCkeybus -> alarm_keypress_partition("S", activePartition);
                 } else if (strcmp(v, "w") == 0) {
-                DSCkeybus->alarm_keypress_partition("W",activePartition);
-              } else if (strcmp(v, "c") == 0) {
-                DSCkeybus->alarm_keypress_partition("*4",activePartition);
-              } else if (strcmp(v, "x") == 0 && !dsc.armed[activePartition-1]) {
-                DSCkeybus->alarm_keypress_partition("#",activePartition);
-              } else if (strcmp(v, "p1") == 0) {
+                  DSCkeybus -> alarm_keypress_partition("W", activePartition);
+                } else if (strcmp(v, "c") == 0) {
+                  DSCkeybus -> alarm_keypress_partition("*4", activePartition);
+                } else if (strcmp(v, "x") == 0 && !dsc.armed[activePartition - 1]) {
+                  DSCkeybus -> alarm_keypress_partition("#", activePartition);
+                } else if (strcmp(v, "p1") == 0) {
                   setActivePartition(1);
-              } else if (strcmp(v, "p2") == 0) {
-                  setActivePartition(2);             
-              } else if (strcmp(v, "p3") == 0) {  
+                } else if (strcmp(v, "p2") == 0) {
+                  setActivePartition(2);
+                } else if (strcmp(v, "p3") == 0) {
                   setActivePartition(3);
-              }  else DSCkeybus->alarm_keypress_partition(v,activePartition);
+                } else DSCkeybus -> alarm_keypress_partition(v, activePartition);
               }
               Serial.printf("got key %s\n", v);
             }
@@ -701,217 +750,238 @@ void gen_iv(byte * iv) {
 
 void setActivePartition(uint8_t partition) {
 
-     if (partition < 1 || partition > maxPartitions) return;
-     char msg[30];
-     if (dsc.disabled[partition-1]) {
-             sprintf(msg, "Partition %d is disabled\n",partition);
-             publishMsg("event_info",msg);
-             Serial.printf("%s\n",msg);
-             return;
-     }
-         
-     activePartition=partition;
-     DSCkeybus->defaultPartition=partition;  
-     DSCkeybus->forceRefresh=true;     
-    sprintf(msg, "Partition: %d",partition);
-    publishMsg("event_info",msg);
-    Serial.printf("%s\n",msg);
-    
+  if (partition < 1 || partition > maxPartitions) return;
+  char msg[30];
+  if (dsc.disabled[partition - 1]) {
+    sprintf(msg, "Partition %d is disabled\n", partition);
+    publishMsg("event_info", msg);
+    Serial.printf("%s\n", msg);
+    return;
+  }
+
+  activePartition = partition;
+  DSCkeybus -> defaultPartition = partition;
+  DSCkeybus -> forceRefresh = true;
+  sprintf(msg, "Partition: %d", partition);
+  publishMsg("event_info", msg);
+  Serial.printf("%s\n", msg);
+
 }
 
-void readConfig(){
+void readConfig() {
 
-   Serial.println(F("Reading config)"));
+  Serial.println(F("Reading config)"));
 
-   File file = SPIFFS.open("/configFile","r");
-   if(!file || file.isDirectory()){
-       Serial.println(F("Failed to open file for reading"));
-       return ;
-   }
-   StaticJsonDocument <300>doc;
-   DeserializationError error = deserializeJson(doc, file);
+  File file = SPIFFS.open("/configFile", "r");
+  if (!file || file.isDirectory()) {
+    Serial.println(F("Failed to open file for reading"));
+    return;
+  }
+  StaticJsonDocument < 300 > doc;
+  DeserializationError error = deserializeJson(doc, file);
 
-    if (error)
-    {
-        Serial.println(F("Failed to parse cred file"));
-        if (file) file.close();
-        return ;
+  if (error) {
+    Serial.println(F("Failed to parse cred file"));
+    if (file) file.close();
+    return;
+  }
+
+  if (doc.containsKey("ids")) {
+    JsonArray ids = doc["ids"];
+    telegramAllowedIDs.clear();
+    for (String id: ids) {
+      telegramAllowedIDs.push_back(id);
+      Serial.printf("IDS %s \n", id.c_str());
     }
 
+  }
 
-   if (doc.containsKey("ids")) {
-    JsonArray ids=doc["ids"];
-    telegramAllowedIDs.clear(); 
-    for (String id :ids) {
-      telegramAllowedIDs.push_back(id);
-      Serial.printf("IDS %s \n",id.c_str());
-    }        
-
-   }
-   
-   if (doc.containsKey("zones")) {
-    JsonArray zones=doc["zones"];
+  if (doc.containsKey("zones")) {
+    JsonArray zones = doc["zones"];
     notifyZones.clear();
-    for (int z : zones) {
+    for (int z: zones) {
       notifyZones.push_back(z);
-      Serial.printf("Zone read is %d\n",z); 
-    }    
-    
-   }
-   if (doc.containsKey("notificationflag")) {
-       notificationFlag=(uint8_t) doc["notificationflag"];
-   }
-   if (file) file.close();
+      Serial.printf("Zone read is %d\n", z);
+    }
 
-
-}
-
-
-void writeConfig(){
-   Serial.println(F("Writing config"));
-
-   File file = SPIFFS.open("/configFile", FILE_WRITE);
-
-   if(!file){
-      Serial.println(F("Failed to open file for writing"));
-      return;
-   }
-   StaticJsonDocument <200>doc;
-   StaticJsonDocument <100>zones;
-   StaticJsonDocument <100>ids;
-
-   for (int z : notifyZones) {
-        Serial.printf("Notify zone: %d\n",z);
-        zones.add(z);
-   }
-
-   for (String id : telegramAllowedIDs) {
-       Serial.printf("Allowed ids: %s\n",id.c_str());
-       ids.add(id);
-   }
-
-   doc["zones"]=zones;
-   doc["ids"]=ids;
-   doc["notificationflag"]=notificationFlag;
-     String out;
-     serializeJson(doc, out);
-     Serial.printf("Serialized=%s\n",out.c_str());
-     
-    if(file.print(out)){
-      Serial.println(F("File written"));
-   }else {
-      Serial.println(F("Write failed"));
-   }
-   if (file) file.close();
+  }
+  if (doc.containsKey("notificationflag")) {
+    notificationFlag = (uint8_t) doc["notificationflag"];
+  }
+  if (file) file.close();
 
 }
 
+void writeConfig() {
+  Serial.println(F("Writing config"));
 
+  File file = SPIFFS.open("/configFile", FILE_WRITE);
+
+  if (!file) {
+    Serial.println(F("Failed to open file for writing"));
+    return;
+  }
+  StaticJsonDocument < 200 > doc;
+  StaticJsonDocument < 100 > zones;
+  StaticJsonDocument < 100 > ids;
+
+  for (int z: notifyZones) {
+    Serial.printf("Notify zone: %d\n", z);
+    zones.add(z);
+  }
+
+  for (String id: telegramAllowedIDs) {
+    Serial.printf("Allowed ids: %s\n", id.c_str());
+    ids.add(id);
+  }
+
+  doc["zones"] = zones;
+  doc["ids"] = ids;
+  doc["notificationflag"] = notificationFlag;
+  String out;
+  serializeJson(doc, out);
+  Serial.printf("Serialized=%s\n", out.c_str());
+
+  if (file.print(out)) {
+    Serial.println(F("File written"));
+  } else {
+    Serial.println(F("Write failed"));
+  }
+  if (file) file.close();
+
+}
 
 #ifdef TELEGRAM_PUSH
 //used with telegram to handle incoming cmds
 String getZoneStatus() {
   String s = F("<b>Zone statuses:</b> \n");
-  s=s+(String) DSCkeybus->previousZoneStatusMsg.c_str()+"\n";
- 
+  s = s + (String) DSCkeybus -> previousZoneStatusMsg.c_str() + "\n";
+
   return s;
 }
 
 String getPartitionStatus() {
-  String s="";
-   for (int p=1;p<=maxPartitions;p++) {
-      s = s + F("<b>Partition ") + (String) p + F(" status:</b>\n");
-      if (DSCkeybus->partitionStatus[p-1].disabled)
-          s=s+F("Partition is disabled\n");
-      else if (DSCkeybus->partitionStatus[p-1].armed) {
-          if (DSCkeybus->partitionStatus[p-1].armedNight)
-            s=s+F("Partition is armed Night\n");          
-          else if (DSCkeybus->partitionStatus[p-1].armedAway)
-            s=s+F("Partition is armed Away\n");
-          else if (DSCkeybus->partitionStatus[p-1].armedStay)
-            s=s+F("Partition is armed Stay\n");
-          else
-            s=s+F("Partition is armed\n");
-      } else if (DSCkeybus->partitionStatus[p-1].exitdelay)
-             s=s+F("Partition is in exit delay\n");
-       else if (DSCkeybus->partitionStatus[p-1].ready)
-           s=s+F("Partition is ready\n");
-      else 
-          s=s+F("Partition is not ready\n");
-       if (DSCkeybus->partitionStatus[p-1].chime && !DSCkeybus->partitionStatus[p-1].disabled)
-            s=s+F("Chime is ") + String(DSCkeybus->partitionStatus[p-1].chime?"ON\n":"OFF\n");
-      s=s+"\n";
-   }
-  
+  String s = "";
+  for (int p = 1; p <= maxPartitions; p++) {
+    s = s + F("<b>Partition ") + (String) p + F(" status:</b>\n");
+    if (DSCkeybus -> partitionStatus[p - 1].disabled)
+      s = s + F("Partition is disabled\n");
+    else if (DSCkeybus -> partitionStatus[p - 1].armed) {
+      if (DSCkeybus -> partitionStatus[p - 1].armedNight)
+        s = s + F("Partition is armed Night\n");
+      else if (DSCkeybus -> partitionStatus[p - 1].armedAway)
+        s = s + F("Partition is armed Away\n");
+      else if (DSCkeybus -> partitionStatus[p - 1].armedStay)
+        s = s + F("Partition is armed Stay\n");
+      else
+        s = s + F("Partition is armed\n");
+    } else if (DSCkeybus -> partitionStatus[p - 1].exitdelay)
+      s = s + F("Partition is in exit delay\n");
+    else if (DSCkeybus -> partitionStatus[p - 1].ready)
+      s = s + F("Partition is ready\n");
+    else
+      s = s + F("Partition is not ready\n");
+    if (DSCkeybus -> partitionStatus[p - 1].chime && !DSCkeybus -> partitionStatus[p - 1].disabled)
+      s = s + F("Chime is ") + String(DSCkeybus -> partitionStatus[p - 1].chime ? "ON\n" : "OFF\n");
+    s = s + "\n";
+  }
+
   return s;
-  
+
 }
 
 String getPanelStatus() {
-  String s="";
-    s = s + F("<b>Panel Lights</b>\n");
+  String s = "";
+  s = s + F("<b>Panel Lights</b>\n");
   if (dsc.powerTrouble)
-      s=s+F("AC is off |");
-  
-  if (!dsc.batteryTrouble) //if 1 then battery is ok
-      s=s+F("Battery is low\n");
- 
-  if (dsc.trouble)
-      s=s+F("Trouble is on\n");
+    s = s + F("AC is off |");
 
-  s = s + "\n"; 
+  if (!dsc.batteryTrouble) //if 1 then battery is ok
+    s = s + F("Battery is low\n");
+
+  if (dsc.trouble)
+    s = s + F("Trouble is on\n");
+
+  s = s + "\n";
 
   return s;
 }
 
 void sendCurrentConfig(JsonDocument & doc) {
-      String config="Zones List\n";
-      for (int z : notifyZones) {
-        config=config +  String(z) + "\n";
-      }
-      config = config + "\nTelegram IDs\n";
-      for (String id : telegramAllowedIDs) {
-        config=config +  id + "\n";
-      }
-      config = config + "\nNotification Flag=" + (String) notificationFlag + "\n";
-      doc["text"] = config;
-      pushlib.sendMessageDoc(doc);
+  String config = "Zones List\n";
+  for (int z: notifyZones) {
+    config = config + String(z) + "\n";
+  }
+  config = config + "\nTelegram IDs\n";
+  for (String id: telegramAllowedIDs) {
+    config = config + id + "\n";
+  }
+  config = config + "\nNotification Flag=" + (String) notificationFlag + "\n";
+  doc["text"] = config;
+  pushlib.sendMessageDoc(doc);
 }
 
 //telegram callback to handle bot commands
 void cmdHandler(rx_message_t * msg) {
 
-  if (!inListTelegramID(msg -> chat_id) && strcmp(msg -> chat_id.c_str(),telegramUserID) != 0) {
+  if (!inListTelegramID(msg -> chat_id) && strcmp(msg -> chat_id.c_str(), telegramUserID) != 0) {
     Serial.printf("Chat ID %s not allowed to send cmds", msg -> chat_id.c_str());
     return;
   }
-  static bool firstRun=true;
+  const char * markup = "{'reply_markup':{'inline_keyboard':[[{'text': '1','callback_data':'1'},{'text': '2','callback_data':'2'},{'text': '3','callback_data':'3'}],      [{'text':'4','callback_data':'4'},{'text': '5','callback_data':'5'},{'text':'6','callback_data':'6'}],      [{'text':'7','callback_data':'7'},{'text': '8','callback_data':'8'},{'text':'9','callback_data':'9'}], [ { 'text': '*', 'callback_data' : '*' }, {'text' :'0', 'callback_data' : '0' },{ 'text' : '#', 'callback_data' : '#' }] , [ { 'text' :'<', 'callback_data' : '<' }, { 'text' : 'ENTER', 'callback_data' : 'ENTER' },{ 'text' : '>', 'callback_data' : '>' }] ]}}";
+
+  static bool firstRun = true;
   StaticJsonDocument < 1000 > doc;
-  #ifdef DEFAULT_PUSH_OPTIONS
-  deserializeJson(doc, DEFAULT_PUSH_OPTIONS);
-  #endif
   doc["chat_id"] = msg -> chat_id;
   String sub = msg -> text.substring(0, 2);
+  static String command = "";
+  if (msg -> is_callback) {
+    Serial.printf("Callback message=%s\n", msg -> text.c_str());
+    if (msg -> text == "ENTER") {
+      // doc["text"]=command;
+      // doc["message_id"]=msg->message_id;
+      // pushlib.sendMessageDoc(doc,"/editMessageText");
+      command = "";
+    } else {
+      std::string s(msg -> text.c_str());
+      DSCkeybus -> alarm_keypress_partition(s, activePartition);
+      command = command + msg -> text;
+      deserializeJson(doc, markup);
+      doc["chat_id"] = msg -> chat_id;
+      doc["text"] = command;
+      doc["message_id"] = msg -> message_id;
+      pushlib.sendMessageDoc(doc, "/editMessageText");
+      //doc["callback_query_id"]=msg->id;
+      //pushlib.sendMessageDoc(doc,"/answerCallbackQuery");
+    }
+  } else if (sub == "/#") {
+    command = "";
 
+    deserializeJson(doc, markup);
+    doc["chat_id"] = msg -> chat_id;
+    doc["text"] = "Enter keys";
+    pushlib.sendMessageDoc(doc);
+
+  } else
   if (msg -> text == "/armstay") {
-    if (!dsc.armed[activePartition-1]) {      
-        doc["text"] = F("sending armed stay");
-        pushlib.sendMessageDoc(doc);
-        DSCkeybus->alarm_keypress_partition("s",activePartition);
+    if (!dsc.armed[activePartition - 1]) {
+      doc["text"] = F("sending armed stay");
+      pushlib.sendMessageDoc(doc);
+      DSCkeybus -> alarm_keypress_partition("s", activePartition);
     }
 
   } else if (msg -> text == "/armaway") {
-    if (!dsc.armed[activePartition-1]) {        
-        doc["text"] = F("sending armed away");
-        pushlib.sendMessageDoc(doc);
-        DSCkeybus->alarm_keypress_partition("w",activePartition);
+    if (!dsc.armed[activePartition - 1]) {
+      doc["text"] = F("sending armed away");
+      pushlib.sendMessageDoc(doc);
+      DSCkeybus -> alarm_keypress_partition("w", activePartition);
     }
 
   } else if (msg -> text == "/bypass") {
-    if (!dsc.armed[activePartition-1]) {        
-        doc["text"] = F("Sending bypass...");
-        pushlib.sendMessageDoc(doc);
-        DSCkeybus->alarm_keypress_partition("*199#",activePartition);
+    if (!dsc.armed[activePartition - 1]) {
+      doc["text"] = F("Sending bypass...");
+      pushlib.sendMessageDoc(doc);
+      DSCkeybus -> alarm_keypress_partition("*199#", activePartition);
     }
   } else if (msg -> text == "/reboot" && !firstRun) {
     doc["text"] = F("Rebooting...");
@@ -924,12 +994,12 @@ void cmdHandler(rx_message_t * msg) {
     s += getPartitionStatus();
     s += String(F("------------------------------\n"));
     s += getZoneStatus();
-    s += String(F("------------------------------\n"));    
+    s += String(F("------------------------------\n"));
     if (pauseNotifications)
       s += String(F("Notifications are DISABLED\n"));
     else
       s += String(F("Notifications are ACTIVE\n"));
-     s += String(F("Notification flag is ")) + (String) notificationFlag + "\n";
+    s += String(F("Notification flag is ")) + (String) notificationFlag + "\n";
     s += "Active partition is " + (String) activePartition + " \n";
     doc["parse_mode"] = "HTML";
     doc["text"] = s;
@@ -937,29 +1007,29 @@ void cmdHandler(rx_message_t * msg) {
     pushlib.sendMessageDoc(doc);
 
   } else if (sub == "/!") {
-      
+
     String cmd = msg -> text.substring(2, msg -> text.length());
     std::string s(cmd.c_str());
     Serial.printf("cmd = %s\n", cmd.c_str());
-    DSCkeybus->alarm_keypress_partition(s,activePartition);    
+    DSCkeybus -> alarm_keypress_partition(s, activePartition);
 
-  }  else if (sub == "/&") {
-     int p;
-    String pstr = msg -> text.substring(2,3);     
-    sscanf(pstr.c_str(), "%d", &p);     
+  } else if (sub == "/&") {
+    int p;
+    String pstr = msg -> text.substring(2, 3);
+    sscanf(pstr.c_str(), "%d", & p);
     String cmd = msg -> text.substring(3, msg -> text.length());
-    std::string s(cmd.c_str());    
-    Serial.printf("cmd = %s,partition=%d,pstr=%s\n", cmd.c_str(),p,pstr.c_str());
-    DSCkeybus->alarm_keypress_partition(s,p);
+    std::string s(cmd.c_str());
+    Serial.printf("cmd = %s,partition=%d,pstr=%s\n", cmd.c_str(), p, pstr.c_str());
+    DSCkeybus -> alarm_keypress_partition(s, p);
 
-  }  else if (msg -> text == "/stopbus") {
+  } else if (msg -> text == "/stopbus") {
     dsc.stop();
     doc["text"] = F("Vista bus stopped...");
     pushlib.sendMessageDoc(doc);
 
   } else if (msg -> text == "/startbus") {
     dsc.stop();
-    DSCkeybus->begin();
+    DSCkeybus -> begin();
     doc["text"] = F("DSC bus started..");
     pushlib.sendMessageDoc(doc);
 
@@ -967,7 +1037,6 @@ void cmdHandler(rx_message_t * msg) {
     pauseNotifications = true;
     doc["text"] = F("Notifications paused..");
     pushlib.sendMessageDoc(doc);
-
 
   } else if (msg -> text == "/startnotify") {
     pauseNotifications = false;
@@ -980,7 +1049,7 @@ void cmdHandler(rx_message_t * msg) {
     doc["parse_mode"] = "HTML";
     doc["text"] = String(buf);
     pushlib.sendMessageDoc(doc);
-    
+
   } else if (msg -> text.startsWith("/setpartition")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
     int p;
@@ -992,124 +1061,124 @@ void cmdHandler(rx_message_t * msg) {
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
     }
-   } else if (msg -> text.startsWith("/setnotifyflag")) {
+  } else if (msg -> text.startsWith("/setnotifyflag")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
     int p;
     sscanf(pstr.c_str(), "%d", & p);
-    if (p >= 0 && p <256) {
-      notificationFlag=p;
-      writeConfig();      
+    if (p >= 0 && p < 256) {
+      notificationFlag = p;
+      writeConfig();
       char out[40];
       sprintf(out, "Nofitification flag set to %d\n", p);
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
     }
-      
+
   } else if (msg -> text.startsWith("/addzones")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
 
-    char * token = strtok((char *)pstr.c_str(), ",");
-   // loop through the string to extract all other tokens
-   while( token != NULL ) {
+    char * token = strtok((char * ) pstr.c_str(), ",");
+    // loop through the string to extract all other tokens
+    while (token != NULL) {
       int z;
-      sscanf(token, "%d", & z);       
-     if (z > 0 && z < maxZones) {
-      if (!inListZone(z)) {
-      notifyZones.push_back(z);
-      writeConfig();
-      char out[40];
-      sprintf(out, "Added zone %d to notify list\n", z);
-      doc["text"] = String(out);
-      pushlib.sendMessageDoc(doc);
+      sscanf(token, "%d", & z);
+      if (z > 0 && z < maxZones) {
+        if (!inListZone(z)) {
+          notifyZones.push_back(z);
+          writeConfig();
+          char out[40];
+          sprintf(out, "Added zone %d to notify list\n", z);
+          doc["text"] = String(out);
+          pushlib.sendMessageDoc(doc);
+        }
       }
-    }
       token = strtok(NULL, ",");
-   }      
-     sendCurrentConfig(doc);
+    }
+    sendCurrentConfig(doc);
 
   } else if (msg -> text.startsWith("/removezones")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
-       char * token = strtok((char *)pstr.c_str(), ",");
-   // loop through the string to extract all other tokens
-   while( token != NULL ) {
-       int z;
-      sscanf(token, "%d", & z);       
-     if (z > 0 && z < maxZones) {
-      if (inListZone(z)) {
-      notifyZones.remove(z);
-      writeConfig();
-      char out[40];
-      sprintf(out, "Removed zone %d from notify list\n", z);
-      doc["text"] = String(out);
-      pushlib.sendMessageDoc(doc);
+    char * token = strtok((char * ) pstr.c_str(), ",");
+    // loop through the string to extract all other tokens
+    while (token != NULL) {
+      int z;
+      sscanf(token, "%d", & z);
+      if (z > 0 && z < maxZones) {
+        if (inListZone(z)) {
+          notifyZones.remove(z);
+          writeConfig();
+          char out[40];
+          sprintf(out, "Removed zone %d from notify list\n", z);
+          doc["text"] = String(out);
+          pushlib.sendMessageDoc(doc);
+        }
       }
-    }
       token = strtok(NULL, ",");
-   }  
-   sendCurrentConfig(doc);
-       
+    }
+    sendCurrentConfig(doc);
+
   } else if (msg -> text.startsWith("/removeids")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
-    char * token = strtok((char *)pstr.c_str(), ",");
-   // loop through the string to extract all other tokens
-   while( token != NULL ) {
-    if (strcmp(token,"")!=0) {
-      if (inListTelegramID(String(token))) {
-      telegramAllowedIDs.remove(String(token));
-      writeConfig();
-      char out[40];
-      sprintf(out, "Removed id %s from ID list\n", token);
-      doc["text"] = String(out);
-      pushlib.sendMessageDoc(doc);
+    char * token = strtok((char * ) pstr.c_str(), ",");
+    // loop through the string to extract all other tokens
+    while (token != NULL) {
+      if (strcmp(token, "") != 0) {
+        if (inListTelegramID(String(token))) {
+          telegramAllowedIDs.remove(String(token));
+          writeConfig();
+          char out[40];
+          sprintf(out, "Removed id %s from ID list\n", token);
+          doc["text"] = String(out);
+          pushlib.sendMessageDoc(doc);
+        }
       }
+      token = strtok(NULL, ",");
     }
-     token = strtok(NULL, ",");
-   }
-   sendCurrentConfig(doc);
-    
+    sendCurrentConfig(doc);
+
   } else if (msg -> text.startsWith("/addids")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
-   char * token = strtok((char *)pstr.c_str(), ",");
-   // loop through the string to extract all other tokens
-   while( token != NULL ) {
-    if (strcmp(token,"")!=0) {
-      if (!inListTelegramID(String(token))) {
-      telegramAllowedIDs.push_back(String(token));
-      writeConfig();
-      char out[40];
-      sprintf(out, "Added id %s to ID list\n", token);
-      doc["text"] = String(out);
-      pushlib.sendMessageDoc(doc);
+    char * token = strtok((char * ) pstr.c_str(), ",");
+    // loop through the string to extract all other tokens
+    while (token != NULL) {
+      if (strcmp(token, "") != 0) {
+        if (!inListTelegramID(String(token))) {
+          telegramAllowedIDs.push_back(String(token));
+          writeConfig();
+          char out[40];
+          sprintf(out, "Added id %s to ID list\n", token);
+          doc["text"] = String(out);
+          pushlib.sendMessageDoc(doc);
+        }
       }
+      token = strtok(NULL, ",");
     }
-     token = strtok(NULL, ",");
-    }      
-   sendCurrentConfig(doc);
-    
+    sendCurrentConfig(doc);
+
   } else if (msg -> text.startsWith("/getcfg")) {
-      sendCurrentConfig(doc);
-      
+    sendCurrentConfig(doc);
+
   } else if (msg -> text.startsWith("/getip")) {
-      char out[50];
-      sprintf(out, "Local IP address http://%s\n", WiFi.localIP().toString().c_str());
-      doc["text"] = String(out);
-      pushlib.sendMessageDoc(doc);
+    char out[50];
+    sprintf(out, "Local IP address http://%s\n", WiFi.localIP().toString().c_str());
+    doc["text"] = String(out);
+    pushlib.sendMessageDoc(doc);
 
   } else if (msg -> text == "/help") {
-     
-    String menu="";
-    int x=1;
-    for (auto s : telegramMenu) {
-        menu=menu + String(x) + ". " + String(FPSTR(s)) + "\n";
-        x++;
+
+    String menu = "";
+    int x = 1;
+    for (auto s: telegramMenu) {
+      menu = menu + String(x) + ". " + String(FPSTR(s)) + "\n";
+      x++;
     }
-    doc["text"]=menu;
+    doc["text"] = menu;
     doc.remove("reply_markup"); //msg too long for markup
     pushlib.sendMessageDoc(doc);
 
   }
-    firstRun=false;
-    doc.clear();
+  firstRun = false;
+  doc.clear();
 }
 
 #endif
