@@ -43,7 +43,7 @@ msgType PushLib::getNextMsg() {
 void PushLib::saveMsgToQueue(String &  msg_text,String  method) {
   if (msgAvailable() + 1 == msgQueueSize) return; //overflow so can't save
   msgType msg;
-  msg.msg_text=msg_text;
+  msg.msg_text = msg_text;
   msg.method=method;
   msgQueue[inMsgIdx] = msg;
   inMsgIdx = (inMsgIdx + 1) % msgQueueSize;

@@ -136,6 +136,8 @@ const char * telegramUserID="1234567890"; // Set the default Telegram chat recip
 const char * telegramMsgPrefix="[Alarm Panel] "; // Set a prefix for all messages
 std::list<String> telegramAllowedIDs = {}; //list of additional telegram ids with access to bot.  Can include channel id.
 std::list<int> notifyZones = {}; //comma separated list of zones that you want push notifications on change
+String password = "!YourSecretPass123"; // login and AES encryption/decryption password. Up to 16 characters accepted.
+
 
 const int dscClockPin = 22;
 const int dscReadPin = 21;
@@ -156,12 +158,12 @@ const int maxZones = 32;
   # 16 - zones 57-64 (for systems with 64 zone support)
 
   */
-const int expanderAddr1 = 0; //1st zone expander emulator address to use . Set to 0 to disable. 
+const int expanderAddr1 = 8; //1st zone expander emulator address to use . Set to 0 to disable. 
 const int expanderAddr2 = 0;
 
 const char * userCodes = "1:User1,2:User2,40:master";
 
-uint8_t notificationFlag = 1 + 2 + 4; //which events; bit 1=zones, bit 2=status, bit 3= events, bit 4 = messages, bit 5=light states
+uint8_t notificationFlag = 255; //which events; bit 1=zones, bit 2=status, bit 3= events, bit 4 = messages, bit 5=light states
 
 //end user config
 
@@ -186,7 +188,8 @@ const char *
     "/removeids=<id>,<id> - remove telegram ids from allowed list",
     "/getip - get url of keypad",
     "/getcfg - list notify and telegram ids",
-    "/setnotifyflag=<flag> - sum of digits: zones = 1 , status = 2 , messages = 4 , events = 8 , light statues = 16"
+    "/setnotifyflag=<flag> - sum of digits: zones = 1 , status = 2 , messages = 4 , events = 8 , light statues = 16",
+    "/setpassword=<password> - new keypad access password"
   };
 
 std::string accessCodeStr = accessCode;
@@ -204,10 +207,29 @@ PushLib pushlib(telegramBotToken, telegramUserID, telegramMsgPrefix);
 
 DSCkeybushome * DSCkeybus;
 
-std::string key = std::string(password).append(16 - key.length(), '0');
+
 #if defined(VIRTUALKEYPAD)
 AES aes;
-char * aeskey = & key[0];
+
+char key[16]{
+ '0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0',
+'0'
+};
+char * aeskey=key;
 
 byte ivaes[N_BLOCK] = {
   0,
@@ -247,7 +269,7 @@ void pushNotification(String text, String receiverid = "") {
 
   StaticJsonDocument < 300 > doc;
   doc["chat_id"] = receiverid != "" ? receiverid : (String) telegramUserID;
-  doc["text"] = text;
+  doc["text"] = telegramMsgPrefix + text;
   pushlib.sendMessageDoc(doc);
 
 }
@@ -310,7 +332,13 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   Serial.println();
-
+  SPIFFS.begin();  
+  readConfig();
+  memset(key,'0',16);
+  for (int x=0;x<password.length() && x < 16;x++)  {
+      key[x]=password[x];
+  }
+  
   // pinMode(LED_BUILTIN, OUTPUT); // LED pin as output.
 
   WiFi.mode(WIFI_STA);
@@ -332,7 +360,7 @@ void setup() {
   }
   //WiFi.setAutoReconnect(true);
   //WiFi.persistent(true);
-  SPIFFS.begin();
+
   #if defined(VIRTUALKEYPAD)
   if (!MDNS.begin(clientName)) {
     Serial.println(F("Error setting up MDNS responder."));
@@ -349,8 +377,8 @@ void setup() {
     Serial.print(F("FILE: "));
     Serial.println(file.name());
     file = root.openNextFile();
-
   }
+  
   ws.onEvent(onWsEvent);
   server.addHandler( & ws);
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
@@ -361,7 +389,7 @@ void setup() {
   Serial.println(F(".local"));
   #endif
 
-  readConfig();
+
 
   #ifdef useOTA
   // Port defaults to 8266
@@ -808,6 +836,9 @@ void readConfig() {
   if (doc.containsKey("notificationflag")) {
     notificationFlag = (uint8_t) doc["notificationflag"];
   }
+  if (doc.containsKey("password")) {
+    password = doc["password"].as<String>();
+  }  
   if (file) file.close();
 
 }
@@ -838,6 +869,8 @@ void writeConfig() {
   doc["zones"] = zones;
   doc["ids"] = ids;
   doc["notificationflag"] = notificationFlag;
+  doc["password"]=password;
+  
   String out;
   serializeJson(doc, out);
   Serial.printf("Serialized=%s\n", out.c_str());
@@ -931,10 +964,14 @@ void cmdHandler(rx_message_t * msg) {
   const char * markup = "{'reply_markup':{'inline_keyboard':[[{'text': '1','callback_data':'1'},{'text': '2','callback_data':'2'},{'text': '3','callback_data':'3'}],      [{'text':'4','callback_data':'4'},{'text': '5','callback_data':'5'},{'text':'6','callback_data':'6'}],      [{'text':'7','callback_data':'7'},{'text': '8','callback_data':'8'},{'text':'9','callback_data':'9'}], [ { 'text': '*', 'callback_data' : '*' }, {'text' :'0', 'callback_data' : '0' },{ 'text' : '#', 'callback_data' : '#' }] , [ { 'text' :'<', 'callback_data' : '<' }, { 'text' : 'ENTER', 'callback_data' : 'ENTER' },{ 'text' : '>', 'callback_data' : '>' }] ]}}";
 
   static bool firstRun = true;
-  StaticJsonDocument < 1000 > doc;
+  StaticJsonDocument < 2000 > doc;
   doc["chat_id"] = msg -> chat_id;
   String sub = msg -> text.substring(0, 2);
   static String command = "";
+  if (firstRun) {
+      firstRun=false;
+      return;
+  }
   if (msg -> is_callback) {
     Serial.printf("Callback message=%s\n", msg -> text.c_str());
     if (msg -> text == "ENTER") {
@@ -954,9 +991,9 @@ void cmdHandler(rx_message_t * msg) {
       //doc["callback_query_id"]=msg->id;
       //pushlib.sendMessageDoc(doc,"/answerCallbackQuery");
     }
+    
   } else if (sub == "/#") {
     command = "";
-
     deserializeJson(doc, markup);
     doc["chat_id"] = msg -> chat_id;
     doc["text"] = "Enter keys";
@@ -983,11 +1020,29 @@ void cmdHandler(rx_message_t * msg) {
       pushlib.sendMessageDoc(doc);
       DSCkeybus -> alarm_keypress_partition("*199#", activePartition);
     }
+    
+  } else if (msg -> text.startsWith("/setpassword")) {
+    String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
+    if (strcmp(pstr.c_str(),"") !=0) {
+      password=pstr;
+      memset(key,'0',16);
+      for (int x=0;x<password.length() && x < 16;x++)  {
+        key[x]=password[x];
+      }
+      aes.set_key((byte * ) aeskey, 128);
+      writeConfig();
+      char out[40];
+      sprintf(out, "Keypad password is now set to %s", password.c_str());
+      doc["text"] = String(out);
+      pushlib.sendMessageDoc(doc);
+    }    
+    
   } else if (msg -> text == "/reboot" && !firstRun) {
     doc["text"] = F("Rebooting...");
     pushlib.sendMessageDoc(doc);
     delay(5000);
     ESP.restart();
+    
   } else if (msg -> text == "/getstatus") {
     String s = "\n" + getPanelStatus();
     s += String(F("------------------------------\n"));
@@ -1061,6 +1116,7 @@ void cmdHandler(rx_message_t * msg) {
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
     }
+    
   } else if (msg -> text.startsWith("/setnotifyflag")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
     int p;
@@ -1076,7 +1132,6 @@ void cmdHandler(rx_message_t * msg) {
 
   } else if (msg -> text.startsWith("/addzones")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
-
     char * token = strtok((char * ) pstr.c_str(), ",");
     // loop through the string to extract all other tokens
     while (token != NULL) {
@@ -1165,15 +1220,14 @@ void cmdHandler(rx_message_t * msg) {
     pushlib.sendMessageDoc(doc);
 
   } else if (msg -> text == "/help") {
-
     String menu = "";
     int x = 1;
     for (auto s: telegramMenu) {
       menu = menu + String(x) + ". " + String(FPSTR(s)) + "\n";
       x++;
     }
+    Serial.printf("menu is %s\n",menu.c_str());
     doc["text"] = menu;
-    doc.remove("reply_markup"); //msg too long for markup
     pushlib.sendMessageDoc(doc);
 
   }
