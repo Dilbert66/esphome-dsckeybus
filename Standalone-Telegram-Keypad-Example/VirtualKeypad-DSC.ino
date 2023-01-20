@@ -1054,7 +1054,7 @@ void cmdHandler(rx_message_t * msg) {
       DSCkeybus -> alarm_keypress_partition("c", activePartition);      
       pushlib.sendMessageDoc(doc);
   } else if (msg -> text == "/bypass") {
-    if (!dsc.armed[activePartition - 1]) {
+    if (!DSCkeybus -> partitionStatus[activePartition - 1].armed) {
       doc["text"] = F("Setting bypass...");
       pushlib.sendMessageDoc(doc);
       DSCkeybus -> alarm_keypress_partition("*199#", activePartition);
@@ -1123,7 +1123,7 @@ void cmdHandler(rx_message_t * msg) {
 
   } else if (msg -> text == "/stopbus") {
     dsc.stop();
-    doc["text"] = F("Vista bus stopped...");
+    doc["text"] = F("DSC bus stopped...");
     pushlib.sendMessageDoc(doc);
 
   } else if (msg -> text == "/startbus") {
