@@ -535,7 +535,7 @@ public:
 
   void alarm_arm_away() {
 
-    set_alarm_state("A", "", defaultPartition);
+    set_alarm_state("W", "", defaultPartition);
 
   }
 
@@ -925,6 +925,8 @@ public:
 //ESP_LOGD("test","code=%s,alarmCode=%s",code.c_str(),alarmCode);
 #if !defined(ARDUINO_MQTT)  
     ESP_LOGD("debug","Setting Alarm state: %s to partition %d",state.c_str(),partition);
+#else
+    Serial.printf("Setting Alarm state: %s to partition %d\n",state.c_str(),partition);    
 #endif
     if (partitionStatus[partition - 1].locked) return;
  
@@ -1521,22 +1523,26 @@ void update() override {
           dsc.armedChanged[partition] = false; // Resets the partition armed status flag
 
           if (dsc.armed[partition]) {
+        
             panelStatusChangeCallback(armStatus, true, partition + 1);
             partitionStatus[partition].armed=true;
             if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) { 
+    
               partitionStatusChangeCallback( String(FPSTR(STATUS_NIGHT)).c_str(), partition + 1);
               partitionStatus[partition].armedStay=false;   
               partitionStatus[partition].armedNight=true;
               partitionStatus[partition].armedAway=false;
-              partitionStatus[partition].exitdelay=false;              
+              partitionStatus[partition].exitdelay=false;  
             }
             else if (dsc.armedStay[partition]) {
+   
               partitionStatusChangeCallback( String(FPSTR(STATUS_STAY)).c_str(), partition + 1);
               partitionStatus[partition].armedStay=true;   
               partitionStatus[partition].armedNight=false;
               partitionStatus[partition].armedAway=false;
               partitionStatus[partition].exitdelay=false;              
             } else {
+        
                 partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
                 clearZoneAlarms(partition + 1);
               partitionStatus[partition].armedStay=false;   
@@ -1547,10 +1553,10 @@ void update() override {
           } else if (!dsc.exitDelay[partition]) {
             if (!forceRefresh) {
                 clearZoneBypass(partition + 1);
-               // partitionStatusChangeCallback( String(FPSTR(STATUS_OFF)).c_str(), partition + 1);
             } 
-              partitionStatus[partition].armed=false; 
+         
               panelStatusChangeCallback(armStatus, false, partition + 1);
+              partitionStatus[partition].armed=false;               
               partitionStatus[partition].armedStay=false;   
               partitionStatus[partition].armedNight=false;
               partitionStatus[partition].armedAway=false;  
@@ -1561,6 +1567,8 @@ void update() override {
         if (dsc.exitDelayChanged[partition] || forceRefresh) {
           dsc.exitDelayChanged[partition] = false; // Resets the exit delay status flag
           if (dsc.exitDelay[partition]) {
+       
+              partitionStatus[partition].armed=false;              
               partitionStatusChangeCallback( String(FPSTR(STATUS_PENDING)).c_str(), partition + 1);
               partitionStatus[partition].exitdelay=true;   
               partitionStatus[partition].armedStay=false;   
@@ -1586,6 +1594,7 @@ void update() override {
               partitionStatus[partition].armedStay=false;   
               partitionStatus[partition].armedNight=false;
               partitionStatus[partition].armedAway=false;
+              partitionStatus[partition].armed=false;              
             }
             panelStatusChangeCallback(rdyStatus, false, partition + 1);
             partitionStatus[partition].ready=false;                

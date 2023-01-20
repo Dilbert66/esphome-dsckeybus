@@ -417,6 +417,8 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       break; // Arm stay
     case 'w':
     case 'W':
+    case 'a':
+    case 'A':
       writeKey = 0xB1;
       writeAccessCode[partition - 1] = true;
       break; // Arm away
@@ -425,8 +427,8 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       writeKey = 0xB6;
       writeAccessCode[partition - 1] = true;
       break; // Arm with no entry delay (night arm)
-    case 'a':
-    case 'A':
+    case 'k':
+    case 'K':
       writeKey = 0xDD;
       isAlarm = true;
       break; // Keypad auxiliary alarm
