@@ -1299,6 +1299,7 @@ void cmdHandler(rx_message_t * msg) {
     doc["text"] = String(out);
     pushlib.sendMessageDoc(doc);   
     
+#if defined(useTIME)    
   } else if (msg -> text.startsWith("/settime")) {
      if (dsc.keybusConnected && getLocalTime(&timeClient)) {
        dsc.setDateTime(timeClient.tm_year + 1900,timeClient.tm_mon + 1,timeClient.tm_mday,  timeClient.tm_hour, timeClient.tm_min);
@@ -1307,6 +1308,7 @@ void cmdHandler(rx_message_t * msg) {
     sprintf(out, "Syncrhonized time");
     doc["text"] = String(out);
     pushlib.sendMessageDoc(doc);    
+#endif
 
   } else if (msg -> text.startsWith("/getip")) {
     char out[50];
