@@ -610,7 +610,7 @@ void loop() {
         if (dsc.ready[defaultPartition - 1]) {
           if (timeClient.tm_sec==offsetSeconds) {          
                 dsc.setDateTime(timeClient.tm_year + 1900,timeClient.tm_mon + 1,timeClient.tm_mday,  timeClient.tm_hour, timeClient.tm_min);
-                Serial.println(F("Time synchronized"));
+                Serial.println(&timeClient, "Synchronized NTP time: %a %b %d %Y %H:%M:%S");
                 timeUpdateNeeded=false;
           }
         }
@@ -626,7 +626,6 @@ void loop() {
           if ((dsc.year != timeClient.tm_year + 1900 || dsc.month != timeClient.tm_mon + 1 || dsc.day !=timeClient.tm_mday || dsc.hour !=  timeClient.tm_hour || dsc.minute != timeClient.tm_min)) {          
              timeUpdateNeeded=true;
              offsetSeconds=timeClient.tm_sec;
-             Serial.println(F("Time synchronized"));
           }
         }
     }   
