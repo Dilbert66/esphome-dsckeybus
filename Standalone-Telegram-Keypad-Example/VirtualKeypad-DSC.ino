@@ -46,7 +46,7 @@
      
      9. Compile and upload the sketch. Recommended to use board "ESP32 Dev Module with Minimal SPIFFS partition scheme (190K SPIFFS   partition) to get the maximum flash storage for program storage if using OTA.    
 
-     if using the VirtualKeypad:
+     If using the VirtualKeypad:
      10. Upload the "data" directory (from the same directory as the .ino file) containing the web server files  to the SPIFFS partition:
           Arduino IDE: Tools > ESP32 Sketch Data Upload.  If uploading the sketch using an external app, ensure you do not erase first or you will need to re-upload the data spiffs folder again after.
 
@@ -79,6 +79,8 @@
 
 #define VIRTUALKEYPAD //comment if you do not want/need the virtualkeypad functionality
 #define useOTA //comment this to disable OTA updates. 
+#define useTIME //comment this if you don't need/want to set your panel time from NTP
+
 
 #include <Arduino.h>
 
@@ -110,6 +112,9 @@
 
 #include <list>
 
+#if defined(useTIME)
+#include <time.h>
+#endif
 
 #define DEBUG 1
 
@@ -133,6 +138,13 @@ std::list<int> notifyZones = {}; //comma separated list of zones that you want p
 String password = "YourSecretPass"; // login and AES encryption/decryption password. Up to 16 characters accepted.
 String accessCode = "1234"; // An access code is required to arm (unless quick arm is enabled)
 String otaAccessCode = ""; // Access code for OTA uploading
+
+#if defined(useTIME)
+const long  timeZoneOffset = -5 * 3600;  // Offset from UTC in seconds (example: US Eastern is UTC - 5)
+const int   daylightOffset = 1 * 3600;   // Daylight savings time offset in seconds
+const char* ntpServer = "pool.ntp.org";  // Set the NTP server
+#endif
+
 
 const int dscClockPin = 22;
 const int dscReadPin = 21;
@@ -206,6 +218,11 @@ PushLib pushlib(telegramBotToken, telegramUserID, telegramMsgPrefix);
 
 DSCkeybushome * DSCkeybus;
 
+#if defined(useTIME)
+tm timeClient;
+bool timeUpdateNeeded=true;
+uint8_t offsetSeconds;
+#endif
 
 #if defined(VIRTUALKEYPAD)
 AES aes;
@@ -367,11 +384,19 @@ void setup() {
       delay(1000);
     }
   }
+  
+#if defined(useTIME)  
+  configTime(timeZoneOffset, daylightOffset, ntpServer);  
+  while (!getLocalTime(&timeClient)) {
+    Serial.print(".");
+    delay(2000);
+  }
+  Serial.println(&timeClient, "Synchronized NTP time: %a %b %d %Y %H:%M:%S");
+#endif
+
   File root = SPIFFS.open("/");
 
   File file = root.openNextFile();
-  Serial.println(F("Opening SPIFFS"));
-
   while (file) {
     Serial.print(F("FILE: "));
     Serial.println(file.name());
@@ -391,13 +416,9 @@ void setup() {
 
 
   #ifdef useOTA
-  // Port defaults to 8266
-  ArduinoOTA.setPort(3232); //port 3232 needed for spiffs OTA upload
-
+  ArduinoOTA.setPort(3232); //port 3232 needed for spiffs OTA upload so we set it that way for all
   // Hostname defaults to esp8266-[ChipID]
   ArduinoOTA.setHostname(clientName);
-
-  // No authentication by default
   ArduinoOTA.setPassword(otaAccessCode.c_str());
 
   ArduinoOTA.onStart([]() {
@@ -582,6 +603,37 @@ void loop() {
 
   }
 
+#if defined(useTIME)
+  // Sets the time if not synchronized
+   if (timeUpdateNeeded ) {
+     if (getLocalTime(&timeClient)) {
+        if (dsc.ready[defaultPartition - 1]) {
+          if (timeClient.tm_sec==offsetSeconds) {          
+                dsc.setDateTime(timeClient.tm_year + 1900,timeClient.tm_mon + 1,timeClient.tm_mday,  timeClient.tm_hour, timeClient.tm_min);
+                Serial.println(F("Time synchronized"));
+                timeUpdateNeeded=false;
+          }
+        }
+     }   
+     
+  }
+  
+  
+  if (dsc.timestampChanged ) {
+    dsc.timestampChanged = false;
+    if (getLocalTime(&timeClient)) {
+        if (dsc.ready[defaultPartition - 1]) {
+          if ((dsc.year != timeClient.tm_year + 1900 || dsc.month != timeClient.tm_mon + 1 || dsc.day !=timeClient.tm_mday || dsc.hour !=  timeClient.tm_hour || dsc.minute != timeClient.tm_min)) {          
+             timeUpdateNeeded=true;
+             offsetSeconds=timeClient.tm_sec;
+             Serial.println(F("Time synchronized"));
+          }
+        }
+    }   
+  }
+#endif  
+
+
   #if defined(VIRTUALKEYPAD)
   if (millis() - pingTime > 300000 && ws.count() > 0) {
     ws.pingAll();
@@ -673,7 +725,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
                   DSCkeybus -> alarm_keypress_partition("a", activePartition);
                 } else if (strcmp(v, "c") == 0) {
                   DSCkeybus -> alarm_keypress_partition("c", activePartition);
-                } else if (strcmp(v, "x") == 0 && !dsc.armed[activePartition - 1]) {
+                } else if (strcmp(v, "x") == 0 && !DSCkeybus -> partitionStatus[activePartition - 1].armed) {
                   DSCkeybus -> alarm_keypress_partition("#", activePartition);
                 } else if (strcmp(v, "p1") == 0) {
                   setActivePartition(1);
@@ -997,7 +1049,6 @@ void cmdHandler(rx_message_t * msg) {
       firstRun=false;
       return;
   }
-  
   if (msg -> is_callback) {
     Serial.printf("Callback message=%s\n", msg -> text.c_str());
     if (msg -> text == "ENTER") {
