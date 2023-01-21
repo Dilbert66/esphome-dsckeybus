@@ -215,7 +215,6 @@ DSCkeybushome * DSCkeybus;
 
 #if defined(useTIME)
 tm timeClient;
-bool initialTimeUpdate=true;
 #endif
 
 #if defined(VIRTUALKEYPAD)
@@ -587,6 +586,15 @@ void setup() {
 
 void loop() {
 
+  static unsigned long delayedStartupTime=millis();
+  static bool delayedStartup=true;
+  static bool initialTimeSync=false;
+  
+  if (delayedStartup && (millis() - delayedStartupTime) > 30000) {
+     delayedStartup=false; 
+     initialTimeSync=true;
+  }
+  
   static unsigned long previousWifiTime;
   if (WiFi.status() != WL_CONNECTED && millis() - previousWifiTime >= 20000) {
     Serial.println(F("Reconnecting to WIFI network"));
@@ -598,14 +606,14 @@ void loop() {
 
 #if defined(useTIME)
   
-  if (dsc.timestampChanged || initialTimeUpdate ) {
+  if (dsc.timestampChanged || initialTimeSync ) {
     dsc.timestampChanged = false;
     if (getLocalTime(&timeClient)) {
         if (dsc.keybusConnected) {
-          if ( initialTimeUpdate || (dsc.year != timeClient.tm_year + 1900 || dsc.month != timeClient.tm_mon + 1 || dsc.day !=timeClient.tm_mday || dsc.hour !=  timeClient.tm_hour || dsc.minute != timeClient.tm_min)) {          
+          if ( initialTimeSync || (dsc.year != timeClient.tm_year + 1900 || dsc.month != timeClient.tm_mon + 1 || dsc.day !=timeClient.tm_mday || dsc.hour !=  timeClient.tm_hour || dsc.minute != timeClient.tm_min)) {          
              dsc.setDateTime(timeClient.tm_year + 1900,timeClient.tm_mon + 1,timeClient.tm_mday,  timeClient.tm_hour, timeClient.tm_min);
                 Serial.println(&timeClient, "Synchronized NTP time: %a %b %d %Y %H:%M:%S");
-                initialTimeUpdate=false;
+                initialTimeSync=false;
           }
         }
     }   

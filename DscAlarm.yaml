@@ -46,6 +46,26 @@ esphome:
   includes:
     # subdirectory path where custom component *.h and *.cpp files are located
     - dscKeybusInterface/
+    
+ #ESP32 only .  Calls a public function within the custom component above. In this case syncs the time     
+ # to the panel 30 seconds after startup
+ # on_boot:
+ #   priority: -100 #everything initialized
+ #   then:
+ #     - delay: 30s
+ #     - lambda: |-
+ #         DSCkeybus->set_panel_time();    
+
+#ESP32 only .  Syncs  the time with the panel every hour
+#interval:
+#  - interval: 3600s
+#    then:
+#      - lambda: |-
+#          DSCkeybus->set_panel_time();  
+
+# add or remove any zone you need. Please ensure you also add/remove the corresonponding case statement above
+# change the name to match your own zone configurations
+# if you don't want to delete a zone, you can also comment out the name: field to hide it from home assistant
 
 wifi:
   ssid: !secret wifi_ssid
@@ -217,16 +237,6 @@ custom_component:
     return {DSCkeybus};
     
  
-#ESP32 only .  Calls a public function within the custom component above. In this case syncs the time   
-#interval:
-#  - interval: 3600s
-#    then:
-#      - lambda: |-
-#          static_cast< DSCkeybushome*> (id(dsckeybus).get_component(0))->set_panel_time();  
-
-# add or remove any zone you need. Please ensure you also add/remove the corresonponding case statement above
-# change the name to match your own zone configurations
-# if you don't want to delete a zone, you can also comment out the name: field to hide it from home assistant
 binary_sensor:
     #zone status open/close for each zone 
   - platform: template
