@@ -267,8 +267,10 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   
 #if defined(ESP32) && !defined(ARDUINO_MQTT)
   void set_panel_time() {
-    ESP_LOGD("info","Setting panel time...");
+
     ESPTime rtc = now();
+    if (!rtc.is_valid()) return;
+    ESP_LOGD("info","Setting panel time...");    
     dsc.setDateTime(rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
   
   }
