@@ -16,7 +16,7 @@
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
 #define ASYNC_CORE 0 // which core to run async tasks on
-#define TASK_STACK_SIZE 9700 // how much stack task is assigned in words 
+#define TASK_STACK_SIZE 9800 // how much stack task is assigned in words 
 #define LONG_POLL_TIMEOUT 120 //how many seconds to keep the connection open for a long poll get updates session
 #define TELEGRAM_PUSH
 #define DEBUG_PUSHLIB 2

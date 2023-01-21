@@ -139,12 +139,6 @@ String password = "YourSecretPass"; // login and AES encryption/decryption passw
 String accessCode = "1234"; // An access code is required to arm (unless quick arm is enabled)
 String otaAccessCode = ""; // Access code for OTA uploading
 
-#if defined(useTIME)
-const long  timeZoneOffset = -5 * 3600;  // Offset from UTC in seconds (example: US Eastern is UTC - 5)
-const int   daylightOffset = 1 * 3600;   // Daylight savings time offset in seconds
-const char* ntpServer = "pool.ntp.org";  // Set the NTP server
-#endif
-
 
 const int dscClockPin = 22;
 const int dscReadPin = 21;
@@ -165,7 +159,7 @@ const int maxZones = 32;
   # 16 - zones 57-64 (for systems with 64 zone support)
 
   */
-const int expanderAddr1 = 0; //1st zone expander emulator address to use . Set to 0 to disable. 
+const int expanderAddr1 = 8; //1st zone expander emulator address to use . Set to 0 to disable. 
 const int expanderAddr2 = 0;
 
 const char * userCodes = "1:User1,2:User2,40:master";
@@ -201,7 +195,8 @@ const char *
     "/setnotifyflag=<flag> - sum of digits: zones = 1 , status = 2 , messages = 4 , events = 8 , light statuses = 16",
     "/setpassword=<password> - new keypad access password",
     "/setaccesscode=<accesscode> - new panel arm/disarm access code",
-    "/setotaaccesscode=<otaaccesscode> - new OTA upload access code"        
+    "/setotaaccesscode=<otaaccesscode> - new OTA upload access code"  ,
+    "/settime - set the panel with NTP time"        
   };
 
 #if defined(VIRTUALKEYPAD)
@@ -220,8 +215,7 @@ DSCkeybushome * DSCkeybus;
 
 #if defined(useTIME)
 tm timeClient;
-bool timeUpdateNeeded=true;
-uint8_t offsetSeconds;
+bool initialTimeUpdate=true;
 #endif
 
 #if defined(VIRTUALKEYPAD)
@@ -391,7 +385,6 @@ void setup() {
     Serial.print(".");
     delay(2000);
   }
-  Serial.println(&timeClient, "Synchronized NTP time: %a %b %d %Y %H:%M:%S");
 #endif
 
   File root = SPIFFS.open("/");
@@ -604,28 +597,15 @@ void loop() {
   }
 
 #if defined(useTIME)
-  // Sets the time if not synchronized
-   if (timeUpdateNeeded ) {
-     if (getLocalTime(&timeClient)) {
-        if (dsc.ready[defaultPartition - 1]) {
-          if (timeClient.tm_sec==offsetSeconds) {          
-                dsc.setDateTime(timeClient.tm_year + 1900,timeClient.tm_mon + 1,timeClient.tm_mday,  timeClient.tm_hour, timeClient.tm_min);
-                Serial.println(&timeClient, "Synchronized NTP time: %a %b %d %Y %H:%M:%S");
-                timeUpdateNeeded=false;
-          }
-        }
-     }   
-     
-  }
   
-  
-  if (dsc.timestampChanged ) {
+  if (dsc.timestampChanged || initialTimeUpdate ) {
     dsc.timestampChanged = false;
     if (getLocalTime(&timeClient)) {
-        if (dsc.ready[defaultPartition - 1]) {
-          if ((dsc.year != timeClient.tm_year + 1900 || dsc.month != timeClient.tm_mon + 1 || dsc.day !=timeClient.tm_mday || dsc.hour !=  timeClient.tm_hour || dsc.minute != timeClient.tm_min)) {          
-             timeUpdateNeeded=true;
-             offsetSeconds=timeClient.tm_sec;
+        if (dsc.keybusConnected) {
+          if ( initialTimeUpdate || (dsc.year != timeClient.tm_year + 1900 || dsc.month != timeClient.tm_mon + 1 || dsc.day !=timeClient.tm_mday || dsc.hour !=  timeClient.tm_hour || dsc.minute != timeClient.tm_min)) {          
+             dsc.setDateTime(timeClient.tm_year + 1900,timeClient.tm_mon + 1,timeClient.tm_mday,  timeClient.tm_hour, timeClient.tm_min);
+                Serial.println(&timeClient, "Synchronized NTP time: %a %b %d %Y %H:%M:%S");
+                initialTimeUpdate=false;
           }
         }
     }   
@@ -905,7 +885,7 @@ void writeConfig() {
     Serial.println(F("Failed to open file for writing"));
     return;
   }
-  StaticJsonDocument < 200 > doc;
+  StaticJsonDocument < 300 > doc;
   StaticJsonDocument < 100 > zones;
   StaticJsonDocument < 100 > ids;
 
@@ -1231,7 +1211,7 @@ void cmdHandler(rx_message_t * msg) {
     while (token != NULL) {
       int z;
       sscanf(token, "%d", & z);
-      if (z > 0 && z < maxZones) {
+      if (z > 0 && z <= maxZones) {
         if (!inListZone(z)) {
           notifyZones.push_back(z);
           writeConfig();
@@ -1252,7 +1232,7 @@ void cmdHandler(rx_message_t * msg) {
     while (token != NULL) {
       int z;
       sscanf(token, "%d", & z);
-      if (z > 0 && z < maxZones) {
+      if (z > 0 && z <= maxZones) {
         if (inListZone(z)) {
           notifyZones.remove(z);
           writeConfig();
@@ -1308,6 +1288,15 @@ void cmdHandler(rx_message_t * msg) {
     sendCurrentConfig(doc);
     char out[50];
     sprintf(out, "Local IP address http://%s\n", WiFi.localIP().toString().c_str());
+    doc["text"] = String(out);
+    pushlib.sendMessageDoc(doc);   
+    
+  } else if (msg -> text.startsWith("/settime")) {
+     if (dsc.keybusConnected && getLocalTime(&timeClient)) {
+       dsc.setDateTime(timeClient.tm_year + 1900,timeClient.tm_mon + 1,timeClient.tm_mday,  timeClient.tm_hour, timeClient.tm_min);
+     } 
+    char out[50];
+    sprintf(out, "Syncrhonized time");
     doc["text"] = String(out);
     pushlib.sendMessageDoc(doc);    
 
