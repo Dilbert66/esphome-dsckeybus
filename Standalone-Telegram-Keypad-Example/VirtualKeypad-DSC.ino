@@ -29,6 +29,9 @@
      4. Install the following libraries, available in the Arduino IDE Library Manager and
         the Platform.io Library Registry:
           AESLib: https://github.com/suculent/thinx-aes-lib
+          
+          Optional: Install the AsyncElegantOTA for easier OTA updates using a web page
+            AsyncElegantOTA: https://github.com/ayushsharma82/AsyncElegantOTA
  
      5. If desired, update the DNS hostname in the sketch.  By default, this is set to
         "dsckeypad" and the web interface will be accessible at: http://dsckeypad.local
@@ -99,6 +102,8 @@
 
 #include <ESPAsyncWebServer.h>
 
+#include <AsyncElegantOTA.h>
+
 #include <AESLib.h>
 
 #endif
@@ -109,7 +114,7 @@
 //wt32-eth01 pin settings
  #define ETH_PHY_ADDR        1
  #define ETH_PHY_TYPE    ETH_PHY_LAN8720
- #define ETH_PHY_POWER  16
+ #define ETH_PHY_POWER   16
  #define ETH_PHY_MDC     23
  #define ETH_PHY_MDIO    18
  #define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN  //  ETH_CLOCK_GPIO17_OUT
@@ -153,19 +158,19 @@ String password = "YourSecretPass"; // login and AES encryption/decryption passw
 String accessCode = "1234"; // An access code is required to arm (unless quick arm is enabled)
 String otaAccessCode = ""; // Access code for OTA uploading
 
+
+
 #if defined(useTIME)
 const long  timeZoneOffset = -5 * 3600;  // Offset from UTC in seconds (example: US Eastern is UTC - 5)
 const int   daylightOffset = 1 * 3600;   // Daylight savings time offset in seconds
 const char* ntpServer = "pool.ntp.org";  // Set the NTP server
 #endif
 
-
 #if not defined(useWT32ETHERNET)
 const int dscClockPin = 22;
 const int dscReadPin = 21;
 const int dscWritePin = 18;
 #else
-  //these are the recommended pins for the wt32-eth01
 const int dscClockPin = 15;
 const int dscReadPin = 14;
 const int dscWritePin = 12;  
@@ -435,6 +440,8 @@ Serial.println("Setting up Ethernet...");
   ws.onEvent(onWsEvent);
   server.addHandler( & ws);
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
+  //AsyncElegantOTA.begin(&server);  
+  AsyncElegantOTA.begin(&server,otaAccessCode.c_str() , otaAccessCode.c_str());  
   server.begin();
   MDNS.addService("http", "tcp", 80);
   Serial.print(F("Web server started: http://"));
