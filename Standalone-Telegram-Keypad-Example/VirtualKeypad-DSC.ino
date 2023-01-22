@@ -77,6 +77,7 @@
      
 */
 
+//#define useWT32ETHERNET //uncomment if using a WT32-ETH01 board and using ethernet.  If using wifi, you can leave it commented.
 #define VIRTUALKEYPAD //comment if you do not want/need the virtualkeypad functionality
 #define useOTA //comment this to disable OTA updates. 
 #define useTIME //comment this if you don't need/want to set your panel time from NTP
@@ -104,7 +105,20 @@
 
 #include <SPIFFS.h>
 
+#if defined(useWT32ETHERNET)
+//wt32-eth01 pin settings
+ #define ETH_PHY_ADDR        1
+ #define ETH_PHY_TYPE    ETH_PHY_LAN8720
+ #define ETH_PHY_POWER  16
+ #define ETH_PHY_MDC     23
+ #define ETH_PHY_MDIO    18
+ #define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN  //  ETH_CLOCK_GPIO17_OUT
+ #define SHIELD_TYPE     "ETH_PHY_LAN8720" 
+#include <ETH.h>
+static bool eth_connected = false;
+#else
 #include <WiFi.h>
+#endif
 
 #include <ArduinoJson.h>
 
@@ -139,10 +153,24 @@ String password = "YourSecretPass"; // login and AES encryption/decryption passw
 String accessCode = "1234"; // An access code is required to arm (unless quick arm is enabled)
 String otaAccessCode = ""; // Access code for OTA uploading
 
+#if defined(useTIME)
+const long  timeZoneOffset = -5 * 3600;  // Offset from UTC in seconds (example: US Eastern is UTC - 5)
+const int   daylightOffset = 1 * 3600;   // Daylight savings time offset in seconds
+const char* ntpServer = "pool.ntp.org";  // Set the NTP server
+#endif
 
+
+#if not defined(useWT32ETHERNET)
 const int dscClockPin = 22;
 const int dscReadPin = 21;
 const int dscWritePin = 18;
+#else
+  //these are the recommended pins for the wt32-eth01
+const int dscClockPin = 15;
+const int dscReadPin = 14;
+const int dscWritePin = 12;  
+
+#endif
 
 const int defaultPartition = 1;
 const int maxPartitions = 3;
@@ -159,7 +187,7 @@ const int maxZones = 32;
   # 16 - zones 57-64 (for systems with 64 zone support)
 
   */
-const int expanderAddr1 = 8; //1st zone expander emulator address to use . Set to 0 to disable. 
+const int expanderAddr1 = 0; //1st zone expander emulator address to use . Set to 0 to disable. 
 const int expanderAddr2 = 0;
 
 const char * userCodes = "1:User1,2:User2,40:master";
@@ -195,8 +223,8 @@ const char *
     "/setnotifyflag=<flag> - sum of digits: zones = 1 , status = 2 , messages = 4 , events = 8 , light statuses = 16",
     "/setpassword=<password> - new keypad access password",
     "/setaccesscode=<accesscode> - new panel arm/disarm access code",
-    "/setotaaccesscode=<otaaccesscode> - new OTA upload access code"  ,
-    "/settime - set the panel with NTP time"        
+    "/setotaaccesscode=<otaaccesscode> - new OTA upload access code" , 
+    "/settime - set the panel with NTP time"    
   };
 
 #if defined(VIRTUALKEYPAD)
@@ -351,14 +379,13 @@ void setup() {
 #endif  
   // pinMode(LED_BUILTIN, OUTPUT); // LED pin as output.
 
+#if defined(useWT32ETHERNET)
+Serial.println("Setting up Ethernet...");
+  WiFi.onEvent(WiFiEvent);
+  ETH.begin();
+#else
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-
-  #if defined(VIRTUALKEYPAD)
-  aes.setPadMode(paddingMode::CMS);
-  aes.set_key((byte * ) aeskey, 128);
-  #endif
-
   uint8_t checkCount = 20;
   while (WiFi.status() != WL_CONNECTED) {
     Serial.printf("Connecting to Wifi..%d\n", checkCount);
@@ -368,8 +395,12 @@ void setup() {
     WiFi.reconnect();
 
   }
-  //WiFi.setAutoReconnect(true);
-  //WiFi.persistent(true);
+
+  Serial.println(F("Ready"));
+  Serial.print(F("IP address: "));
+  Serial.println(WiFi.localIP());
+
+#endif
 
   #if defined(VIRTUALKEYPAD)
   if (!MDNS.begin(clientName)) {
@@ -378,6 +409,11 @@ void setup() {
       delay(1000);
     }
   }
+
+  #if defined(VIRTUALKEYPAD)
+  aes.setPadMode(paddingMode::CMS);
+  aes.set_key((byte * ) aeskey, 128);
+  #endif
   
 #if defined(useTIME)  
   configTime(timeZoneOffset, daylightOffset, ntpServer);  
@@ -441,9 +477,6 @@ void setup() {
   ArduinoOTA.begin();
   #endif
 
-  Serial.println(F("Ready"));
-  Serial.print(F("IP address: "));
-  Serial.println(WiFi.localIP());
 
   DSCkeybus = new DSCkeybushome(dscClockPin, dscReadPin, dscWritePin);
   DSCkeybus -> accessCode = accessCode.c_str();
@@ -596,6 +629,7 @@ void loop() {
      initialTimeSync=true;
   }
   
+#if not defined(useWT32ETHERNET)
   static unsigned long previousWifiTime;
   if (WiFi.status() != WL_CONNECTED && millis() - previousWifiTime >= 20000) {
     Serial.println(F("Reconnecting to WIFI network"));
@@ -604,6 +638,8 @@ void loop() {
     previousWifiTime = millis();
 
   }
+#endif
+
 
 #if defined(useTIME)
   
@@ -644,6 +680,14 @@ void loop() {
       ledTime = millis();
     }
   */
+      static unsigned long ledTime;
+    if (millis() - ledTime > 10000) {
+
+
+      ledTime = millis();
+    }
+  
+  
   pushlib.loop();
 
   #ifdef useOTA
@@ -652,6 +696,70 @@ void loop() {
   #endif
 
 }
+
+#if defined(useWT32ETHERNET)
+void WiFiEvent(WiFiEvent_t event)
+{
+  
+  switch (event) {
+    case SYSTEM_EVENT_ETH_START:
+      Serial.println("ETH Started");
+      //set eth hostname here
+      ETH.setHostname("esp32-ethernet");
+      break;
+    case  SYSTEM_EVENT_ETH_CONNECTED:
+      Serial.println("ETH Connected");
+      break;
+    case  SYSTEM_EVENT_ETH_GOT_IP:
+      Serial.print("ETH MAC: ");
+      Serial.print(ETH.macAddress());
+      Serial.print(", IPv4: ");
+      Serial.print(ETH.localIP());
+      if (ETH.fullDuplex()) {
+        Serial.print(", FULL_DUPLEX");
+      }
+      Serial.print(", ");
+      Serial.print(ETH.linkSpeed());
+      Serial.println("Mbps");
+      eth_connected = true;
+      break;
+    case  SYSTEM_EVENT_ETH_DISCONNECTED:
+      Serial.println("ETH Disconnected");
+      eth_connected = false;
+      break;
+    case  SYSTEM_EVENT_ETH_STOP:
+      Serial.println("ETH Stopped");
+      eth_connected = false;
+      break;
+    default:
+      break;
+  }
+  
+}
+
+#endif
+
+void testClient(const char * host, uint16_t port)
+{
+  Serial.print("\nconnecting to ");
+  Serial.println(host);
+
+  WiFiClient client;
+  if (!client.connect(host, port)) {
+    Serial.println("connection failed");
+    return;
+  }
+  client.printf("GET / HTTP/1.1\r\nHost: %s\r\n\r\n", host);
+  while (client.connected() && !client.available());
+  while (client.available()) {
+    Serial.write(client.read());
+  }
+
+  Serial.println("closing connection\n");
+  client.stop();
+
+}
+
 #if defined(VIRTUALKEYPAD)
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t * data, size_t len) {
 
@@ -1098,7 +1206,6 @@ void cmdHandler(rx_message_t * msg) {
       pushlib.sendMessageDoc(doc);
       DSCkeybus -> alarm_keypress_partition("*199#", activePartition);
     }
-    
 #if defined(VIRTUALKEYPAD)
   } else if (msg -> text.startsWith("/setpassword")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
@@ -1115,8 +1222,7 @@ void cmdHandler(rx_message_t * msg) {
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
     } 
-#endif
- 
+#endif    
   } else if (msg -> text.startsWith("/setaccesscode")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
     if (strcmp(pstr.c_str(),"") !=0) {
@@ -1299,10 +1405,14 @@ void cmdHandler(rx_message_t * msg) {
   } else if (msg -> text.startsWith("/getcfg")) {
     sendCurrentConfig(doc);
     char out[50];
+#if defined(useWT32ETHERNET)
+    sprintf(out, "Local IP address http://%s\n", ETH.localIP().toString().c_str());
+#else    
     sprintf(out, "Local IP address http://%s\n", WiFi.localIP().toString().c_str());
+#endif
     doc["text"] = String(out);
     pushlib.sendMessageDoc(doc);   
-    
+
 #if defined(useTIME)    
   } else if (msg -> text.startsWith("/settime")) {
      if (dsc.keybusConnected && getLocalTime(&timeClient)) {
@@ -1313,10 +1423,13 @@ void cmdHandler(rx_message_t * msg) {
     doc["text"] = String(out);
     pushlib.sendMessageDoc(doc);    
 #endif
-
   } else if (msg -> text.startsWith("/getip")) {
     char out[50];
+#if defined(useWT32ETHERNET)
+    sprintf(out, "Local IP address http://%s\n", ETH.localIP().toString().c_str());
+#else    
     sprintf(out, "Local IP address http://%s\n", WiFi.localIP().toString().c_str());
+#endif
     doc["text"] = String(out);
     pushlib.sendMessageDoc(doc);
 

@@ -91,7 +91,7 @@ void PushLib::sendMessageDoc(JsonDocument &  doc, String  method) {
 void PushLib::postMessage(WiFiClientSecure *ipClient, String *msg, String  *method) {
 
 
-  if (WiFi.status() == WL_CONNECTED && !ipClient -> connected()) 
+  if ( !ipClient -> connected()) 
     ipClient -> connect("api.telegram.org", 443);
 
     if (ipClient -> connected()) {
@@ -195,7 +195,7 @@ void PushLib::getUpdatesSendTask(void * args) {
       _this -> postMessage( & ipClient, & msg.msg_text,&msg.method);
       continue; //we make sure we clean out send queue first
     }
-    if (millis() - checkTime > _this -> telegramCheckInterval && WiFi.status() == WL_CONNECTED) {
+    if (millis() - checkTime > _this -> telegramCheckInterval ) {
       rx_message_t m;
 
       if (!ipClient.connected()) ipClient.connect("api.telegram.org", 443);
