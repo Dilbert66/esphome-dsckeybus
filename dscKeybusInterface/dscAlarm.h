@@ -267,12 +267,10 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   
 #if defined(ESP32) && !defined(ARDUINO_MQTT)
   void set_panel_time() {
-
     ESPTime rtc = now();
     if (!rtc.is_valid()) return;
     ESP_LOGD("info","Setting panel time...");    
     dsc.setDateTime(rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
-  
   }
   #else
   void set_panel_time(int year,int month,int day,int hour,int minute) {
@@ -1414,14 +1412,14 @@ void update() override {
     if (!forceDisconnect && ( dsc.statusChanged || forceRefresh)) { // Processes data only when a valid Keybus command has been read and statuses were changed
       dsc.statusChanged = false; // Reset the status tracking flag
 
-      if (debug == 1)
+      if (debug  > 0)
         printPacket("Paneldata: ", dsc.panelData[0], dsc.panelData, 16);
 
       for (byte partition = 0; partition < dscPartitions; partition++) {
         if (firstrun)
           beepsCallback("0", partition + 1);
         if (dsc.disabled[partition]) continue;
-        setStatus(partition, true);
+        setStatus(partition, false);
 
       }
 #if !defined(ARDUINO_MQTT)     
@@ -1834,7 +1832,7 @@ void update() override {
 
     if (dsc.status[partition] == partitionStatus[partition].lastStatus && beeps == 0 && !force) return;
     byte * currentSelection = & partitionStatus[partition].currentSelection;
-
+ 
     String lcdLine1;
     String lcdLine2;
     options = false;
@@ -1843,10 +1841,10 @@ void update() override {
     partitionStatus[partition].decimalInput = false;
 #if !defined(ARDUINO_MQTT) 
     if (debug > 1)     
-    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip);
+    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d,force=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip,force);
    #else
          if (debug > 1)     
-    Serial.printf("status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d\n", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip);  
+    Serial.printf("status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d,force=%d\n", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip,force);  
 #endif    
     switch (dsc.status[partition]) {
     case 0x01:

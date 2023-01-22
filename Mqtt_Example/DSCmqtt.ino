@@ -13,17 +13,13 @@
  *    3. Set the MQTT server address and other connection options in the sketch.
  *    4. Upload the sketch and monitor using a tool such as MQTT explorer.
  *    5. Setup your home control software to process the MQTT topics
- *
- * 
- Once the sketch is loaded and running, any following updates can be done via OTA updates for initial testing.  
-        See here for an example:  https://randomnerdtutorials.com/esp8266-ota-updates-with-arduino-ide-over-the-air/
-        
-        NOTE: I do not normally recommended leaving the ability to do OTA updates active on a production system. Once done testing, you should either disable it by commenting out "useOTA" or set a good long passcode.
-        Be aware that for uploading sketch data (web server files) via OTA, you cannot have a password set. Once all testing is done, you can then set your password of choice or disable the feature. 
- */       
-/*NOTE: Only use SSL with an ESP32.  The ESP8266 will get out of memory errors with the bear ssl library*/
+ 
+
+NOTE: Only use SSL with an ESP32.  The ESP8266 will get out of memory errors with the bear ssl library
+*/
 
 //#define useMQTTSSL /*set this to use SSL with a supported mqtt broker.  */
+#define useTIME //comment this if you don't need/want to set your panel time from NTP
 
 #ifdef ESP32
 
@@ -49,10 +45,18 @@
 
 #include <WiFiUdp.h>
 
+#if defined(useTIME)
+
+#include <time.h>
+
+#endif
+
 #include <ArduinoOTA.h>
+
 #include <ArduinoJson.h>
 
 #define ARDUINO_MQTT
+
 #include "dscAlarm.h"
 
 #define DEBUG 1
@@ -66,16 +70,21 @@ const char * otaAccessCode = "1234"; // Access code for OTA uploading
 const char * mqttServer = "<yourmqttserveraddress>"; // MQTT server domain name or IP address
 const char * mqttUsername = "<mqttuser>"; // Optional, leave blank if not required
 const char * mqttPassword = "<mqttpass>"; // Optional, leave blank if not required
+#if defined(useTIME)
+const long  timeZoneOffset = -5 * 3600;  // Offset from UTC in seconds (example: US Eastern is UTC - 5)
+const int   daylightOffset = 1 * 3600;   // Daylight savings time offset in seconds
+const char* ntpServer = "pool.ntp.org";  // Set the NTP server
+#endif
 
-const int dscClockPin=22;
-const int dscReadPin=21;
-const int dscWritePin=18;
 
-const int defaultPartition=1;
-const int maxZones=32;
+const int dscClockPin = 22;
+const int dscReadPin = 21;
+const int dscWritePin = 18;
 
-const int expanderAddr1=0;
-const int expanderAddr2=0;
+const int defaultPartition = 1;
+const int maxZones = 32;
+const int expanderAddr1 = 0;
+const int expanderAddr2 = 0;
 
 const char * userCodes = "1:User1,2:User2";
 
@@ -85,7 +94,7 @@ const char * mqttZoneStatusTopic = "DSC/Get/Zone"; // Sends zone status per zone
 const char * mqttRelayStatusTopic = "DSC/Get/Relay"; //relay status (relay1... relay2)
 
 const char * mqttTroubleMsgTopic = "DSC/Get/Trouble"; // Sends trouble status
-const char * mqttPanelTopic = "DSC/Get"; 
+const char * mqttPanelTopic = "DSC/Get";
 //const char * mqttLightsSuffix = "/StatusLights"; // battery/ac
 const char * mqttPartitionTopic = "DSC/Get/Partition"; // Partition1 ... Partition2
 const char * mqttStatusSuffix = "/Status"; // alarm/triggered ready/etc Partition1 ... Partition
@@ -100,7 +109,6 @@ const char * mqttBirthMessage = "online";
 const char * mqttLwtMessage = "offline";
 const char * mqttCmdSubscribeTopic = "DSC/Set"; // Receives messages to write to the panel
 
-
 //End user config
 
 #ifdef useMQTTSSL
@@ -108,8 +116,6 @@ const int mqttPort = 8883; // MQTT server ssl port
 #else
 const int mqttPort = 1883; // MQTT server port
 #endif
-
-
 
 #ifdef useMQTTSSL
 WiFiClientSecure wifiClient;
@@ -121,6 +127,10 @@ WiFiClient wifiClient;
 PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
 unsigned long mqttPreviousTime;
 int lastLedState;
+
+#if defined(useTIME)
+tm timeClient;
+#endif
 
 DSCkeybushome * DSCkeybus;
 
@@ -143,6 +153,15 @@ void setup() {
     WiFi.reconnect();
 
   }
+
+  #if defined(useTIME)
+  configTime(timeZoneOffset, daylightOffset, ntpServer);
+  while (!getLocalTime( & timeClient)) {
+    Serial.print(".");
+    delay(2000);
+  }
+  #endif
+
   // Port defaults to 8266
   ArduinoOTA.setPort(8266);
 
@@ -174,163 +193,205 @@ void setup() {
   Serial.println(F("Ready"));
   Serial.print(F("IP address: "));
   Serial.println(WiFi.localIP());
-  
+
   mqtt.setCallback(mqttCallback);
 
   if (mqttConnect()) mqttPreviousTime = millis();
   else mqttPreviousTime = 0;
 
   Serial.println(F("DSC Interface is online."));
-  
-    DSCkeybus = new DSCkeybushome(dscClockPin,dscReadPin,dscWritePin);
-    DSCkeybus->accessCode=accessCode;
-    DSCkeybus->maxZones=maxZones;
-    DSCkeybus->defaultPartition=defaultPartition;
-    DSCkeybus->debug=2; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
-    DSCkeybus->expanderAddr1=expanderAddr1; //zone expander
-    DSCkeybus->expanderAddr2=expanderAddr2;
-    DSCkeybus->userCodes=userCodes;
-    
-    DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
-        mqttPublish(mqttPanelTopic,mqttStatusSuffix,statusCode.c_str());
-    });
-    
-    DSCkeybus->onPartitionStatusChange([&](std::string statusCode, int partition) {
-      mqttPublish(mqttPartitionTopic,mqttStatusSuffix,partition,statusCode.c_str());
-    });
-    
-    DSCkeybus->onPartitionMsgChange([&](std::string msg,uint8_t partition) {
-        mqttPublish(mqttPartitionTopic,mqttPartitionMsgSuffix,partition,msg.c_str());
-    });      
 
-    DSCkeybus->onPanelStatusChange([&](panelStatus ps,bool open,int partition) {
-        
-           char psvalue[10];
-           strcpy(psvalue,"");           
-           switch (ps) {
-           case trStatus: strcat(psvalue,PSTR("/Trouble"));break;
-           case batStatus: strcat(psvalue,PSTR("/Battery"));break;
-           case acStatus: strcat(psvalue,PSTR("/AC"));break;
-           case panicStatus: strcat(psvalue,PSTR("/Panic"));break;
-           case rdyStatus: strcat(psvalue,PSTR("/Ready"));break;
-           case armStatus: strcat(psvalue,PSTR("/Armed"));break;
-           default: break;
-            } 
-           if (!partition) 
-           mqttPublish(mqttPanelTopic,psvalue,open);
-           else
-           mqttPublish(mqttPartitionTopic,psvalue,partition,open);
-    });
-    DSCkeybus->onZoneMsgStatus([&](std::string msg) {
-            mqttPublish(mqttZoneMsgTopic,msg.c_str());
-    });
-    DSCkeybus->onLine1Display([&](std::string msg,int partition) {
-          mqttPublish(mqttPartitionTopic,mqttLine1Suffix,partition,msg.c_str());
-    });
-    DSCkeybus->onLine2Display([&](std::string msg,int partition) {
-          mqttPublish(mqttPartitionTopic,mqttLine2Suffix,partition,msg.c_str());
-    });
-    DSCkeybus->onEventInfo([&](std::string msg) {
-           mqttPublish(mqttEventTopic,msg.c_str());
-    });  
+  DSCkeybus = new DSCkeybushome(dscClockPin, dscReadPin, dscWritePin);
+  DSCkeybus -> accessCode = accessCode;
+  DSCkeybus -> maxZones = maxZones;
+  DSCkeybus -> defaultPartition = defaultPartition;
+  DSCkeybus -> debug = 2; // 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
+  DSCkeybus -> expanderAddr1 = expanderAddr1; //zone expander
+  DSCkeybus -> expanderAddr2 = expanderAddr2;
+  DSCkeybus -> userCodes = userCodes;
 
-    DSCkeybus->onBeeps([&](std::string beep,int partition) {
-        mqttPublish(mqttPartitionTopic,mqttBeepSuffix,partition,beep.c_str());
-    });    
-    DSCkeybus->onFireStatusChange([&](bool open, int partition) {
-           if (!partition) 
-             mqttPublish(mqttPanelTopic,mqttFireSuffix,open);
-           else
-             mqttPublish(mqttPartitionTopic,mqttFireSuffix,partition,open);
-    }); 
-    DSCkeybus->onTroubleMsgStatus([&](std::string msg) {
-            mqttPublish(mqttTroubleMsgTopic,msg.c_str());
-    });
-    DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
-        mqttPublish(mqttZoneStatusTopic,zone,open);
+  DSCkeybus -> onSystemStatusChange([ & ](std::string statusCode) {
+    mqttPublish(mqttPanelTopic, mqttStatusSuffix, statusCode.c_str());
+  });
 
-    });
-    DSCkeybus->onRelayChannelChange([&](uint8_t channel, bool state) {
-        mqttPublish(mqttRelayStatusTopic,channel,state);
-    });
-   
-     DSCkeybus->begin(); 
+  DSCkeybus -> onPartitionStatusChange([ & ](std::string statusCode, int partition) {
+    mqttPublish(mqttPartitionTopic, mqttStatusSuffix, partition, statusCode.c_str());
+  });
+
+  DSCkeybus -> onPartitionMsgChange([ & ](std::string msg, uint8_t partition) {
+    mqttPublish(mqttPartitionTopic, mqttPartitionMsgSuffix, partition, msg.c_str());
+  });
+
+  DSCkeybus -> onPanelStatusChange([ & ](panelStatus ps, bool open, int partition) {
+
+    char psvalue[10];
+    strcpy(psvalue, "");
+    switch (ps) {
+    case trStatus:
+      strcat(psvalue, PSTR("/Trouble"));
+      break;
+    case batStatus:
+      strcat(psvalue, PSTR("/Battery"));
+      break;
+    case acStatus:
+      strcat(psvalue, PSTR("/AC"));
+      break;
+    case panicStatus:
+      strcat(psvalue, PSTR("/Panic"));
+      break;
+    case rdyStatus:
+      strcat(psvalue, PSTR("/Ready"));
+      break;
+    case armStatus:
+      strcat(psvalue, PSTR("/Armed"));
+      break;
+    case fireStatus:
+      break;
+    case chimeStatus:
+      break;
+    default:
+      break;
+    }
+    if (!partition)
+      mqttPublish(mqttPanelTopic, psvalue, open);
+    else
+      mqttPublish(mqttPartitionTopic, psvalue, partition, open);
+  });
+  DSCkeybus -> onZoneMsgStatus([ & ](std::string msg) {
+    mqttPublish(mqttZoneMsgTopic, msg.c_str());
+  });
+  DSCkeybus -> onLine1Display([ & ](std::string msg, int partition) {
+    mqttPublish(mqttPartitionTopic, mqttLine1Suffix, partition, msg.c_str());
+  });
+  DSCkeybus -> onLine2Display([ & ](std::string msg, int partition) {
+    mqttPublish(mqttPartitionTopic, mqttLine2Suffix, partition, msg.c_str());
+  });
+  DSCkeybus -> onEventInfo([ & ](std::string msg) {
+    mqttPublish(mqttEventTopic, msg.c_str());
+  });
+
+  DSCkeybus -> onBeeps([ & ](std::string beep, int partition) {
+    mqttPublish(mqttPartitionTopic, mqttBeepSuffix, partition, beep.c_str());
+  });
+  DSCkeybus -> onFireStatusChange([ & ](bool open, int partition) {
+    if (!partition)
+      mqttPublish(mqttPanelTopic, mqttFireSuffix, open);
+    else
+      mqttPublish(mqttPartitionTopic, mqttFireSuffix, partition, open);
+  });
+  DSCkeybus -> onTroubleMsgStatus([ & ](std::string msg) {
+    mqttPublish(mqttTroubleMsgTopic, msg.c_str());
+  });
+  DSCkeybus -> onZoneStatusChange([ & ](uint8_t zone, bool open) {
+    mqttPublish(mqttZoneStatusTopic, zone, open);
+
+  });
+  DSCkeybus -> onRelayChannelChange([ & ](uint8_t channel, bool state) {
+    mqttPublish(mqttRelayStatusTopic, channel, state);
+  });
+
+  DSCkeybus -> begin();
 }
 
-
-
 void loop() {
-  static int loopFlag = 0;
+  static int loopCount = 0;
+  static unsigned long delayedStartupTime = millis();
+  static bool delayedStartup = true;
+  static bool initialTimeSync = false;
+
+  if (delayedStartup && (millis() - delayedStartupTime) > 30000) {
+    delayedStartup = false;
+    initialTimeSync = true;
+  }
+
   if (WiFi.status() != WL_CONNECTED) {
     WiFi.begin();
-    if (loopFlag==0)
-        Serial.println(F("\nWifi disconnected. Reconnecting..."));
+    if (loopCount == 0)
+      Serial.println(F("\nWifi disconnected. Reconnecting..."));
     WiFi.disconnect();
     WiFi.reconnect();
-    delay(1000);    
-    loopFlag=1;
-  } else 
-      loopFlag=0;
-  
+    delay(1000);
+    loopCount++;
+    if (loopCount > 100)
+      ESP.restart();
+  } else
+    loopCount = 0;
+
   if (WiFi.status() == WL_CONNECTED) {
     ArduinoOTA.handle();
     mqttHandle();
   }
- /* 
-  static unsigned long ledTime;
-  if (millis() - ledTime > 1000) {
-    if (lastLedState) {
-      digitalWrite(LED_BUILTIN, LOW);
-      lastLedState = 0;
-    } else {
-      digitalWrite(LED_BUILTIN, HIGH);
-      lastLedState = 1;
+  /* 
+   static unsigned long ledTime;
+   if (millis() - ledTime > 1000) {
+     if (lastLedState) {
+       digitalWrite(LED_BUILTIN, LOW);
+       lastLedState = 0;
+     } else {
+       digitalWrite(LED_BUILTIN, HIGH);
+       lastLedState = 1;
 
+     }
+     ledTime = millis();
+   }
+   */
+
+  #if defined(useTIME)
+
+  if (dsc.timestampChanged || initialTimeSync) {
+    dsc.timestampChanged = false;
+    if (getLocalTime( & timeClient)) {
+      if (dsc.keybusConnected) {
+        if (initialTimeSync || (dsc.year != timeClient.tm_year + 1900 || dsc.month != timeClient.tm_mon + 1 || dsc.day != timeClient.tm_mday || dsc.hour != timeClient.tm_hour || dsc.minute != timeClient.tm_min)) {
+          dsc.setDateTime(timeClient.tm_year + 1900, timeClient.tm_mon + 1, timeClient.tm_mday, timeClient.tm_hour, timeClient.tm_min);
+          Serial.println( & timeClient, "Synchronized NTP time: %a %b %d %Y %H:%M:%S");
+          initialTimeSync = false;
+        }
+      }
     }
-    ledTime = millis();
   }
-  */
-  DSCkeybus->loop();
-  
-} //loop
+  #endif
 
+  DSCkeybus -> loop();
+
+} //loop
 
 // Handles messages received in the mqttSubscribeTopic
 void mqttCallback(char * topic, byte * payload, unsigned int length) {
 
   payload[length] = '\0';
 
-  StaticJsonDocument <256> doc;
-  deserializeJson(doc,payload);
-       int p=defaultPartition;
-       const char * s="";
-       const char * c="";
-      if (strcmp(topic, mqttCmdSubscribeTopic) == 0) { 
-        if (doc.containsKey("partition"))
-          p=doc["partition"];
-        if (doc.containsKey("code"))
-            c=doc["code"];     
-        if (doc.containsKey("state") )  {
-            s=doc["state"];  
-            DSCkeybus->set_alarm_state(s,c,p); 
-        } else if (doc.containsKey("keys")) {
-            s=doc["keys"]; 
-            DSCkeybus->alarm_keypress_partition(s,p);
-        } else if (doc.containsKey("fault") && doc.containsKey("zone")) {
-          int z=doc["zone"];
-          bool f=doc["fault"] > 0?1:0;
-          DSCkeybus->set_zone_fault(z,f);
-        } else if (doc.containsKey("stop")) {
-           disconnectKeybus(); 
-        } else if (doc.containsKey("start") || doc.containsKey("restart")) {
-            ESP.restart();
-        }
-        
-      }    
+  StaticJsonDocument < 256 > doc;
+  deserializeJson(doc, payload);
+  int p = defaultPartition;
+  const char * s = "";
+  const char * c = accessCode;
+  if (strcmp(topic, mqttCmdSubscribeTopic) == 0) {
+    if (doc.containsKey("partition"))
+      p = doc["partition"];
+    if (doc.containsKey("code"))
+      c = doc["code"];
+    if (doc.containsKey("state")) {
+      s = doc["state"];
+      DSCkeybus -> set_alarm_state(s, c, p);
+    } else if (doc.containsKey("keys")) {
+      s = doc["keys"];
+      DSCkeybus -> alarm_keypress_partition(s, p);
+    } else if (doc.containsKey("fault") && doc.containsKey("zone")) {
+      int z = doc["zone"];
+      bool f = doc["fault"] > 0 ? 1 : 0;
+      DSCkeybus -> set_zone_fault(z, f);
+    } else if (doc.containsKey("stop")) {
+      disconnectKeybus();
+    } else if (doc.containsKey("start") || doc.containsKey("restart")) {
+      ESP.restart();
+    }
+
+  }
 }
 
 void mqttHandle() {
- 
+
   if (!mqtt.connected()) {
     unsigned long mqttCurrentTime = millis();
     if (mqttCurrentTime - mqttPreviousTime > 5000) {
@@ -351,7 +412,7 @@ void mqttHandle() {
 bool mqttConnect() {
   Serial.print(F("MQTT...."));
   //if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttSystemTopic, 0, true, mqttLwtMessage)) {
-  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {      
+  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
     Serial.print(F("connected: "));
     Serial.println(mqttServer);
     mqtt.subscribe(mqttCmdSubscribeTopic);
@@ -362,40 +423,45 @@ bool mqttConnect() {
   return mqtt.connected();
 }
 
-void mqttPublish(const char * publishTopic,  const char * value) {
+void mqttPublish(const char * publishTopic,
+  const char * value) {
   mqtt.publish(publishTopic, value);
 }
 
-void mqttPublish(const char * topic, const char * suffix,  const char * value) {
+void mqttPublish(const char * topic,
+  const char * suffix,
+    const char * value) {
   char publishTopic[strlen(topic) + 3 + strlen(suffix)];
   strcpy(publishTopic, topic);
   strcat(publishTopic, suffix);
   mqtt.publish(publishTopic, value);
 }
 
-void mqttPublish(const char * topic,const char * suffix , bool bvalue) {
+void mqttPublish(const char * topic,
+  const char * suffix, bool bvalue) {
   const char * value = bvalue ? "ON" : "OFF";
-  mqttPublish(topic,suffix,value);
+  mqttPublish(topic, suffix, value);
 }
 
-
-
-void mqttPublish(const char * topic,const char * suffix , byte srcNumber,  const char * value) {
+void mqttPublish(const char * topic,
+  const char * suffix, byte srcNumber,
+    const char * value) {
   char publishTopic[strlen(topic) + 10 + strlen(suffix)];
- char dstNumber[3];
+  char dstNumber[3];
   strcpy(publishTopic, topic);
   itoa(srcNumber, dstNumber, 10);
-  strcat(publishTopic, dstNumber);  
-  strcat(publishTopic, suffix);  
+  strcat(publishTopic, dstNumber);
+  strcat(publishTopic, suffix);
   mqtt.publish(publishTopic, value);
 }
 
-void mqttPublish(const char * topic,const char * suffix , byte srcNumber,  bool bvalue) {
+void mqttPublish(const char * topic,
+  const char * suffix, byte srcNumber, bool bvalue) {
   const char * value = bvalue ? "ON" : "OFF";
-  mqttPublish(topic,suffix,srcNumber,value);
+  mqttPublish(topic, suffix, srcNumber, value);
 }
 
-void mqttPublish(const char * topic, byte srcNumber,  bool bvalue) {
+void mqttPublish(const char * topic, byte srcNumber, bool bvalue) {
   const char * value = bvalue ? "ON" : "OFF";
   char publishTopic[strlen(topic) + 10];
   char dstNumber[3];
@@ -405,7 +471,3 @@ void mqttPublish(const char * topic, byte srcNumber,  bool bvalue) {
   mqtt.publish(publishTopic, value);
 
 }
-
-
-
-
