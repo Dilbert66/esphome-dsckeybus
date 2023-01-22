@@ -343,11 +343,12 @@ void setup() {
   Serial.println();
   SPIFFS.begin();  
   readConfig();
+#if defined(VIRTUALKEYPAD)  
   memset(key,'0',16);
   for (int x=0;x<password.length() && x < 16;x++)  {
       key[x]=password[x];
   }
-  
+#endif  
   // pinMode(LED_BUILTIN, OUTPUT); // LED pin as output.
 
   WiFi.mode(WIFI_STA);
@@ -1098,6 +1099,7 @@ void cmdHandler(rx_message_t * msg) {
       DSCkeybus -> alarm_keypress_partition("*199#", activePartition);
     }
     
+#if defined(VIRTUALKEYPAD)
   } else if (msg -> text.startsWith("/setpassword")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
     if (strcmp(pstr.c_str(),"") !=0) {
@@ -1113,6 +1115,8 @@ void cmdHandler(rx_message_t * msg) {
       doc["text"] = String(out);
       pushlib.sendMessageDoc(doc);
     } 
+#endif
+ 
   } else if (msg -> text.startsWith("/setaccesscode")) {
     String pstr = msg -> text.substring(msg -> text.indexOf('=') + 1, msg -> text.length());
     if (strcmp(pstr.c_str(),"") !=0) {
