@@ -1464,7 +1464,8 @@ void update() override {
         dsc.keypadPanicAlarm = false;
         //partitionMsgChangeCallback("Keypad Panic Alarm",defaultPartition);
       }
-
+      
+     
       // Publishes trouble status
       if (dsc.troubleChanged || forceRefresh ) {
         dsc.troubleChanged = false; // Resets the trouble status flag
@@ -1612,6 +1613,10 @@ void update() override {
               fireStatusChangeCallback(false,partition + 1); // Fire alarm restored
               partitionStatus[partition].fire=false;             
           }
+        }
+        if (forceRefresh) {
+          panelStatusChangeCallback(chimeStatus, partitionStatus[partition].chime,partition+1);
+          
         }
 
       }
