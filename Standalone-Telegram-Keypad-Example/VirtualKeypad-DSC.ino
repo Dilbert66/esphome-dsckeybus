@@ -29,9 +29,7 @@
      4. Install the following libraries, available in the Arduino IDE Library Manager and
         the Platform.io Library Registry:
           AESLib: https://github.com/suculent/thinx-aes-lib
-          
-          Optional: Install the AsyncElegantOTA for easier OTA updates using a web page
-            AsyncElegantOTA: https://github.com/ayushsharma82/AsyncElegantOTA
+          AsyncElegantOTA: https://github.com/ayushsharma82/AsyncElegantOTA
  
      5. If desired, update the DNS hostname in the sketch.  By default, this is set to
         "dsckeypad" and the web interface will be accessible at: http://dsckeypad.local
@@ -72,8 +70,11 @@
         a. I do not normally recommended leaving the ability to do OTA updates active on a production system. Once done testing, you should either disable it by commenting out "useOTA" or set a good long passcode.
         Be aware that for uploading sketch data (web server files) via OTA, you cannot have a password set. Once all testing is done, you can then set your password of choice or disable the feature. 
         
-        b. You can access the virtual keypad web interface by the IP address displayed through
-        the serial output or http://dsckeypad.local (for clients and networks that support mDNS).
+        b. You can also use the AsyncElegantOTA function to upload your sketch via the http://<deviceipaddress>/update  or http://<clientName>.local url.  See this link for
+        details: https://randomnerdtutorials.com/esp32-ota-over-the-air-arduino/
+        
+        c. You can access the virtual keypad web interface by the IP address displayed through
+        the serial output or http://<clientName>.local (for clients and networks that support mDNS).
         You can also talk to your telegram bot from the bot chat window created above. Send /help for a list of commands. On boot, the system will send all status to your bot channel.
       
        
@@ -117,8 +118,8 @@
  #define ETH_PHY_POWER   16
  #define ETH_PHY_MDC     23
  #define ETH_PHY_MDIO    18
- #define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN  //  ETH_CLOCK_GPIO17_OUT
- #define SHIELD_TYPE     "ETH_PHY_LAN8720" 
+ #define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN  
+ #define SHIELD_TYPE     ETH_PHY_LAN8720 
 #include <ETH.h>
 static bool eth_connected = false;
 #else
@@ -158,13 +159,12 @@ String password = "YourSecretPass"; // login and AES encryption/decryption passw
 String accessCode = "1234"; // An access code is required to arm (unless quick arm is enabled)
 String otaAccessCode = ""; // Access code for OTA uploading
 
-
-
 #if defined(useTIME)
 const long  timeZoneOffset = -5 * 3600;  // Offset from UTC in seconds (example: US Eastern is UTC - 5)
 const int   daylightOffset = 1 * 3600;   // Daylight savings time offset in seconds
 const char* ntpServer = "pool.ntp.org";  // Set the NTP server
 #endif
+
 
 #if not defined(useWT32ETHERNET)
 const int dscClockPin = 22;
@@ -238,7 +238,7 @@ AsyncWebSocket ws("/ws");
 #endif
 
 unsigned long pingTime;
-bool pauseNotifications;
+bool pauseNotifications=false;
 uint8_t activePartition = defaultPartition;
 
 struct
@@ -376,19 +376,17 @@ void setup() {
   Serial.println();
   SPIFFS.begin();  
   readConfig();
-#if defined(VIRTUALKEYPAD)  
-  memset(key,'0',16);
-  for (int x=0;x<password.length() && x < 16;x++)  {
-      key[x]=password[x];
-  }
-#endif  
+
   // pinMode(LED_BUILTIN, OUTPUT); // LED pin as output.
 
 #if defined(useWT32ETHERNET)
+
 Serial.println("Setting up Ethernet...");
   WiFi.onEvent(WiFiEvent);
   ETH.begin();
+  
 #else
+  
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   uint8_t checkCount = 20;
@@ -400,26 +398,11 @@ Serial.println("Setting up Ethernet...");
     WiFi.reconnect();
 
   }
-
   Serial.println(F("Ready"));
   Serial.print(F("IP address: "));
   Serial.println(WiFi.localIP());
-
 #endif
 
-  #if defined(VIRTUALKEYPAD)
-  if (!MDNS.begin(clientName)) {
-    Serial.println(F("Error setting up MDNS responder."));
-    while (1) {
-      delay(1000);
-    }
-  }
-
-  #if defined(VIRTUALKEYPAD)
-  aes.setPadMode(paddingMode::CMS);
-  aes.set_key((byte * ) aeskey, 128);
-  #endif
-  
 #if defined(useTIME)  
   configTime(timeZoneOffset, daylightOffset, ntpServer);  
   while (!getLocalTime(&timeClient)) {
@@ -428,15 +411,29 @@ Serial.println("Setting up Ethernet...");
   }
 #endif
 
-  File root = SPIFFS.open("/");
+#if defined(VIRTUALKEYPAD)
+  memset(key,'0',16);
+  for (int x=0;x<password.length() && x < 16;x++)  {
+      key[x]=password[x];
+  }
+  aes.setPadMode(paddingMode::CMS);
+  aes.set_key((byte * ) aeskey, 128);
+  
+  if (!MDNS.begin(clientName)) {
+    Serial.println(F("Error setting up MDNS responder."));
+    while (1) {
+      delay(1000);
+    }
+  }
 
+  File root = SPIFFS.open("/");
   File file = root.openNextFile();
   while (file) {
     Serial.print(F("FILE: "));
     Serial.println(file.name());
     file = root.openNextFile();
   }
-  
+ 
   ws.onEvent(onWsEvent);
   server.addHandler( & ws);
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
@@ -447,6 +444,7 @@ Serial.println("Setting up Ethernet...");
   Serial.print(F("Web server started: http://"));
   Serial.print(clientName);
   Serial.println(F(".local"));
+  
   #endif
 
 
@@ -456,7 +454,6 @@ Serial.println("Setting up Ethernet...");
   // Hostname defaults to esp8266-[ChipID]
   ArduinoOTA.setHostname(clientName);
   ArduinoOTA.setPassword(otaAccessCode.c_str());
-
   ArduinoOTA.onStart([]() {
     pushlib.stop();
     dsc.stop();
@@ -480,10 +477,8 @@ Serial.println("Setting up Ethernet...");
     DSCkeybus -> begin();
     pushlib.begin();
   });
-
   ArduinoOTA.begin();
   #endif
-
 
   DSCkeybus = new DSCkeybushome(dscClockPin, dscReadPin, dscWritePin);
   DSCkeybus -> accessCode = accessCode.c_str();
@@ -616,11 +611,13 @@ Serial.println("Setting up Ethernet...");
 
   DSCkeybus -> begin();
 
-  pauseNotifications = false;
+  
   #ifdef TELEGRAM_PUSH
   pushlib.addCmdHandler( & cmdHandler);
   #endif
+  
   pushlib.begin();
+  
   pushNotification("System restarted");
 
 }
@@ -647,9 +644,7 @@ void loop() {
   }
 #endif
 
-
 #if defined(useTIME)
-  
   if (dsc.timestampChanged || initialTimeSync ) {
     dsc.timestampChanged = false;
     if (getLocalTime(&timeClient)) {
@@ -687,13 +682,6 @@ void loop() {
       ledTime = millis();
     }
   */
-      static unsigned long ledTime;
-    if (millis() - ledTime > 10000) {
-
-
-      ledTime = millis();
-    }
-  
   
   pushlib.loop();
 
@@ -745,27 +733,6 @@ void WiFiEvent(WiFiEvent_t event)
 }
 
 #endif
-
-void testClient(const char * host, uint16_t port)
-{
-  Serial.print("\nconnecting to ");
-  Serial.println(host);
-
-  WiFiClient client;
-  if (!client.connect(host, port)) {
-    Serial.println("connection failed");
-    return;
-  }
-  client.printf("GET / HTTP/1.1\r\nHost: %s\r\n\r\n", host);
-  while (client.connected() && !client.available());
-  while (client.available()) {
-    Serial.write(client.read());
-  }
-
-  Serial.println("closing connection\n");
-  client.stop();
-
-}
 
 #if defined(VIRTUALKEYPAD)
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t * data, size_t len) {
@@ -1150,6 +1117,10 @@ void cmdHandler(rx_message_t * msg) {
   static String command = "";
   if (firstRun) {
       firstRun=false;
+      if (msg -> text != "/reboot") {
+        doc["text"] = F("First command ignored on initial start. Please send your command again.");
+        pushlib.sendMessageDoc(doc); 
+      }      
       return;
   }
   if (msg -> is_callback) {
@@ -1253,9 +1224,6 @@ void cmdHandler(rx_message_t * msg) {
       pushlib.sendMessageDoc(doc);
    
   } else if (msg -> text == "/reboot" && !firstRun) {
-    doc["text"] = F("Rebooting...");
-    pushlib.sendMessageDoc(doc);
-    delay(5000);
     ESP.restart();
     
   } else if (msg -> text == "/getstatus") {
