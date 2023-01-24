@@ -98,13 +98,9 @@
 #if defined(VIRTUALKEYPAD)
 
 #include <ESPmDNS.h>
-
 #include <AsyncTCP.h>
-
 #include <ESPAsyncWebServer.h>
-
 #include <AsyncElegantOTA.h>
-
 #include <AESLib.h>
 
 #endif
@@ -112,6 +108,7 @@
 #include <SPIFFS.h>
 
 #if defined(useWT32ETHERNET)
+
 //wt32-eth01 pin settings
  #define ETH_PHY_ADDR        1
  #define ETH_PHY_TYPE    ETH_PHY_LAN8720
@@ -120,16 +117,17 @@
  #define ETH_PHY_MDIO    18
  #define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN  
  #define SHIELD_TYPE     ETH_PHY_LAN8720 
-#include <ETH.h>
-static bool eth_connected = false;
+ #include <ETH.h>
+ static bool eth_connected = false;
+ 
 #else
-#include <WiFi.h>
+  
+ #include <WiFi.h>
+ 
 #endif
 
 #include <ArduinoJson.h>
-
 #include <string>
-
 #include <list>
 
 #if defined(useTIME)
@@ -137,11 +135,8 @@ static bool eth_connected = false;
 #endif
 
 #define DEBUG 1
-
 #define ARDUINO_MQTT
-
 #include "dscAlarm.h"
-
 #include "telegram_async.h" //telegram notify full async plugin with inbound bot cmd capability
 
 //start user config
@@ -164,7 +159,6 @@ const long  timeZoneOffset = -5 * 3600;  // Offset from UTC in seconds (example:
 const int   daylightOffset = 1 * 3600;   // Daylight savings time offset in seconds
 const char* ntpServer = "pool.ntp.org";  // Set the NTP server
 #endif
-
 
 #if not defined(useWT32ETHERNET)
 const int dscClockPin = 22;
@@ -201,8 +195,7 @@ uint8_t notificationFlag = 255; //which events; bit 1=zones, bit 2=status, bit 3
 
 //end user config
 
-const char *
-  const telegramMenu[] PROGMEM = {
+const char * telegramMenu[] PROGMEM = {
     "/help - this command",
     "/armstay - arm partition in stay mode",
     "/armaway - arm parition in away mode",
@@ -232,11 +225,6 @@ const char *
     "/settime - set the panel with NTP time"    
   };
 
-#if defined(VIRTUALKEYPAD)
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
-#endif
-
 unsigned long pingTime;
 bool pauseNotifications=false;
 uint8_t activePartition = defaultPartition;
@@ -251,6 +239,10 @@ tm timeClient;
 #endif
 
 #if defined(VIRTUALKEYPAD)
+
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
+
 AES aes;
 
 char key[16]{
@@ -479,6 +471,7 @@ Serial.println("Setting up Ethernet...");
   });
   ArduinoOTA.begin();
   #endif
+
 
   DSCkeybus = new DSCkeybushome(dscClockPin, dscReadPin, dscWritePin);
   DSCkeybus -> accessCode = accessCode.c_str();
@@ -967,6 +960,22 @@ void readConfig() {
 
 }
 
+void printConfig() {
+  File file = SPIFFS.open("/configFile", "r");
+  if (!file || file.isDirectory()) {
+    Serial.println(F("Failed to open file for reading"));
+    return;
+  }
+  Serial.println("Config file contents: ");
+  
+  while(file.available()){
+ 
+        Serial.write(file.read());
+    }
+
+  if (file) file.close();
+}
+
 void writeConfig() {
   Serial.println(F("Writing config"));
 
@@ -1011,18 +1020,17 @@ void writeConfig() {
 }
 
 #ifdef TELEGRAM_PUSH
-//used with telegram to handle incoming cmds
 String getZoneStatus() {
   String s = F("<b>Zone statuses:</b> \n");
-  s = s + (String) DSCkeybus -> previousZoneStatusMsg.c_str() + "\n";
-
+  s += (String) DSCkeybus -> previousZoneStatusMsg.c_str() + "\n";
   return s;
 }
 
 String getPartitionStatus() {
   String s = "";
   for (int p = 1; p <= maxPartitions; p++) {
-    s = s + F("<b>Partition ") + (String) p + F(" status:</b>\n");
+    if (s!="") s+="\n";
+    s = s +  F("<b>Partition ") + (String) p + F(" status:</b>\n");
     if (DSCkeybus -> partitionStatus[p - 1].disabled)
       s = s + F("Partition is disabled\n");
     else if (DSCkeybus -> partitionStatus[p - 1].armed) {
@@ -1033,7 +1041,7 @@ String getPartitionStatus() {
       else if (DSCkeybus -> partitionStatus[p - 1].armedStay)
         s = s + F("Partition is armed Stay\n");
       else
-        s = s + F("Partition is armed\n");
+        s = s +  F("Partition is armed\n");
     } else if (DSCkeybus -> partitionStatus[p - 1].exitdelay)
       s = s + F("Partition is in exit delay\n");
     else if (DSCkeybus -> partitionStatus[p - 1].ready)
@@ -1042,43 +1050,39 @@ String getPartitionStatus() {
       s = s + F("Partition is not ready\n");
     if (DSCkeybus -> partitionStatus[p - 1].chime && !DSCkeybus -> partitionStatus[p - 1].disabled)
       s = s + F("Chime is ") + String(DSCkeybus -> partitionStatus[p - 1].chime ? "ON\n" : "OFF\n");
-    s = s + "\n";
   }
-
   return s;
-
 }
 
 String getPanelStatus() {
   String s = "";
   s = s + F("<b>Panel Lights</b>\n");
   if (dsc.powerTrouble)
-    s = s + F("AC is off |");
+    s = s + F("AC is off\n");
 
   if (!dsc.batteryTrouble) //if 1 then battery is ok
     s = s + F("Battery is low\n");
 
   if (dsc.trouble)
     s = s + F("Trouble is on\n");
-
-  s = s + "\n";
-
   return s;
 }
 
 void sendStatus(JsonDocument & doc) {
     String s = "\n" + getPanelStatus();
-    s += String(F("------------------------------\n"));
+    s += F("------------------------------\n");
     s += getPartitionStatus();
-    s += String(F("------------------------------\n"));
+    s += F("------------------------------\n");
     s += getZoneStatus();
-    s += String(F("------------------------------\n"));
+    s += F("------------------------------\n");
     if (pauseNotifications)
-      s += String(F("Notifications are DISABLED\n"));
+      s += F("<b>Notifications:</b> DISABLED\n");
     else
-      s += String(F("Notifications are ACTIVE\n"));
-    s += String(F("Notification flag is ")) + (String) notificationFlag + "\n";
-    s += "Active partition is " + (String) activePartition + " \n";
+      s += F("<b>Notifications:</b> ACTIVE\n");
+    s += F("------------------------------\n");    
+    s = s + F("<b>Notification flag:</b> ") + (String) notificationFlag + "\n";
+    s += F("------------------------------\n");    
+    s = s + F("<b>Active partition:</b> ") + (String) activePartition + " \n";
     doc["parse_mode"] = "HTML";
     doc["text"] = s;
     doc.remove("reply_markup"); //msg too long for markup        
@@ -1087,18 +1091,33 @@ void sendStatus(JsonDocument & doc) {
 }
 
 void sendCurrentConfig(JsonDocument & doc) {
-  String config = "Zones List\n";
+  String config = F("<b>Notification zone list:</b>\n");
+  String tmp="";
   for (int z: notifyZones) {
-    config += String(z) + "\n";
+    if (tmp!="") tmp+=", ";    
+    tmp += String(z);
   }
-  config = config + "\nTelegram IDs\n";
+  config = config +  tmp + "\n" +  F("------------------------------\n");  
+  config = config + F("<b>Allowed access Telegram IDs:</b>\n");
+  tmp="";
   for (String id: telegramAllowedIDs) {
-    config += id + "\n";
+    if (tmp!="") tmp+=", ";
+    tmp += id ;
   }
-  config += "\nNotification flag=" + (String) notificationFlag + "\n";
-  config += "\nCurrent OTA access code="+ otaAccessCode + "\n";
+  config = config +  tmp+ "\n" +  F("------------------------------\n");  
+  config = config +  F("<b>Notification flag:</b> ") + (String) notificationFlag + "\n";
+  config = config +  String(F("------------------------------\n"));   
+  config = config +  F("<b>Current OTA access code:</b> ")+ otaAccessCode + "\n";
+  config = config +  F("------------------------------\n");  
+#if defined(useWT32ETHERNET)
+    config= config +  F("<b>Local IP address:</b> http://") + ETH.localIP().toString() + "\n";
+#else    
+    config= config +  F("<b>Local IP address:</b> http://") + WiFi.localIP().toString() + "\n";
+#endif 
   doc["text"] = config;
+  doc["parse_mode"] = "HTML";  
   pushlib.sendMessageDoc(doc);
+
 }
 
 //telegram callback to handle bot commands
@@ -1108,7 +1127,7 @@ void cmdHandler(rx_message_t * msg) {
     Serial.printf("Chat ID %s not allowed to send cmds", msg -> chat_id.c_str());
     return;
   }
-  const char * markup = "{'reply_markup':{'inline_keyboard':[[{'text': '1','callback_data':'1'},{'text': '2','callback_data':'2'},{'text': '3','callback_data':'3'}],      [{'text':'4','callback_data':'4'},{'text': '5','callback_data':'5'},{'text':'6','callback_data':'6'}],      [{'text':'7','callback_data':'7'},{'text': '8','callback_data':'8'},{'text':'9','callback_data':'9'}], [ { 'text': '*', 'callback_data' : '*' }, {'text' :'0', 'callback_data' : '0' },{ 'text' : '#', 'callback_data' : '#' }] , [ { 'text' :'<', 'callback_data' : '<' }, { 'text' : 'ENTER', 'callback_data' : 'ENTER' },{ 'text' : '>', 'callback_data' : '>' }] ]}}";
+  const char * markup PROGMEM = "{'reply_markup':{'inline_keyboard':[[{'text': '1','callback_data':'1'},{'text': '2','callback_data':'2'},{'text': '3','callback_data':'3'}],      [{'text':'4','callback_data':'4'},{'text': '5','callback_data':'5'},{'text':'6','callback_data':'6'}],      [{'text':'7','callback_data':'7'},{'text': '8','callback_data':'8'},{'text':'9','callback_data':'9'}], [ { 'text': '*', 'callback_data' : '*' }, {'text' :'0', 'callback_data' : '0' },{ 'text' : '#', 'callback_data' : '#' }] , [ { 'text' :'<', 'callback_data' : '<' }, { 'text' : 'ENTER', 'callback_data' : 'ENTER' },{ 'text' : '>', 'callback_data' : '>' }] ]}}";
 
   static bool firstRun = true;
   StaticJsonDocument < 2000 > doc;
@@ -1118,7 +1137,7 @@ void cmdHandler(rx_message_t * msg) {
   if (firstRun) {
       firstRun=false;
       if (msg -> text != "/reboot") {
-        doc["text"] = F("First command ignored on initial start. Please send your command again.");
+        doc["text"] = String(F("First command ignored on initial start. Please send your command again: ")) +  msg->text;
         pushlib.sendMessageDoc(doc); 
       }      
       return;
@@ -1224,6 +1243,8 @@ void cmdHandler(rx_message_t * msg) {
       pushlib.sendMessageDoc(doc);
    
   } else if (msg -> text == "/reboot" && !firstRun) {
+   // doc["text"] = F("Rebooting...");
+   // pushlib.sendMessageDoc(doc);
     ESP.restart();
     
   } else if (msg -> text == "/getstatus") {
@@ -1379,14 +1400,7 @@ void cmdHandler(rx_message_t * msg) {
 
   } else if (msg -> text.startsWith("/getcfg")) {
     sendCurrentConfig(doc);
-    char out[50];
-#if defined(useWT32ETHERNET)
-    sprintf(out, "Local IP address http://%s\n", ETH.localIP().toString().c_str());
-#else    
-    sprintf(out, "Local IP address http://%s\n", WiFi.localIP().toString().c_str());
-#endif
-    doc["text"] = String(out);
-    pushlib.sendMessageDoc(doc);   
+    printConfig();
 
 #if defined(useTIME)    
   } else if (msg -> text.startsWith("/settime")) {
@@ -1424,5 +1438,7 @@ void cmdHandler(rx_message_t * msg) {
   firstRun = false;
   doc.clear();
 }
+
+
 
 #endif
