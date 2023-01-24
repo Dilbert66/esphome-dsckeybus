@@ -1416,8 +1416,10 @@ void update() override {
         printPacket("Paneldata: ", dsc.panelData[0], dsc.panelData, 16);
 
       for (byte partition = 0; partition < dscPartitions; partition++) {
-        if (firstrun)
+        if (firstrun) {
           beepsCallback("0", partition + 1);
+          partitionStatus[partition].chime=0;
+        }
         if (dsc.disabled[partition]) continue;
         setStatus(partition, false);
 
