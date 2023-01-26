@@ -1479,11 +1479,9 @@ void update() override {
                 dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
             }          
          
-        }
-        
-        else {
+        } else {
             panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
-            if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
+            if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked && troubleFetch) {
                 partitionStatus[defaultPartition-1].keyPressTime = millis();
                 dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
             }             

@@ -58,7 +58,7 @@ uint8_t PushLib::msgAvailable() {
 
 void PushLib::begin() {
 
-  xTaskCreatePinnedToCore(
+  xTaskCreateUniversal(
     this -> getUpdatesSendTask, //Function to implement the task
     "getUpdatesSendTask", //Name of the task
     TASK_STACK_SIZE, //Stack size in words
@@ -338,7 +338,7 @@ void PushLib::getUpdatesSendTask(void * args) {
  
       if ( m.chat_id != "" && m.chat_id !="0"  && m.chat_id != "null") {
         if (DEBUG_PUSHLIB > 0) printf("message received %s from %s\n", m.text.c_str(), m.chat_id.c_str());
-        _this->handleCommands(m);    
+        _this->handleCommands(m);  
       }   
     }
     delay(1);
