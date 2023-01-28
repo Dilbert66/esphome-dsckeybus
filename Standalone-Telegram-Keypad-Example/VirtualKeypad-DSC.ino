@@ -556,7 +556,7 @@ Serial.println("Setting up Ethernet...");
       publishLcd((char * ) msg.c_str(), NULL);
   });
   DSCkeybus -> onLine2Display([ & ](std::string msg, int partition) {
-    if (partition == activePartition && msg != "")
+    if (partition == activePartition )
       publishLcd(NULL, (char * ) msg.c_str());
 
   });
@@ -736,14 +736,12 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 
     if (dsc.keybusConnected && ws.count()) {
       publishLcd((char * )
-        "DSC bus", (char * )
-        "connected", client -> id());
+        "DSC bus connected", (char*)"");
       DSCkeybus -> forceRefresh = true;
     } else
     if (!dsc.keybusConnected && ws.count()) {
       publishLcd((char * )
-        "DSC bus", (char * )
-        "disconnected");
+        "DSC bus disconnected", (char*)"");
     }
     //client->ping();
     pingTime = millis();
@@ -893,15 +891,20 @@ void gen_iv(byte * iv) {
 void setActivePartition(uint8_t partition) {
 
   if (partition < 1 || partition > maxPartitions) return;
-  char msg[30];
+
+  char msg[30];   
   if (dsc.disabled[partition - 1]) {
-    sprintf(msg, "Partition %d is disabled\n", partition);
-    publishMsg("event_info", msg);
-    Serial.printf("%s\n", msg);
+    String line1="Partition " + String(partition) + " is disabled";
+    publishLcd((char*)line1.c_str(),(char*)"");     
+    //sprintf(msg, "Partition %d is disabled\n", partition);
+    //publishMsg("event_info", msg);
+    //Serial.printf("%s\n", msg);
     return;
   }
 
   activePartition = partition;
+  String line1="Partition: " + String(partition);
+  publishLcd((char*)line1.c_str(),(char*)"");  
   DSCkeybus -> defaultPartition = partition;
   DSCkeybus -> forceRefresh = true;
   sprintf(msg, "Partition: %d", partition);

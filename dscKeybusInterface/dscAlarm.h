@@ -1421,7 +1421,7 @@ void update() override {
           partitionStatus[partition].chime=0;
         }
         if (dsc.disabled[partition]) continue;
-        setStatus(partition, false);
+        setStatus(partition, forceRefresh);
 
       }
 #if !defined(ARDUINO_MQTT)     
