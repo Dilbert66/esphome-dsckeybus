@@ -224,26 +224,26 @@ void setup() {
 
   DSCkeybus -> onPanelStatusChange([ & ](panelStatus ps, bool open, int partition) {
 
-    char psvalue[10];
-    strcpy(psvalue, "");
+    String psvalue;
+
     switch (ps) {
     case trStatus:
-      strcat(psvalue, PSTR("/Trouble"));
+      psvalue=F("/Trouble");
       break;
     case batStatus:
-      strcat(psvalue, PSTR("/Battery"));
+      psvalue=F("/Battery");
       break;
     case acStatus:
-      strcat(psvalue, PSTR("/AC"));
+     psvalue=F("/AC");
       break;
     case panicStatus:
-      strcat(psvalue, PSTR("/Panic"));
+     psvalue=F("/Panic");
       break;
     case rdyStatus:
-      strcat(psvalue, PSTR("/Ready"));
+      psvalue=F("/Ready");
       break;
     case armStatus:
-      strcat(psvalue, PSTR("/Armed"));
+     psvalue=F("/Armed");
       break;
     case fireStatus:
       break;
@@ -252,10 +252,11 @@ void setup() {
     default:
       break;
     }
+    
     if (!partition)
-      mqttPublish(mqttPanelTopic, psvalue, open);
+      mqttPublish(mqttPanelTopic, psvalue.c_str(), open);
     else
-      mqttPublish(mqttPartitionTopic, psvalue, partition, open);
+      mqttPublish(mqttPartitionTopic, psvalue.c_str(), partition, open);
   });
   DSCkeybus -> onZoneMsgStatus([ & ](std::string msg) {
     mqttPublish(mqttZoneMsgTopic, msg.c_str());

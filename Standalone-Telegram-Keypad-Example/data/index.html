@@ -581,7 +581,7 @@ function encrypt(msg) {
               } catch (err) {
                  $("#first_line").html("*** Invalid login ****");
                 $("#second_line").html("");                
-                console.log(e.data);
+                //console.log(e.data);
               }
               if (obj instanceof Object) {
                 if ("power_status" in obj) {
@@ -672,7 +672,7 @@ function encrypt(msg) {
                 }  else if ("zone_info" in obj) {
                     $("#zone_info").html(obj.zone_info);
                 } else {
-                  console.log(obj);
+                  //console.log(obj);
                 }
               } else {
                // console.log(obj);
