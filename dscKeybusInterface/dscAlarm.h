@@ -1731,11 +1731,15 @@ void update() override {
        
       if (bitRead(system1, 0)) {
         system1Msg.append(String(PSTR("BAT ")).c_str());
-        if (system1Changed) 
+        if (system1Changed) {
+            dsc.batteryTrouble=true;          
             panelStatusChangeCallback(batStatus, true, 0);
+        }
       } else {
-          if (system1Changed)
+          if (system1Changed) {
+            dsc.batteryTrouble=false;    
             panelStatusChangeCallback(batStatus, false, 0);
+          }
       }
       
       if (bitRead(system1, 1)) {
