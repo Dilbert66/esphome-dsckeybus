@@ -535,7 +535,7 @@ public:
 
   void alarm_arm_away() {
 
-    set_alarm_state("W", "", defaultPartition);
+    set_alarm_state("A", "", defaultPartition);
 
   }
 
@@ -922,7 +922,7 @@ public:
     if (code.length() != 4 || !isInt(code, 10)) code = ""; // ensure we get a numeric 4 digit code
     const char * alarmCode = strcpy(new char[code.length() + 1], code.c_str());
     if (!partition) partition = defaultPartition;
-//ESP_LOGD("test","code=%s,alarmCode=%s",code.c_str(),alarmCode);
+ESP_LOGD("test","code=%s,alarmCode=%s",code.c_str(),alarmCode);
 #if !defined(ARDUINO_MQTT)  
     ESP_LOGD("debug","Setting Alarm state: %s to partition %d",state.c_str(),partition);
 #else
@@ -940,7 +940,7 @@ public:
       dsc.write('s', partition); // Virtual keypad arm stay
     }
     // Arm away
-    else if (state.compare("A") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
+    else if ((state.compare("A") == 0 state.compare("W") == 0) && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
 #if !defined(ARDUINO_MQTT)          
      if (debug > 1) ESP_LOGD("debug","Arming away");  
 #endif     
