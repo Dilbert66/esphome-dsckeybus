@@ -940,7 +940,7 @@ ESP_LOGD("test","code=%s,alarmCode=%s",code.c_str(),alarmCode);
       dsc.write('s', partition); // Virtual keypad arm stay
     }
     // Arm away
-    else if ((state.compare("A") == 0 state.compare("W") == 0) && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
+    else if ((state.compare("A") == 0 || state.compare("W") == 0) && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
 #if !defined(ARDUINO_MQTT)          
      if (debug > 1) ESP_LOGD("debug","Arming away");  
 #endif     
