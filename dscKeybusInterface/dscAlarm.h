@@ -922,7 +922,7 @@ public:
     if (code.length() != 4 || !isInt(code, 10)) code = ""; // ensure we get a numeric 4 digit code
     const char * alarmCode = strcpy(new char[code.length() + 1], code.c_str());
     if (!partition) partition = defaultPartition;
-ESP_LOGD("test","code=%s,alarmCode=%s",code.c_str(),alarmCode);
+
 #if !defined(ARDUINO_MQTT)  
     ESP_LOGD("debug","Setting Alarm state: %s to partition %d",state.c_str(),partition);
 #else
