@@ -994,7 +994,7 @@ private:
         ESP_LOGI(label, "%02X: %s", cmd, s);
     #else
     if (debug > 0)
-        Serial.printf("%02X: %s\n", cmd, s); 
+        Serial.printf("%s %02X: %s\n",label, cmd, s); 
     #endif
   }
 
@@ -1476,14 +1476,14 @@ void update() override {
 
             if ( troubleFetch && !dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
                 partitionStatus[defaultPartition-1].keyPressTime = millis();
-                dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
+               // dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
             }          
          
         } else {
             panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
             if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked && troubleFetch) {
                 partitionStatus[defaultPartition-1].keyPressTime = millis();
-                dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
+                //dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
             }             
         }
 
