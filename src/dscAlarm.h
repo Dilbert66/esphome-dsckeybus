@@ -569,6 +569,9 @@ private:
       if (dsc.status[partition - 1] == 0xAA) { //time entry
         tpl = F("XXXX    XXXXXX  XXXXXXXXXXXXXXXX");
       }
+      if (dsc.status[partition - 1] == 0xAB) { //time entry
+        tpl = F("XXXX                            ");
+      }      
 
       if (key == '#') {
         partitionStatus[partition - 1].newData = false;
@@ -2036,8 +2039,9 @@ void update() override {
       partitionStatus[partition].digits = 16;
       break;
     case 0xAB:
-      lcdLine1 = F("*6:          ");
-      lcdLine2 = F("Auto-arm time   ");
+      lcdLine1 = F(" HHMM");
+      lcdLine2 = F("");
+      partitionStatus[partition].digits = 4;
       break;
     case 0xAC:
       lcdLine1 = F("*6:          ");
@@ -2061,7 +2065,6 @@ void update() override {
       break;
     case 0xB7:
       lcdLine1 = F("Enter        ");
-
       lcdLine2 = F("installer code  ");
       break;
     case 0xB8:
@@ -2081,6 +2084,10 @@ void update() override {
       lcdLine1 = F("*5 Enter new ");
       lcdLine2 = F("6-digit code    ");
       partitionStatus[partition].digits = 6;
+      break;
+    case 0xBF:
+      lcdLine1 = F("Select day:");
+      lcdLine2 = F("Sun=1,Tue=2,Sat=7");
       break;
     case 0xC6:
       lcdLine1 = F(" Zone faults  <>");
@@ -2292,6 +2299,9 @@ void update() override {
           if (dsc.status[partition] == 0xAA) {
             tpl = F("XXXX    XXXXXX  XXXXXXXXXXXXXXXX");
           }
+          if (dsc.status[partition] == 0xAB) {
+            tpl = F("XXXX");
+          }          
           if (tpl[x] == 'X') {
             if (x == partitionStatus[partition].editIdx)
               sprintf(s, PSTR("[%1X]"), c);
