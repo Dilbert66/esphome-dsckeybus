@@ -360,7 +360,7 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   bool sendCmd,system0Changed,system1Changed;
   byte system0,
   system1,previousSystem0,previousSystem1;
-  byte programZones[dscZones/8];
+  byte programZones[dscZones];
   char decimalInputBuffer[6];
   byte line2Digit,
   line2Status;
@@ -1063,7 +1063,7 @@ private:
     std::string options;
     options = " ";
     byte option;
-    for (byte optionGroup = 0; optionGroup < dscZones/8; optionGroup++) {
+    for (byte optionGroup = 0; optionGroup < dscZones; optionGroup++) {
       for (byte optionBit = 0; optionBit < 8; optionBit++) {
         option = optionBit + 1 + (optionGroup * 8);
         if (bitRead(programZones[optionGroup], optionBit)) {
@@ -1080,7 +1080,7 @@ private:
   bool checkUserCode(byte code) {
     byte option, optionGroup;
     bool r=false;
-    for (optionGroup = 0; optionGroup < dscZones/8; optionGroup++) {
+    for (optionGroup = 0; optionGroup < dscZones; optionGroup++) {
       for (byte optionBit = 0; optionBit < 8; optionBit++) {
         option = optionBit + 1 + (optionGroup * 8);
         if (bitRead(programZones[optionGroup], optionBit) && option == code) {
@@ -1097,7 +1097,7 @@ private:
     byte option, optionGroup, s;
     s = start >= maxZones ? 0 : start;
     byte r=0;
-    for (optionGroup = 0; optionGroup < dscZones/8; optionGroup++) {
+    for (optionGroup = 0; optionGroup < dscZones; optionGroup++) {
       for (byte optionBit = 0; optionBit < 8; optionBit++) {
         option = optionBit + 1 + (optionGroup * 8);
         if (bitRead(programZones[optionGroup], optionBit) && option > s) {
@@ -1113,7 +1113,7 @@ private:
     byte s;
     s = start >= maxZones || start == 0 ? maxZones : start;
     byte r=0;
-    for (int optionGroup = dscZones/8 - 1; optionGroup >= 0 && optionGroup < dscZones/8; optionGroup--) {
+    for (int optionGroup = dscZones - 1; optionGroup >= 0 && optionGroup < dscZones; optionGroup--) {
       for (int optionBit = 7; optionBit >= 0 && optionBit < 8; optionBit--) {
         byte option = optionBit + 1 + (optionGroup * 8);
         if (bitRead(programZones[optionGroup], optionBit)) {
@@ -1307,7 +1307,7 @@ private:
   }
 
   void getBypassZones(byte partition) {
-    for (byte zoneGroup = 0; zoneGroup < dscZones/8; zoneGroup++) {
+    for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         zone = zoneBit + (zoneGroup * 8);
         if (!(zoneStatus[zone].partition == partition + 1 && zoneStatus[zone].enabled) || zone >= maxZones) continue;
