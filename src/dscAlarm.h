@@ -433,8 +433,6 @@ void begin() {
 #endif
 
 
-
-
     firstrun = true;
     systemStatusChangeCallback(String(FPSTR(STATUS_OFFLINE)).c_str());
     forceDisconnect = false;
@@ -827,7 +825,7 @@ private:
         dsc.write(key, partition);
       }
       setStatus(partition - 1, true);
-    } else {
+    }  else  {
       dsc.write(key, partition);
       setStatus(partition - 1, false);
     }
@@ -1074,6 +1072,7 @@ private:
         }
       }
     }
+    Serial.printf("in get options %s\n",options.c_str());
     return options.c_str();
   }
 
@@ -1318,7 +1317,6 @@ private:
         }
       }
     }
-    setStatus(partition, true);
   }
 #if defined(ARDUINO_MQTT)
   public:
@@ -1408,6 +1406,7 @@ void update() override {
       for (byte partition = 0; partition < dscPartitions; partition++) {
         if (dsc.disabled[partition] || dsc.status[partition] != 0xA0) continue;
         getBypassZones(partition);
+        setStatus(partition, true);
       }
 
     }
@@ -1424,7 +1423,7 @@ void update() override {
           partitionStatus[partition].chime=0;
         }
         if (dsc.disabled[partition]) continue;
-        setStatus(partition, forceRefresh);
+        setStatus(partition, forceRefresh || dsc.status[partition]==0xEE || dsc.status[partition]==0xA0);
 
       }
 #if !defined(ARDUINO_MQTT)     
@@ -1967,6 +1966,10 @@ void update() override {
       lcdLine1 = F("Keypad       ");
       lcdLine2 = F("blanked         ");
       break;
+    case 0x80:
+      lcdLine1 = F("Invalid entry   ");
+      lcdLine2 = F("         ");
+      break;      
     case 0x8A:
       lcdLine1 = F("Activate     ");
       lcdLine2 = F("stay/away zones ");
@@ -2059,10 +2062,15 @@ void update() override {
       lcdLine1 = F("*6:          ");
       lcdLine2 = F("Enable DLS      ");
       break;
+    case 0xB1:
+        lcdLine1 = F("*6    ");
+        lcdLine2=F("b1 command");
+        break;      
     case 0xB2:
+    case 0xB3:
       lcdLine1 = F("*7:          ");
       lcdLine2 = F("Command output  ");
-      break;
+      break;      
     case 0xB7:
       lcdLine1 = F("Enter        ");
       lcdLine2 = F("installer code  ");
@@ -2070,7 +2078,6 @@ void update() override {
     case 0xB8:
       lcdLine1 = F("Enter *      ");
       lcdLine2 = F("function code   ");
-
       break;
     case 0xB9:
       lcdLine1 = F("Zone Tamper <>");
@@ -2101,6 +2108,10 @@ void update() override {
       lcdLine1 = F("Service req.  <>");
       lcdLine2 = F(" ");
       break;
+    case 0xCD:
+       lcdLine1 = F("Downloading in progress");
+       lcdLine2=F(" ");
+       break;
     case 0xCE:
       lcdLine1 = F("Active camera");
       lcdLine2 = F("monitor select. ");
