@@ -1411,6 +1411,12 @@ void update() override {
         getBypassZones(partition);
         setStatus(partition, true);
       }
+#if !defined(ARDUINO_MQTT)     
+      if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
+      #else
+                if (dsc.bufferOverflow) Serial.printf( "Keybus buffer overflow\n");
+#endif      
+      dsc.bufferOverflow = false;      
 
     }
 
@@ -1429,12 +1435,7 @@ void update() override {
         setStatus(partition, forceRefresh || dsc.status[partition]==0xEE || dsc.status[partition]==0xA0);
 
       }
-#if !defined(ARDUINO_MQTT)     
-      if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
-      #else
-                if (dsc.bufferOverflow) Serial.printf( "Keybus buffer overflow\n");
-#endif      
-      dsc.bufferOverflow = false;
+
 
       // Checks if the interface is connected to the Keybus
       if (dsc.keybusChanged || forceRefresh ) {

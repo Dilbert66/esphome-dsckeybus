@@ -597,7 +597,7 @@ dscKeybusInterface::dscClockInterrupt() {
        }
       }
       // Stores new panel data in the panel buffer
-      if (panelBufferLength == dscBufferSize) 
+      if (panelBufferLength >= dscBufferSize) 
           bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         //for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
