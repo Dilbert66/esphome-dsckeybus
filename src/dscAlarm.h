@@ -465,6 +465,8 @@ void begin() {
         partitionStatus[p].editIdx=0;
         partitionStatus[p].digits=0;
     }
+    for (int x=0;x<dscZones;x++)
+        programZones[x]=0;
 
     system1 = 0;
     system0 = 0;
@@ -2676,16 +2678,23 @@ void update() override {
     byte zone;
   //  std::string group1msg,group2msg;
     
-  //  group1msg="";
- //   group2msg="";
+
     if (startByte == 5) zoneStart = 4;
     for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
       programZones[zoneGroup] = dsc.panelData[startByte + byteCount];
       byteCount++;
     }
-
+    if (zoneStart==0) {
+        //clear upper group
+        for (int x=4;x<dscZones;x++) {
+            programZones[x] = 0;
+        }  
+    }    
+/*
     byteCount = 0;
     char s1[5];
+   std::string  group1msg="";
+   std::string  group2msg="";    
     //if (startByte == 4 || startByte == 3) group1msg = "";
    // if (startByte == 5) group2msg = "";
     for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
@@ -2693,16 +2702,17 @@ void update() override {
         zone = (zoneBit + 1) + (zoneGroup * 8);
         if (bitRead(dsc.panelData[startByte + byteCount], zoneBit)) {
           sprintf(s1, "%02d ", zone);
-       //   if (startByte == 4 || startByte == 3) group1msg.append(s1);
-       //   if (startByte == 5) group2msg.append(s1);
+          if (startByte == 4 || startByte == 3) group1msg.append(s1);
+          if (startByte == 5) group2msg.append(s1);
 
         }
       }
       byteCount++;
     }
    // group1msg.append(group2msg);
-   // ESP_LOGD("info","procesprogramzones: %02X, %s",startByte,group1msg.c_str());
+    ESP_LOGD("info","procesprogramzones: %02X, %s,%S",startByte,group1msg.c_str(),group2msg.c_str());
     //lightsCallback(group1msg, defaultPartition);
+    */
     if (options)
       dsc.statusChanged = true;
   }
