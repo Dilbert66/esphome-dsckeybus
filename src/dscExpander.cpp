@@ -283,11 +283,7 @@ void dscKeybusInterface::setZoneFault(byte zone, bool fault) {
 
 
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR 
-#elif defined(ESP32)
-IRAM_ATTR 
-#endif
+IRAM_ATTR
 dscKeybusInterface::prepareModuleResponse(byte address, int bit) {
 
   for (int idx = 0; idx < moduleIdx; idx++) { //get the buffer data from the module record that matches the address we need
@@ -331,11 +327,7 @@ void dscKeybusInterface::setDateTime(unsigned int year,byte month,byte day,byte 
 }
 
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR 
-#elif defined(ESP32)
 IRAM_ATTR 
-#endif 
 dscKeybusInterface::processCmd70() {
   if (pgmBuffer.idx + 5 > pgmBuffer.len) return;
   updateWriteBuffer((byte*) &pgmBuffer.data[pgmBuffer.idx], 9,1,5);

@@ -417,8 +417,6 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       break; // Arm stay
     case 'w':
     case 'W':
-    case 'a':
-    case 'A':
       writeKey = 0xB1;
       writeAccessCode[partition - 1] = true;
       break; // Arm away
@@ -427,8 +425,8 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
       writeKey = 0xB6;
       writeAccessCode[partition - 1] = true;
       break; // Arm with no entry delay (night arm)
-    case 'k':
-    case 'K':
+    case 'a':
+    case 'A':
       writeKey = 0xDD;
       isAlarm = true;
       break; // Keypad auxiliary alarm
@@ -487,11 +485,7 @@ void dscKeybusInterface::write(const char receivedKey,int partition) {
 }
 
 bool
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
 IRAM_ATTR
-#endif
 dscKeybusInterface::redundantPanelData(byte  previousCmd[] , volatile byte  currentCmd[], byte checkedBytes) {
   for (byte i = 0; i < checkedBytes; i++) {
     if (previousCmd[i] != currentCmd[i]) {
@@ -510,18 +504,13 @@ bool dscKeybusInterface::validCRC() {
   }
   if (dataSum % 256 == panelData[byteCount]) 
       return true;
-
-      return false;
+  return false;
 }
 
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
 // data after an interval.
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
 IRAM_ATTR
-#endif
 dscKeybusInterface::dscClockInterrupt() {
 
   // Data sent from the panel and keypads/modules has latency after a clock change (observed up to 160us for
@@ -597,7 +586,7 @@ dscKeybusInterface::dscClockInterrupt() {
        }
       }
       // Stores new panel data in the panel buffer
-      if (panelBufferLength >= dscBufferSize) 
+      if (panelBufferLength == dscBufferSize) 
           bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         //for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
@@ -667,11 +656,7 @@ dscKeybusInterface::dscClockInterrupt() {
 
 // Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer1 after 250us to read the data line
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
 IRAM_ATTR
-#endif
   #if ESP_IDF_VERSION_MAJOR < 444
 dscKeybusInterface::dscDataInterrupt() {
     #else
@@ -759,11 +744,7 @@ dscKeybusInterface::dscDataInterrupt() {
 }
 
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
 IRAM_ATTR
-#endif
 dscKeybusInterface::writeCharsToQueue(byte * keys,byte partition, byte len, bool alarm) {
   writeQueueType req;
   req.len = len;
@@ -777,11 +758,7 @@ dscKeybusInterface::writeCharsToQueue(byte * keys,byte partition, byte len, bool
 }
 
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
 IRAM_ATTR
-#endif
 dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int bit,byte partition,int len,  bool alarm) {
 
   writeBufferLength = len;
@@ -794,11 +771,7 @@ dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte * src, int bit,by
 }
 
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
 IRAM_ATTR
-#endif
 dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
 
   if (writeDataPending) return;
@@ -843,11 +816,7 @@ dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
 
 }
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
 IRAM_ATTR
-#endif
 dscKeybusInterface::processPendingQueue(byte cmd) {
 
   //process queued 05/0b/1b requests
@@ -859,11 +828,7 @@ dscKeybusInterface::processPendingQueue(byte cmd) {
 }
 
 void
-#if defined(ESP8266)
-ICACHE_RAM_ATTR
-#elif defined(ESP32)
 IRAM_ATTR
-#endif
 dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
 
   if (writeDataPending) return;

@@ -402,7 +402,7 @@ void begin() {
     register_service( & DSCkeybushome::alarm_disarm, "alarm_disarm", {
       "code"
     });
-#ifdef ESP32
+#if defined(ESP32) && !defined(ARDUINO_MQTT)
     register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {});
 #else
     register_service( & DSCkeybushome::set_panel_time, "set_panel_time", {
@@ -1411,12 +1411,6 @@ void update() override {
         getBypassZones(partition);
         setStatus(partition, true);
       }
-#if !defined(ARDUINO_MQTT)     
-      if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
-      #else
-                if (dsc.bufferOverflow) Serial.printf( "Keybus buffer overflow\n");
-#endif      
-      dsc.bufferOverflow = false;      
 
     }
 
@@ -1435,7 +1429,12 @@ void update() override {
         setStatus(partition, forceRefresh || dsc.status[partition]==0xEE || dsc.status[partition]==0xA0);
 
       }
-
+#if !defined(ARDUINO_MQTT)     
+      if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
+      #else
+                if (dsc.bufferOverflow) Serial.printf( "Keybus buffer overflow\n");
+#endif      
+      dsc.bufferOverflow = false;
 
       // Checks if the interface is connected to the Keybus
       if (dsc.keybusChanged || forceRefresh ) {
