@@ -1,12 +1,12 @@
-console.info("%c  Alarm-keypad-card  \n%c Version 0.0.4a ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
+console.info("%c  Alarm-keypad-card \n%c Version 0.1.0 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
 
-class AlarmKeypadCard extends Polymer.Element {
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.0.1/lit-element.js?module";
 
-  static get template() {
-    
-    return Polymer.html`
-      <style>
-        ha-card {  
+class AlarmKeypadCard extends LitElement {
+
+  static get styles() {
+    return css`
+       ha-card {  
           padding-bottom: 16px;
           position: relative;
           font-size: calc(var(--base-unit));
@@ -101,92 +101,128 @@ class AlarmKeypadCard extends Polymer.Element {
         padding-left: .2rem;
        }        
 
-    </style>
-    
-    <ha-card header="[[_title]]">
-        <div id="zoom" style="[[_scale]]">
-          <div class='flex-container' on-click="stopPropagation">
+    `;
+  }
+
+  render() {
+    return html`
+   <ha-card header="${this._title}">
+        <div id="zoom" style="${this._scale}">
+          <div class='flex-container' @click="${this.stopPropagation}">
               <div class='keypad'>
 
-                <template is='dom-if' if='{{_view_display}}'>
+                ${this._view_display?html`
                   <div class="keypad_display">
-                    <div class="keypad_state" id="keypad_state1">[[_line1]]</div>
-                    <div class="keypad_state" id="keypad_state2">[[_line2]]</div>
-                  </div>
-                </template>
+                    <div class="keypad_state" id="keypad_state1">${this._line1}</div>
+                    <div class="keypad_state" id="keypad_state2">${this._line2}</div>
+                </div>`:''}
 
-
-                <template is='dom-if' if='{{_view_status}}'>                
+                ${this._view_status?html`
                 <div class='pad'>
-                    <div class='mdc-button  mdc-icon'>[[_status_A]]
-                        <ha-icon id="icon-a" icon="[[_iconA]]"/>
+                    <div class='mdc-button  mdc-icon'>${this._status_A}
+                        <ha-icon id="icon-a" icon="${this._iconA}"/>
                     </div>
-                    <div class='mdc-button  mdc-icon'>[[_status_B]]
-                        <ha-icon id="icon-b" icon="[[_iconB]]"/>
+                    <div class='mdc-button  mdc-icon'>${this._status_B}
+                        <ha-icon id="icon-b" icon="${this._iconB}"/>
                     </div>
-                    <div class='mdc-button  mdc-icon'>[[_status_C]]
-                        <ha-icon id="icon-c" icon="[[_iconC]]"/>
+                    <div class='mdc-button  mdc-icon'>${this._status_C}
+                        <ha-icon id="icon-c" icon="${this._iconC}"/>
                     </div>
-                    <div class='mdc-button mdc-icon'>[[_status_D]]
-                        <ha-icon id="icon-d" icon="[[_iconD]]"/>
+                    <div class='mdc-button mdc-icon'>${this._status_D}
+                        <ha-icon id="icon-d" icon="${this._iconD}"/>
                     </div>                    
-                </div>
-                 <template is='dom-if' if='{{_view_status2}}'>                
+                </div>`:''}
+                
+
+                ${this._view_status2?html`
                 <div class='pad'>
-                    <div class='mdc-button  mdc-icon'>[[_status_E]]
-                        <ha-icon id="icon-e" icon="[[_iconE]]"/>
+                    <div class='mdc-button  mdc-icon'>${this._status_E}
+                        <ha-icon id="icon-e" icon="${this._iconE}"/>
                     </div>
   
-                    <div class='mdc-button  mdc-icon'>[[_status_F]]
-                        <ha-icon id="icon-f" icon="[[_iconF]]"/>
+                    <div class='mdc-button  mdc-icon'>${this._status_F}
+                        <ha-icon id="icon-f" icon="${this._iconF}"/>
                     </div>
 
-                    <div class='mdc-button  mdc-icon'>[[_status_G]]
-                        <ha-icon id="icon-g" icon="[[_iconG]]"/>
+                    <div class='mdc-button  mdc-icon'>${this._status_G}
+                        <ha-icon id="icon-g" icon="${this._iconG}"/>
                     </div>
-                    <div class='mdc-button mdc-icon'>[[_status_H]]
-                        <ha-icon id="icon-h" icon="[[_iconH]]"/>
+                    <div class='mdc-button mdc-icon'>${this._status_H}
+                        <ha-icon id="icon-h" icon="${this._iconH}"/>
                     </div>                    
-                </div>
-                </template>
-                </template>
-                <template is='dom-if' if='{{_view_pad}}'>                
+                </div>`:''}
+
+                ${this._view_pad?html`                
                   <div class="pad">
-                                 
+                  
+                ${this._button_left?html`  
+                    <div>
+                      <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="A"
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_A}
+                      </button>
+                      <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="B"
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_B}
+                      </button>
+                      <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="C"
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_C}
+                      </button>
+                      <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="D"
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_D}
+                      </button>
+                     ${this._view_bottom?html`                       
+                     <button
+                        class='mdc-button mdc-button--outlined'
+                        toggles state="H"
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_H}
+                     </button>`:''}
+                    </div>`:''}    
+                    
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="1"
-                        on-click='setState'
-                        title='Unset'>1<span class="keypad_cmd_text">[[_text_1]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>1<span class="keypad_cmd_text">${this._text_1}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="4"
-                        on-click='setState'
-                        title='Unset'>4<span class="keypad_cmd_text">[[_text_4]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>4<span class="keypad_cmd_text">${this._text_4}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="7"
-                        on-click='setState'
-                        title='Unset'>7<span class="keypad_cmd_text">[[_text_7]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>7<span class="keypad_cmd_text">${this._text_7}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="*"
-                        on-click='setState'
-                        title='Unset'>*<span class="keypad_cmd_text">[[_text_star]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>*<span class="keypad_cmd_text">${this._text_star}</span>
                       </button>
 
-   <template is='dom-if' if='{{_view_bottom}}'>
+                     ${this._view_bottom?html`   
                      <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="E"
-                        on-click='setState'
-                        title='Unset'>[[_button_E]]
-                      </button>
-                      </template>
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_E}
+                     </button>`:''}
                       
                     </div>
 
@@ -194,111 +230,111 @@ class AlarmKeypadCard extends Polymer.Element {
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="2"
-                        on-click='setState'
-                        title='Unset'>2<span class="keypad_cmd_text">[[_text_2]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>2<span class="keypad_cmd_text">${this._text_2}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="5"
-                        on-click='setState'
-                        title='Unset'>5<span class="keypad_cmd_text">[[_text_5]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>5<span class="keypad_cmd_text">${this._text_5}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="8"
-                        on-click='setState'
-                        title='Unset'>8<span class="keypad_cmd_text">[[_text_8]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>8<span class="keypad_cmd_text">${this._text_8}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="0"
-                        on-click='setState'
-                        title='Unset'>0<span class="keypad_cmd_text">[[_text_0]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>0<span class="keypad_cmd_text">${this._text_0}</span>
                       </button>
-                    <template is='dom-if' if='{{_view_bottom}}'>
+
+                     ${this._view_bottom?html`                       
                      <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="F"
-                        on-click='setState'
-                        title='Unset'>[[_button_F]]
-                      </button>
-                      </template>                      
-                      
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_F}
+                     </button>`:''}
                     </div>
 
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="3"
-                        on-click='setState'
-                        title='Unset'>3<span class="keypad_cmd_text">[[_text_3]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>3<span class="keypad_cmd_text">${this._text_3}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="6"
-                        on-click='setState'
-                        title='Unset'>6<span class="keypad_cmd_text">[[_text_6]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>6<span class="keypad_cmd_text">${this._text_6}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="9"
-                        on-click='setState'
-                        title='Unset'>9<span class="keypad_cmd_text">[[_text_9]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>9<span class="keypad_cmd_text">${this._text_9}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="#"
-                        on-click='setState'
-                        title='Unset'>#<span class="keypad_cmd_text">[[_text_pound]]</span>
+                       @click="${this.setState}"
+                        title='Unset'>#<span class="keypad_cmd_text">${this._text_pound}</span>
                       </button>
-                    <template is='dom-if' if='{{_view_bottom}}'>
+                      ${this._view_bottom?html`                      
                      <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="G"
-                        on-click='setState'
-                        title='Unset'>[[_button_G]]
-                      </button>
-                      </template>                      
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_G}
+                      </button>`:''}
+                   
                     </div>
-                    
+                   ${this._button_left?'':html`  
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="A"
-                        on-click='setState'
-                        title='Unset'>[[_button_A]]
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_A}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="B"
-                        on-click='setState'
-                        title='Unset'>[[_button_B]]
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_B}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="C"
-                        on-click='setState'
-                        title='Unset'>[[_button_C]]
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_C}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="D"
-                        on-click='setState'
-                        title='Unset'>[[_button_D]]
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_D}
                       </button>
-                    <template is='dom-if' if='{{_view_bottom}}'>
+                     ${this._view_bottom?html`                       
                      <button
                         class='mdc-button mdc-button--outlined'
                         toggles state="H"
-                        on-click='setState'
-                        title='Unset'>[[_button_H]]
-                      </button>
-                      </template>                      
-                    </div>
+                       @click="${this.setState}"
+                        title='Unset'>${this._button_H}
+                     </button>`:''}
+                     
+                    </div>`}
                     
-                  </div>
+                </div>`:''}
                   
-                </template>
+
+                
                 <audio id="exitsound1" loop>
                   <source src="/local/1_beep.mp3" type="audio/mpeg">
                 </audio>
@@ -313,52 +349,59 @@ class AlarmKeypadCard extends Polymer.Element {
       </div>
     </ha-card>
     `;
-    
   }
-
+  
+ updated(changedProperties) {
+  if (changedProperties.has("_kpdline1") || changedProperties.has("_kpdline2")) {
+    this.displayChanged();
+  }
+  if (changedProperties.has("_kpdbeep")) {
+      this.beepChanged();
+  } 
+  if (changedProperties.has("_kpdsetting")) {
+      this.settingChanged();
+  }
+ }
+ 
   static get properties() {
     return {
         _config: Object,
         _title: String,
         _kpdline1: {
           type: Object,
-          observer: 'displayChanged'
         },
         _kpdline2: {
           type: Object,
-          observer: 'displayChanged'
         },
         _kpdbeep: {
-          type: Object,
-          observer: 'beepChanged'
+          type: Object,            
         },
         _kpda: {
-          type: Object,
+        type: Object,
         },
         _kpdb: {
-          type: Object,
+          type: Object,            
         },
         _kpdc: {
-          type: Object,
+          type: Object,            
         },
         _kpdd: {
-          type: Object,
+          type: Object,            
         },  
         _kpde: {
-          type: Object,
+          type: Object,            
         },
         _kpdf: {
-          type: Object,
+          type: Object,            
         },
         _kpdg: {
-          type: Object,
+          type: Object,            
         },
         _kpdh: {
-          type: Object,
+          type: Object,            
         },         
         _kpdsetting: {
-          type: Object,
-          observer: 'settingChanged'
+          type: Object,            
         },
         _kpdservicetype: String,
         _kpdservice: String,
@@ -425,8 +468,9 @@ class AlarmKeypadCard extends Polymer.Element {
         _view_bottom: Boolean,
         _view_status: Boolean,
         _view_status2: Boolean,
+        _button_left: Boolean,
         _scale: String,
-    }
+    };
   }
 
   setConfig(config) {
@@ -435,69 +479,67 @@ class AlarmKeypadCard extends Polymer.Element {
       if (!config.disp_line2) throw new Error('You need to define a disp_line2');
       if (!config.service_type) throw new Error('You need to define a service type');
       if (!config.service) throw new Error('You need to define a keypad service');
-     
-      this.setProperties({
-        _config: config,
-        _title: config.title,
-        _kpdservice: config.service,
-        _kpdservicetype: config.service_type,
-        _view_display: (config.view_display != null) ? config.view_display : true,
-        _view_pad: (config.view_pad != null) ? config.view_pad : true,
-        _view_bottom: (config.view_bottom != null) ? config.view_bottom : false,
-        _view_status: (config.view_status != null) ? config.view_status : true,
-        _view_status2: (config.view_status_2 != null) ? config.view_status_2 : false,
-        _scale: (config.scale != null) ? "transform-origin: 0 0; zoom: "+config.scale+"; -moz-transform: scale("+config.scale+");" : "1",
-        _button_A: (config.button_A != null)?config.button_A:"A",
-        _button_B: (config.button_B != null)?config.button_B:"B",
-        _button_C: (config.button_C != null)?config.button_C:"C",
-        _button_D: (config.button_D != null)?config.button_D:"D",
-        _button_E: (config.button_E != null)?config.button_E:"E",
-        _button_F: (config.button_F != null)?config.button_F:"F",
-        _button_G: (config.button_G != null)?config.button_G:"G",
-        _button_H: (config.button_H != null)?config.button_H:"H",        
-        _status_A: (config.status_A != null)?config.status_A:"A",
-        _status_B: (config.status_B != null)?config.status_B:"B",
-        _status_C: (config.status_C != null)?config.status_C:"C",
-        _status_D: (config.status_D != null)?config.status_D:"D",
-        _status_E: (config.status_E != null)?config.status_E:"E",
-        _status_F: (config.status_F != null)?config.status_F:"F",
-        _status_G: (config.status_G != null)?config.status_G:"G",
-        _status_H: (config.status_H != null)?config.status_H:"H",        
-        _cmd_A: (config.cmd_A != null)?config.cmd_A:"",
-        _cmd_B: (config.cmd_B != null)?config.cmd_B:"",
-        _cmd_C: (config.cmd_C != null)?config.cmd_C:"",
-        _cmd_D: (config.cmd_D != null)?config.cmd_D:"",
-        _cmd_E: (config.cmd_E != null)?config.cmd_E:"",
-        _cmd_F: (config.cmd_F != null)?config.cmd_F:"",
-        _cmd_G: (config.cmd_G != null)?config.cmd_G:"",
-        _cmd_H: (config.cmd_H != null)?config.cmd_H:"",        
-        _key_0: (config.key_0 != null)?config.key_0:"",
-        _key_1: (config.key_1 != null)?config.key_1:"",
-        _key_2: (config.key_2 != null)?config.key_2:"",
-        _key_3: (config.key_3 != null)?config.key_3:"",
-        _key_4: (config.key_4 != null)?config.key_4:"",
-        _key_5: (config.key_5 != null)?config.key_5:"",
-        _key_6: (config.key_6 != null)?config.key_6:"",
-        _key_7: (config.key_7 != null)?config.key_7:"",
-        _key_8: (config.key_8 != null)?config.key_8:"",
-        _key_9: (config.key_9 != null)?config.key_9:"", 
-        _key_star: (config.key_star != null)?config.key_star:"",
-        _key_pound: (config.key_pound != null)?config.key_pound:"",        
-        _text_0: (config.text_0 != null)?config.text_0:"",
-        _text_1: (config.text_1 != null)?config.text_1:"",
-        _text_2: (config.text_2 != null)?config.text_2:"",
-        _text_3: (config.text_3 != null)?config.text_3:"",
-        _text_4: (config.text_4 != null)?config.text_4:"",
-        _text_5: (config.text_5 != null)?config.text_5:"",
-        _text_6: (config.text_6 != null)?config.text_6:"",
-        _text_7: (config.text_7 != null)?config.text_7:"",
-        _text_8: (config.text_8 != null)?config.text_8:"",
-        _text_9: (config.text_9 != null)?config.text_9:"",         
-        _text_star: (config.text_star != null)?config.text_star:"",
-        _text_pound: (config.text_pound != null)?config.text_pound:"",
-      });
-  }
-
+      this._config=config;
+      this._title=config.title;
+      this._view_display=(config.view_display != null) ? config.view_display : true;
+      this._kpdservice= config.service;
+      this._kpdservicetype= config.service_type;
+      this._view_display= (config.view_display != null) ? config.view_display : true;
+      this._view_pad= (config.view_pad != null) ? config.view_pad : true;
+      this._button_left= (config.button_left != null) ? config.button_left : false;      
+      this._view_bottom= (config.view_bottom != null) ? config.view_bottom : false;
+      this._view_status= (config.view_status != null) ? config.view_status : true;
+      this._view_status2= (config.view_status_2 != null) ? config.view_status_2 : false;
+      this._scale= (config.scale != null) ? "transform-origin: 0 0; zoom: "+config.scale+"; -moz-transform: scale("+config.scale+");" : "1";
+      this._button_A=(config.button_A != null)?config.button_A:"A";
+      this._button_B=(config.button_B != null)?config.button_B:"B";
+      this._button_C=(config.button_C != null)?config.button_C:"C";
+      this._button_D=(config.button_D != null)?config.button_D:"D";
+      this._button_E=(config.button_E != null)?config.button_E:"E";
+      this._button_F=(config.button_F != null)?config.button_F:"F";
+      this._button_G=(config.button_G != null)?config.button_G:"G";
+      this._button_H=(config.button_H != null)?config.button_H:"H";        
+      this._status_A=(config.status_A != null)?config.status_A:"A";
+      this._status_B=(config.status_B != null)?config.status_B:"B";
+      this._status_C=(config.status_C != null)?config.status_C:"C";
+      this._status_D=(config.status_D != null)?config.status_D:"D";
+      this._status_E=(config.status_E != null)?config.status_E:"E";
+      this._status_F=(config.status_F != null)?config.status_F:"F";
+      this._status_G=(config.status_G != null)?config.status_G:"G";
+      this._status_H=(config.status_H != null)?config.status_H:"H";        
+      this._cmd_A=(config.cmd_A != null)?config.cmd_A:"";
+      this._cmd_B=(config.cmd_B != null)?config.cmd_B:"";
+      this._cmd_C=(config.cmd_C != null)?config.cmd_C:"";
+      this._cmd_D=(config.cmd_D != null)?config.cmd_D:"";
+      this._cmd_E=(config.cmd_E != null)?config.cmd_E:"";
+      this._cmd_F=(config.cmd_F != null)?config.cmd_F:"";
+      this._cmd_G=(config.cmd_G != null)?config.cmd_G:"";
+      this._cmd_H=(config.cmd_H != null)?config.cmd_H:"";        
+      this._key_0=(config.key_0 != null)?config.key_0:"";
+      this._key_1=(config.key_1 != null)?config.key_1:"";
+      this._key_2=(config.key_2 != null)?config.key_2:"";
+      this._key_3=(config.key_3 != null)?config.key_3:"";
+      this._key_4=(config.key_4 != null)?config.key_4:"";
+      this._key_5=(config.key_5 != null)?config.key_5:"";
+      this._key_6=(config.key_6 != null)?config.key_6:"";
+      this._key_7=(config.key_7 != null)?config.key_7:"";
+      this._key_8=(config.key_8 != null)?config.key_8:"";
+      this._key_9=(config.key_9 != null)?config.key_9:""; 
+      this._key_star=(config.key_star != null)?config.key_star:"";
+      this._key_pound=(config.key_pound != null)?config.key_pound:"";
+      this._text_0=(config.text_0 != null)?config.text_0:"";
+      this._text_1=(config.text_1 != null)?config.text_1:"";
+      this._text_2=(config.text_2 != null)?config.text_2:"";
+      this._text_3=(config.text_3 != null)?config.text_3:"";
+      this._text_4=(config.text_4 != null)?config.text_4:"";
+      this._text_5=(config.text_5 != null)?config.text_5:"";
+      this._text_6=(config.text_6 != null)?config.text_6:"";
+      this._text_7=(config.text_7 != null)?config.text_7:"";
+      this._text_8=(config.text_8 != null)?config.text_8:"";
+      this._text_9=(config.text_9 != null)?config.text_9:"";         
+      this._text_star=(config.text_star != null)?config.text_star:"";
+      this._text_pound=(config.text_pound != null)?config.text_pound:"";
+   }
 
   set hass(hass) {
     this._hass = hass;
@@ -513,30 +555,23 @@ class AlarmKeypadCard extends Polymer.Element {
     this._kpdf = this._hass.states[this._config.sensor_F];    
     this._kpdg = this._hass.states[this._config.sensor_G]; 
     this._kpdh = this._hass.states[this._config.sensor_H]; 
-
-      this.setProperties({
-      _iconA:  this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
-      _iconB:  this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
-      _iconC:  this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
-      _iconD:  this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
-      _iconE:  this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
-      _iconF: this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
-      _iconG:  this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",
-      _iconH:  this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?'mdi:check-circle':'mdi:circle-outline':"",      
-      });
-
+    this._iconA= this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
+    this._iconB= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
+    this._iconC= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
+    this._iconD= this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
+    this._iconE= this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
+    this._iconF=this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
+    this._iconG= this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
+    this._iconH= this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";      
   }
  
   displayChanged() {
     let state1 = "";
     let state2 = "";
-      
     for (let i = 0; i < this._kpdline1.state.length; i++) state1 += this._translateChar(this._kpdline1.state[i]);
     for (let i = 0; i < this._kpdline2.state.length; i++) state2 += this._translateChar(this._kpdline2.state[i]);
-    this.setProperties({
-      _line1: state1,
-      _line2: state2      
-    });
+    this._line1=state1;
+    this._line2=state2;
   }
 
   beepChanged() {
@@ -617,4 +652,3 @@ class AlarmKeypadCard extends Polymer.Element {
 }
 
 customElements.define('alarm-keypad-card', AlarmKeypadCard);
-   
