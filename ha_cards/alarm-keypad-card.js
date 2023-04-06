@@ -159,69 +159,69 @@ class AlarmKeypadCard extends LitElement {
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="A"
+                         state="A"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_A}
+                        title='${this._button_A}'>${this._button_A}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="B"
+                         state="B"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_B}
+                        title='${this._button_B}'>${this._button_B}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="C"
+                         state="C"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_C}
+                        title='${this._button_C}'>${this._button_C}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="D"
+                         state="D"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_D}
+                        title='${this._button_D}'>${this._button_D}
                       </button>
                      ${this._view_bottom?html`                       
                      <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="H"
+                         state="H"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_H}
+                        title='${this._button_H}'>${this._button_H}
                      </button>`:''}
                     </div>`:''}    
                     
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="1"
+                         state="1"
                        @click="${this.setState}"
-                        title='Unset'>1<span class="keypad_cmd_text">${this._text_1}</span>
+                        title='1'>1<span class="keypad_cmd_text">${this._text_1}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="4"
+                         state="4"
                        @click="${this.setState}"
-                        title='Unset'>4<span class="keypad_cmd_text">${this._text_4}</span>
+                        title='4'>4<span class="keypad_cmd_text">${this._text_4}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="7"
+                         state="7"
                        @click="${this.setState}"
-                        title='Unset'>7<span class="keypad_cmd_text">${this._text_7}</span>
+                        title='7'>7<span class="keypad_cmd_text">${this._text_7}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="*"
+                         state="*"
                        @click="${this.setState}"
-                        title='Unset'>*<span class="keypad_cmd_text">${this._text_star}</span>
+                        title='*'>*<span class="keypad_cmd_text">${this._text_star}</span>
                       </button>
 
                      ${this._view_bottom?html`   
                      <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="E"
+                         state="E"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_E}
+                        title='${this._button_E}'>${this._button_E}
                      </button>`:''}
                       
                     </div>
@@ -229,69 +229,69 @@ class AlarmKeypadCard extends LitElement {
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="2"
+                         state="2"
                        @click="${this.setState}"
-                        title='Unset'>2<span class="keypad_cmd_text">${this._text_2}</span>
+                        title='2'>2<span class="keypad_cmd_text">${this._text_2}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="5"
+                         state="5"
                        @click="${this.setState}"
-                        title='Unset'>5<span class="keypad_cmd_text">${this._text_5}</span>
+                        title='5'>5<span class="keypad_cmd_text">${this._text_5}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="8"
+                         state="8"
                        @click="${this.setState}"
-                        title='Unset'>8<span class="keypad_cmd_text">${this._text_8}</span>
+                        title='8'>8<span class="keypad_cmd_text">${this._text_8}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="0"
+                         state="0"
                        @click="${this.setState}"
-                        title='Unset'>0<span class="keypad_cmd_text">${this._text_0}</span>
+                        title='0'>0<span class="keypad_cmd_text">${this._text_0}</span>
                       </button>
 
                      ${this._view_bottom?html`                       
                      <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="F"
+                         state="F"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_F}
+                        title='${this._button_F}'>${this._button_F}
                      </button>`:''}
                     </div>
 
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="3"
+                         state="3"
                        @click="${this.setState}"
-                        title='Unset'>3<span class="keypad_cmd_text">${this._text_3}</span>
+                        title='3'>3<span class="keypad_cmd_text">${this._text_3}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="6"
+                         state="6"
                        @click="${this.setState}"
-                        title='Unset'>6<span class="keypad_cmd_text">${this._text_6}</span>
+                        title='6'>6<span class="keypad_cmd_text">${this._text_6}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="9"
+                         state="9"
                        @click="${this.setState}"
-                        title='Unset'>9<span class="keypad_cmd_text">${this._text_9}</span>
+                        title='9'>9<span class="keypad_cmd_text">${this._text_9}</span>
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="#"
+                         state="#"
                        @click="${this.setState}"
-                        title='Unset'>#<span class="keypad_cmd_text">${this._text_pound}</span>
+                        title='#'>#<span class="keypad_cmd_text">${this._text_pound}</span>
                       </button>
                       ${this._view_bottom?html`                      
                      <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="G"
+                         state="G"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_G}
+                        title='${this._button_G}'>${this._button_G}
                       </button>`:''}
                    
                     </div>
@@ -299,34 +299,34 @@ class AlarmKeypadCard extends LitElement {
                     <div>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="A"
+                         state="A"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_A}
+                        title='${this._button_A}'>${this._button_A}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="B"
+                         state="B"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_B}
+                        title='${this._button_B}'>${this._button_B}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="C"
+                         state="C"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_C}
+                        title='${this._button_C}'>${this._button_C}
                       </button>
                       <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="D"
+                         state="D"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_D}
+                        title='${this._button_D}'>${this._button_D}
                       </button>
                      ${this._view_bottom?html`                       
                      <button
                         class='mdc-button mdc-button--outlined'
-                        toggles state="H"
+                         state="H"
                        @click="${this.setState}"
-                        title='Unset'>${this._button_H}
+                        title='${this._button_H}'>${this._button_H}
                      </button>`:''}
                      
                     </div>`}
