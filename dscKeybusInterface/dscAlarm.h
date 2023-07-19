@@ -1371,11 +1371,11 @@ void update() override {
     }
 
 
-    if ( dsc.loop() || forceRefresh) { //Processes data only when a valid Keybus command has been read
+    if ( (dsc.loop() || forceRefresh) && dsc.panelData[0] ) { //Processes data only when a valid Keybus command has been read
  
       static bool delayedStart = true;
       static unsigned long startWait = millis();
-      if (millis() - startWait > 10000 && delayedStart) {
+      if (millis() - startWait > 30000 && delayedStart) {
         delayedStart = false;
         troubleMsgStatusCallback("");
         if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
@@ -1414,7 +1414,7 @@ void update() override {
 
     }
 
-    if (!forceDisconnect && ( dsc.statusChanged || forceRefresh)) { // Processes data only when a valid Keybus command has been read and statuses were changed
+    if (!forceDisconnect && ( dsc.statusChanged || forceRefresh) && dsc.panelData[0]) { // Processes data only when a valid Keybus command has been read and statuses were changed
       dsc.statusChanged = false; // Reset the status tracking flag
 
       if (debug  > 0)
@@ -1803,7 +1803,7 @@ void update() override {
 
     }
 
-    if (!forceDisconnect && dsc.handleModule()) {
+    if (!forceDisconnect && dsc.handleModule() && dsc.moduleCmd) {
       if (dsc.panelData[0] == 0x41) {
         for (byte zoneByte = 0; zoneByte < 4; zoneByte++) {
           byte zoneBit = 0;
