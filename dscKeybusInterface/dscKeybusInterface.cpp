@@ -130,8 +130,10 @@ void dscKeybusInterface::stop() {
   // Disables esp32 timer0
   #elif defined(ESP32)
   #if ESP_IDF_VERSION_MAJOR < 444
-  timerAlarmDisable(timer1);
-  timerEnd(timer1);
+  if (timer1 != NULL)  {  
+    timerAlarmDisable(timer1);
+    timerEnd(timer1);
+  }
   #else // ESP-IDF 4+
   esp_timer_stop(timer0);
   #endif // ESP_IDF_VERSION_MAJOR
