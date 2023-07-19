@@ -126,8 +126,11 @@ void dscKeybusInterface::stop() {
 
   // Disables esp32 timer0
   #elif defined(ESP32)
-  timerAlarmDisable(timer0);
-  timerEnd(timer0);
+  if (timer1 != NULL)  {  
+    timerAlarmDisable(timer1);
+    timerEnd(timer1);
+  }  
+
   #endif
 
   // Disables the Keybus clock pin interrupt
