@@ -126,9 +126,9 @@ void dscKeybusInterface::stop() {
 
   // Disables esp32 timer0
   #elif defined(ESP32)
-  if (timer1 != NULL)  {  
-    timerAlarmDisable(timer1);
-    timerEnd(timer1);
+  if (timer0 != NULL)  {  
+    timerAlarmDisable(timer0);
+    timerEnd(timer0);
   }  
 
   #endif
