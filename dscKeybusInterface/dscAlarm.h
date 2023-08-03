@@ -269,13 +269,13 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   void set_panel_time() {
     ESPTime rtc = now();
     if (!rtc.is_valid()) return;
-    ESP_LOGD("info","Setting panel time...");    
+    ESP_LOGI("info","Setting panel time...");    
     dsc.setDateTime(rtc.year, rtc.month, rtc.day_of_month, rtc.hour, rtc.minute);
   }
   #else
   void set_panel_time(int year,int month,int day,int hour,int minute) {
       #if !defined(ARDUINO_MQTT)
-    ESP_LOGD("info","Setting panel time..."); 
+    ESP_LOGI("info","Setting panel time..."); 
     #else
           Serial.printf("Setting panel time...\n");   
     #endif
@@ -506,7 +506,7 @@ public:
   void set_zone_fault(int zone, bool fault) {
 #if defined(EXPANDER) 
  #if !defined(ARDUINO_MQTT)     
-    ESP_LOGD("Debug", "Setting Zone Fault: %d,%d", zone, fault);
+    ESP_LOGI("Debug", "Setting Zone Fault: %d,%d", zone, fault);
  #else
       Serial.printf("Setting Zone Fault: %d,%d\n", zone, fault);
  #endif
@@ -862,7 +862,7 @@ public:
   void alarm_keypress_partition(std::string keystring, int partition) {
     if (!partition) partition = defaultPartition;
 #if !defined(ARDUINO_MQTT)         
-    if (debug > 0) ESP_LOGD("Debug", "Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition-1].locked);
+    if (debug > 0) ESP_LOGI("Debug", "Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition-1].locked);
     #else
           if (debug > 0) Serial.printf("Writing keys: %s to partition %d, partition disabled: %d , partition locked: %d\n", keystring.c_str(), partition,dsc.disabled[partition - 1],partitionStatus[partition-1].locked);  
 #endif
@@ -903,7 +903,7 @@ private:
                 b=true;
             std::string s=payload["zone"];
             p = atoi(s.c_str());
-           // ESP_LOGD("info","set zone fault %s,%s,%d,%d",s2.c_str(),c,b,p);            
+           // ESP_LOGI("info","set zone fault %s,%s,%d,%d",s2.c_str(),c,b,p);            
             set_zone_fault(p,b);
 
         }
@@ -927,7 +927,7 @@ public:
     if (!partition) partition = defaultPartition;
 
 #if !defined(ARDUINO_MQTT)  
-    ESP_LOGD("debug","Setting Alarm state: %s to partition %d",state.c_str(),partition);
+    ESP_LOGI("debug","Setting Alarm state: %s to partition %d",state.c_str(),partition);
 #else
     Serial.printf("Setting Alarm state: %s to partition %d\n",state.c_str(),partition);    
 #endif
@@ -938,21 +938,21 @@ public:
     // Arm stay
     if (state.compare("S") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
 #if !defined(ARDUINO_MQTT)          
-         if (debug > 1) ESP_LOGD("debug","Arming stay");   
+         if (debug > 1) ESP_LOGI("debug","Arming stay");   
 #endif         
       dsc.write('s', partition); // Virtual keypad arm stay
     }
     // Arm away
     else if ((state.compare("A") == 0 || state.compare("W") == 0) && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
 #if !defined(ARDUINO_MQTT)          
-     if (debug > 1) ESP_LOGD("debug","Arming away");  
+     if (debug > 1) ESP_LOGI("debug","Arming away");  
 #endif     
       dsc.write('w', partition); // Virtual keypad arm away
     }
     // Arm night  ** this depends on the accessCode setup in the yaml
     else if (state.compare("N") == 0 && !dsc.armed[partition - 1] && !dsc.exitDelay[partition - 1]) {
 #if !defined(ARDUINO_MQTT)          
-       if (debug > 1) ESP_LOGD("debug","Arming night");  
+       if (debug > 1) ESP_LOGI("debug","Arming night");  
 #endif
       //ensure you have the accessCode setup correctly in the yaml for this to work
       dsc.write('n', partition); // Virtual keypad arm away
@@ -973,7 +973,7 @@ public:
     else if (state.compare("D") == 0 && (dsc.armed[partition-1] || dsc.exitDelay[partition-1])) {
       if (code.length() == 4) { // ensure we get 4 digit code
 #if !defined(ARDUINO_MQTT)        
-      if (debug > 1) ESP_LOGD("debug","Disarming ... ");  
+      if (debug > 1) ESP_LOGI("debug","Disarming ... ");  
 #endif      
         dsc.write(alarmCode, partition);
       }
@@ -1074,7 +1074,7 @@ private:
         }
       }
     }
-    ESP_LOGD("info"," in get options %s",options.c_str());
+    ESP_LOGI("info"," in get options %s",options.c_str());
     //Serial.printf("in get options %s\n",options.c_str());
     return options.c_str();
   }
@@ -1341,7 +1341,7 @@ void update() override {
    static bool firstrunmqtt=true;
    if (is_connected() && firstrunmqtt)	{
          publish(topic,"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}",0,1);
-       // ESP_LOGD("test","published %s,%s",topic.c_str(),"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}");
+       // ESP_LOGI("test","published %s,%s",topic.c_str(),"{\"name\":" +  topic_prefix + "alarm panel, \"cmd_t\":" +  topic_prefix + String(FPSTR(setalarmcommandtopic)).c_str() + "}");
          firstrunmqtt=false;
        }
 #endif      
@@ -1430,7 +1430,7 @@ void update() override {
 
       }
 #if !defined(ARDUINO_MQTT)     
-      if (dsc.bufferOverflow) ESP_LOGD("Error", "Keybus buffer overflow");
+      if (dsc.bufferOverflow) ESP_LOGI("Error", "Keybus buffer overflow");
       #else
                 if (dsc.bufferOverflow) Serial.printf( "Keybus buffer overflow\n");
 #endif      
@@ -1855,7 +1855,7 @@ void update() override {
     partitionStatus[partition].decimalInput = false;
 #if !defined(ARDUINO_MQTT) 
     if (debug > 1)     
-    ESP_LOGD("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d,force=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip,force);
+    ESP_LOGI("info", "status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d,force=%d", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip,force);
    #else
          if (debug > 1)     
     Serial.printf("status %02X, last status %02X,line2status %02X,selection %02X,partition=%d,skip=%d,force=%d\n", dsc.status[partition], partitionStatus[partition].lastStatus, line2Status, * currentSelection, partition + 1, skip,force);  
@@ -2270,12 +2270,12 @@ void update() override {
 
     if (!skip) {
 
-      // ESP_LOGD("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, *currentSelection);
+      // ESP_LOGI("test", "digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d,partition=%d,selection=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked, partition + 1, *currentSelection);
 
       //if multi digit field, setup for 6E request to panel
       if (dsc.status[partition] != partitionStatus[partition].lastStatus && !partitionStatus[partition].locked && partitionStatus[partition].digits && !partitionStatus[partition].newData) {
 
-        // ESP_LOGD("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked);
+        // ESP_LOGI("test", "in setlcd: digits = %d,status=%02X,previoustatus=%02X,newdata=%d,locked=%d", partitionStatus[partition].digits, dsc.status[partition], partitionStatus[partition].lastStatus, partitionStatus[partition].newData, partitionStatus[partition].locked);
 
         dsc.setLCDReceive(partitionStatus[partition].digits, partition + 1);
         partitionStatus[partition].editIdx = 0;
@@ -2455,7 +2455,7 @@ void update() override {
         if (dsc.status[partition] == 0x9F && dsc.accessCodePrompt && isInt(accessCode, 10)) {
         dsc.accessCodePrompt = false;
         dsc.write(accessCode, partition + 1);
-        //if (debug > 0) ESP_LOGD("Debug", "got access code prompt for partition %d", partition + 1);
+        //if (debug > 0) ESP_LOGI("Debug", "got access code prompt for partition %d", partition + 1);
       }  
 
       if (options) {
@@ -2517,7 +2517,7 @@ void update() override {
       break;
     case 0x75: //tones 1
     case 0x7D:
-      //ESP_LOGD("info", "Sent tones cmd %02X,%02X", dsc.panelData[0], dsc.panelData[3]);
+      //ESP_LOGI("info", "Sent tones cmd %02X,%02X", dsc.panelData[0], dsc.panelData[3]);
       break; //tones 2
     case 0x87: //relay cmd
       processRelayCmd();
@@ -2535,7 +2535,7 @@ void update() override {
       case 0x04:
       case 0x05:
       case 0x06:
-      case 0x1D: //ESP_LOGD("info", "Sent tones cmd %02X,%02X", dsc.panelData[0], dsc.panelData[4]);
+      case 0x1D: //ESP_LOGI("info", "Sent tones cmd %02X,%02X", dsc.panelData[0], dsc.panelData[4]);
         break; //tones 3-8
       case 0x19:
         printBeeps(4);
@@ -2547,7 +2547,7 @@ void update() override {
         processProgramZones(5);
         break; // Programming zone lights 33-64 //bypass?
       case 0x18:
-        //ESP_LOGD("info", "zone lights 33");
+        //ESP_LOGI("info", "zone lights 33");
         if ((dsc.panelData[4] & 0x04) == 0x04)
           processProgramZones(5);
         break; // Alarm memory zones 33-64
@@ -2710,7 +2710,7 @@ void update() override {
       byteCount++;
     }
    // group1msg.append(group2msg);
-    ESP_LOGD("info","procesprogramzones: %02X, %s,%S",startByte,group1msg.c_str(),group2msg.c_str());
+    ESP_LOGI("info","procesprogramzones: %02X, %s,%S",startByte,group1msg.c_str(),group2msg.c_str());
     //lightsCallback(group1msg, defaultPartition);
     */
     if (options)
