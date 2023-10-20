@@ -24,7 +24,7 @@
 void dscKeybusInterface::resetStatus() {
   statusChanged = true;
   keybusChanged = true;
-  //troubleChanged = true;
+  troubleChanged = false;
   powerChanged = true;
   batteryChanged = true;
   for (byte partition = 0; partition < dscPartitions; partition++) {
@@ -871,8 +871,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
       if (panelData[panelByte] == 0x09 + zoneCount) {
         if (zoneCount < 8) {
           bitWrite(alarmZones[0], zoneCount, 1);
-          if (bitRead(previousAlarmZones[0], zoneCount) != 1) {
-            bitWrite(previousAlarmZones[0], zoneCount, 1);
+          if (bitRead(alarmZones[0], zoneCount) != 1) {
+            bitWrite(alarmZones[0], zoneCount, 1);
             bitWrite(alarmZonesChanged[0], zoneCount, 1);
             alarmZonesStatusChanged = true;
             if (!pauseStatus) statusChanged = true;
@@ -880,8 +880,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         }
         else if (zoneCount >= 8 && zoneCount < 16) {
           bitWrite(alarmZones[1], (zoneCount - 8), 1);
-          if (bitRead(previousAlarmZones[1], (zoneCount - 8)) != 1) {
-            bitWrite(previousAlarmZones[1], (zoneCount - 8), 1);
+          if (bitRead(alarmZones[1], (zoneCount - 8)) != 1) {
+            bitWrite(alarmZones[1], (zoneCount - 8), 1);
             bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
             alarmZonesStatusChanged = true;
             if (!pauseStatus) statusChanged = true;
@@ -889,8 +889,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         }
         else if (zoneCount >= 16 && zoneCount < 24) {
           bitWrite(alarmZones[2], (zoneCount - 16), 1);
-          if (bitRead(previousAlarmZones[2], (zoneCount - 16)) != 1) {
-            bitWrite(previousAlarmZones[2], (zoneCount - 16), 1);
+          if (bitRead(alarmZones[2], (zoneCount - 16)) != 1) {
+            bitWrite(alarmZones[2], (zoneCount - 16), 1);
             bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
             alarmZonesStatusChanged = true;
             if (!pauseStatus) statusChanged = true;
@@ -898,8 +898,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         }
         else if (zoneCount >= 24 && zoneCount < 32) {
           bitWrite(alarmZones[3], (zoneCount - 24), 1);
-          if (bitRead(previousAlarmZones[3], (zoneCount - 24)) != 1) {
-            bitWrite(previousAlarmZones[3], (zoneCount - 24), 1);
+          if (bitRead(alarmZones[3], (zoneCount - 24)) != 1) {
+            bitWrite(alarmZones[3], (zoneCount - 24), 1);
             bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
             alarmZonesStatusChanged = true;
             if (!pauseStatus) statusChanged = true;
@@ -924,8 +924,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
       if (panelData[panelByte] == 0x29 + zoneCount) {
         if (zoneCount < 8) {
           bitWrite(alarmZones[0], zoneCount, 0);
-          if (bitRead(previousAlarmZones[0], zoneCount) != 0) {
-            bitWrite(previousAlarmZones[0], zoneCount, 0);
+          if (bitRead(alarmZones[0], zoneCount) != 0) {
+            bitWrite(alarmZones[0], zoneCount, 0);
             bitWrite(alarmZonesChanged[0], zoneCount, 1);
             alarmZonesStatusChanged = true;
             if (!pauseStatus) statusChanged = true;
@@ -933,8 +933,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         }
         else if (zoneCount >= 8 && zoneCount < 16) {
           bitWrite(alarmZones[1], (zoneCount - 8), 0);
-          if (bitRead(previousAlarmZones[1], (zoneCount - 8)) != 0) {
-            bitWrite(previousAlarmZones[1], (zoneCount - 8), 0);
+          if (bitRead(alarmZones[1], (zoneCount - 8)) != 0) {
+            bitWrite(alarmZones[1], (zoneCount - 8), 0);
             bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
             alarmZonesStatusChanged = true;
             if (!pauseStatus) statusChanged = true;
@@ -942,8 +942,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         }
         else if (zoneCount >= 16 && zoneCount < 24) {
           bitWrite(alarmZones[2], (zoneCount - 16), 0);
-          if (bitRead(previousAlarmZones[2], (zoneCount - 16)) != 0) {
-            bitWrite(previousAlarmZones[2], (zoneCount - 16), 0);
+          if (bitRead(alarmZones[2], (zoneCount - 16)) != 0) {
+            bitWrite(alarmZones[2], (zoneCount - 16), 0);
             bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
             alarmZonesStatusChanged = true;
             if (!pauseStatus) statusChanged = true;
@@ -951,8 +951,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         }
         else if (zoneCount >= 24 && zoneCount < 32) {
           bitWrite(alarmZones[3], (zoneCount - 24), 0);
-          if (bitRead(previousAlarmZones[3], (zoneCount - 24)) != 0) {
-            bitWrite(previousAlarmZones[3], (zoneCount - 24), 0);
+          if (bitRead(alarmZones[3], (zoneCount - 24)) != 0) {
+            bitWrite(alarmZones[3], (zoneCount - 24), 0);
             bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
             alarmZonesStatusChanged = true;
             if (!pauseStatus) statusChanged = true;

@@ -249,7 +249,7 @@ class dscKeybusInterface {
     bool previousAlarm[dscPartitions];
     bool previousFire[dscPartitions];
 	bool previousTrouble;
-    byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
+    byte previousOpenZones[dscZones];
 	
     static byte dscClockPin;
     static byte dscReadPin;
