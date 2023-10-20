@@ -23,11 +23,7 @@
 #include <Arduino.h>
 
 
-#if defined(__AVR__)
-const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
-const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
-const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
-#elif defined(ESP8266) || defined(ESP32)
+#if defined(ESP8266) || defined(ESP32)
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;

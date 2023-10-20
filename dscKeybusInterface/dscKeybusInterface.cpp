@@ -88,13 +88,7 @@ void dscKeybusInterface::begin(Stream &_stream) {
   // Platform-specific timers trigger a read of the data line 250us after the Keybus clock changes
 
   // Arduino Timer1 calls ISR(TIMER1_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
-  #if defined(__AVR__)
-  TCCR1A = 0;
-  TCCR1B = 0;
-  TIMSK1 |= (1 << TOIE1);
-
-  // esp8266 timer1 calls dscDataInterrupt() from dscClockInterrupt() as a one-shot timer
-  #elif defined(ESP8266)
+  #if defined(ESP8266)
   timer1_isr_init();
   timer1_attachInterrupt(dscDataInterrupt);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
@@ -116,11 +110,7 @@ void dscKeybusInterface::begin(Stream &_stream) {
 void dscKeybusInterface::stop() {
 
   // Disables Arduino Timer1 interrupts
-  #if defined(__AVR__)
-  TIMSK1 = 0;
-
-  // Disables esp8266 timer1
-  #elif defined(ESP8266)
+  #if defined(ESP8266)
   timer1_disable();
   timer1_detachInterrupt();
 
@@ -578,25 +568,14 @@ bool dscKeybusInterface::validCRC() {
 
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
 // data after an interval.
-#if defined(__AVR__)
-void dscKeybusInterface::dscClockInterrupt() {
-#elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
-#elif defined(ESP32)
+
 void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
-#endif
 
   // Data sent from the panel and keypads/modules has latency after a clock change (observed up to 160us for keypad data).
   // The following sets up a timer for both Arduino/AVR and Arduino/esp8266 that will call dscDataInterrupt() in
   // 250us to read the data line.
 
-  // AVR Timer1 calls dscDataInterrupt() via ISR(TIMER1_OVF_vect) when the Timer1 counter overflows
-  #if defined(__AVR__)
-  TCNT1=61535;            // Timer1 counter start value, overflows at 65535 in 250us
-  TCCR1B |= (1 << CS10);  // Sets the prescaler to 1
-
-  // esp8266 timer1 calls dscDataInterrupt() in 250us
-  #elif defined(ESP8266)
+#if defined(ESP8266)
   timer1_write(1250);
 
   // esp32 timer0 calls dscDataInterrupt() in 250us
@@ -681,24 +660,13 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
 // Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
 // dscDataInterrupt() to read the data line
-#if defined(__AVR__)
-ISR(TIMER1_OVF_vect) {
-  TCCR1B = 0;  // Disables Timer1
-  dscKeybusInterface::dscDataInterrupt();
-}
-#endif
-
 
 // Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer0 after 250us to read the data line
-#if defined(__AVR__)
-void dscKeybusInterface::dscDataInterrupt() {
-#elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
-#elif defined(ESP32)
+
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
   timerStop(timer0);
   portENTER_CRITICAL(&timer0Mux);
-#endif
+
 
   static bool skipData = false;
   static bool goodCmd = false;
