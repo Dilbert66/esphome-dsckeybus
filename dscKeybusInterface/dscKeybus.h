@@ -26,12 +26,7 @@
 
 #include <Arduino.h>
 
-#if defined(__AVR__)
-const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
-const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
-const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
-const byte dscReadSize = 16;    // Maximum bytes of a Keybus command
-#elif defined(ESP8266)
+#if defined(ESP8266)
 const byte dscPartitions = 4;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
@@ -45,10 +40,7 @@ const DRAM_ATTR byte dscReadSize = 16;
 
 
 
-#if defined(__AVR__)
-const byte maxModules = 4;
-const byte writeQueueSize=5; //write pending queue size
-#elif defined(ESP8266)
+#if defined(ESP8266)
 const byte maxModules = 4;
 const byte writeQueueSize=20; //zone pending update queue
 #elif defined(ESP32)

@@ -70,13 +70,6 @@ volatile unsigned long dscClassicInterface::writeCompleteTime;
 
 // Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
 // dscDataInterrupt() to read the data line
-#if defined(__AVR__)
-ISR(TIMER1_OVF_vect) {
-  TCCR1B = 0;  // Disables Timer1
-  dscClassicInterface::dscDataInterrupt();
-}
-#endif  // __AVR__
-
 
 // DSC Keypad Interface
 #elif defined dscKeypad
@@ -108,11 +101,6 @@ volatile byte dscKeypadInterface::isrModuleByteCount;
 volatile byte dscKeypadInterface::panelCommandByteTotal;
 volatile byte dscKeypadInterface::moduleData[dscReadSize];
 
-#if defined(__AVR__)
-ISR(TIMER1_OVF_vect) {
-  dscKeypadInterface::dscClockInterrupt();
-}
-#endif  // __AVR__
 
 // DSC Classic Keypad Interface
 #elif defined dscClassicKeypad
@@ -149,12 +137,6 @@ volatile unsigned long dscClassicKeypadInterface::repeatInterval;
 volatile unsigned long dscClassicKeypadInterface::keyInterval;
 volatile unsigned long dscClassicKeypadInterface::alarmKeyTime;
 volatile unsigned long dscClassicKeypadInterface::alarmKeyInterval;
-
-#if defined(__AVR__)
-ISR(TIMER1_OVF_vect) {
-  dscClassicKeypadInterface::dscClockInterrupt();
-}
-#endif  // __AVR__
 
 
 // DSC PowerSeries
@@ -218,11 +200,6 @@ byte dscKeybusInterface::maxZones;
 byte dscKeybusInterface::panelVersion;
 // Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
 // dscDataInterrupt() to read the data line
-#if defined(__AVR__)
-ISR(TIMER1_OVF_vect) {
-  TCCR1B = 0;  // Disables Timer1
-  dscKeybusInterface::dscDataInterrupt();
-}
-#endif  // __AVR__
+
 #endif  // dscClassicSeries, dscKeypadInterface
 #endif  // dscKeybusInterface_h

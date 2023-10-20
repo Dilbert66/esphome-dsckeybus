@@ -79,13 +79,7 @@ void dscKeybusInterface::begin(Stream & _stream,byte setClockPin, byte setReadPi
   // Platform-specific timers trigger a read of the data line 250us after the Keybus clock changes
 
   // Arduino/AVR Timer1 calls ISR(TIMER1_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
-  #if defined(__AVR__)
-  TCCR1A = 0;
-  TCCR1B = 0;
-  TIMSK1 |= (1 << TOIE1);
-
-  // esp8266 timer1 calls dscDataInterrupt() from dscClockInterrupt() as a one-shot timer
-  #elif defined(ESP8266)
+  #if defined(ESP8266)
   timer1_isr_init();
   timer1_attachInterrupt(dscDataInterrupt);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
@@ -119,11 +113,7 @@ void dscKeybusInterface::begin(Stream & _stream,byte setClockPin, byte setReadPi
 void dscKeybusInterface::stop() {
 
   // Disables Arduino/AVR Timer1 interrupts
-  #if defined(__AVR__)
-  TIMSK1 = 0;
-
-  // Disables esp8266 timer1
-  #elif defined(ESP8266)
+  #if defined(ESP8266)
   timer1_disable();
   timer1_detachInterrupt();
 
@@ -520,12 +510,7 @@ dscKeybusInterface::dscClockInterrupt() {
   // 250us to read the data line.
 
   // AVR Timer1 calls dscDataInterrupt() via ISR(TIMER1_OVF_vect) when the Timer1 counter overflows
-  #if defined(__AVR__)
-  TCNT1 = 61535; // Timer1 counter start value, overflows at 65535 in 250us
-  TCCR1B |= (1 << CS10); // Sets the prescaler to 1
-
-  // esp8266 timer1 calls dscDataInterrupt() in 250us
-  #elif defined(ESP8266)
+  #if defined(ESP8266)
   timer1_write(1250);
 
   // esp32 timer1 calls dscDataInterrupt() in 250us
@@ -657,9 +642,8 @@ dscKeybusInterface::dscClockInterrupt() {
 }
 
 // Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer1 after 250us to read the data line
-void
-IRAM_ATTR
-  #if ESP_IDF_VERSION_MAJOR < 444
+void IRAM_ATTR 
+#if ESP_IDF_VERSION_MAJOR < 444
 dscKeybusInterface::dscDataInterrupt() {
     #else
   dscKeybusInterface::dscDataInterrupt( void* arg) {      
