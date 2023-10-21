@@ -416,7 +416,7 @@ text_sensor:
     id: system_status
     name: "$systemName System Status"
     icon: "mdi:shield"
-    #battery level status for wireless channels, tamper , in alarm, etc for individual zones
+    #battery level status for wireless channels, tamper , in alarm, etc for individual zones - future
   - platform: template
     id: zone_status
     name: "$systemName zone status "
