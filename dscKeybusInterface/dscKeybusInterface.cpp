@@ -664,8 +664,12 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 // Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer0 after 250us to read the data line
 
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+    
+  #if defined(ESP32)
   timerStop(timer0);
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL( & timer0Mux);
+  #endif
+
 
 
   static bool skipData = false;
