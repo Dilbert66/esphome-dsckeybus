@@ -331,41 +331,42 @@ binary_sensor:
     #panel trouble status on/off
   - platform: template
     id: tr
-    name: "$systemName Trouble State"
+    name: "$systemName Trouble Status"
     device_class: problem
     
     #battery status ok/low
   - platform: template
     id: bat
-    name: "$systemName Battery State"
+    name: "$systemName Battery Status"
     device_class: problem
 
     #AC power status ok/no power
   - platform: template
     id: ac
-    name: "$systemName AC State"
+    name: "$systemName AC Status"
     device_class: plug
     
     #fire alarm on/off
   - platform: template
     id: f1
     device_class: smoke
-    name: "$systemName Fire partition 1 State"
+    name: "$systemName Fire partition 1 Status"
     
     #fire alarm on/off
   - platform: template
     id: f2
     device_class: smoke
-    name: "$systemName Fire partiti    #alarm on/off 
-    
+    name: "$systemName Fire partition 2 Status"
+
+    #alarm on/off 
   - platform: template
     id: p1_alm
-    name: "$systemName partition 1 Alarm State"
+    name: "$systemName partition 1 Alarm Status"
     
     #alarm on/off
   - platform: template
     id: p2_alm
-    name: "$systemName partition 2 Alarm State"   2 State"    
+    name: "$systemName partition 2 Alarm Status"  
   
 #relay PGM channels. Will show the state of the activate relay channel on/off
 #uncomment the name: field if you wish to see it in home assistant
