@@ -63,9 +63,6 @@ esphome:
 #      - lambda: |-
 #          DSCkeybus->set_panel_time();  
 
-# add or remove any zone you need. Please ensure you also add/remove the corresonponding case statement above
-# change the name to match your own zone configurations
-# if you don't want to delete a zone, you can also comment out the name: field to hide it from home assistant
 
 wifi:
   ssid: !secret wifi_ssid
@@ -109,6 +106,7 @@ time:
  - platform: sntp
    id: sntp_time
 
+
 custom_component:
  - id: dsckeybus
    lambda: |-
@@ -127,8 +125,18 @@ custom_component:
     // if you only have one partition, remove the case 2 and corresponding p2 sensor. You can also add more partitions if needed
     DSCkeybus->onPartitionStatusChange([&](std::string statusCode, int partition) {
        switch(partition) {
-         case 1: id(p1).publish_state(statusCode); break;
-         case 2: id(p2).publish_state(statusCode); break;
+         case 1: id(p1).publish_state(statusCode);
+                 if (statusCode.compare("triggered")==0) 
+                    id(p1_alm).publish_state(true); 
+                 else
+                    id(p1_alm).publish_state(false); 
+                 break;   
+         case 2: id(p2).publish_state(statusCode); 
+                 if (statusCode.compare("triggered")==0) 
+                    id(p2_alm).publish_state(true); 
+                 else
+                    id(p2_alm).publish_state(false); 
+                 break;  
       } 
     });
     
@@ -146,7 +154,7 @@ custom_component:
             case trStatus: id(tr).publish_state(open);break;
             case batStatus: id(bat).publish_state(open);break;
             case acStatus: id(ac).publish_state(open);break;
-            case panicStatus: id(panic).publish_state(open);break;
+            //case panicStatus: id(panic).publish_state(open);break;
             default: break;
           };break;  
         case 1: //partition 1 armed/ready
@@ -234,9 +242,25 @@ custom_component:
       }
     });
     
+    //init some template binary sensors to defaults
+    id(r1).publish_state(0);
+    id(r2).publish_state(0);
+    id(r3).publish_state(0);
+    id(r4).publish_state(0);
+    id(r5).publish_state(0);
+    id(r6).publish_state(0);
+    id(r7).publish_state(0);
+    id(r8).publish_state(0);  
+    id(tr_msg).publish_state("");    
+    id(m1).publish_state("");
+    id(m2).publish_state(""); //comment out if only 1 partition
+       
     return {DSCkeybus};
     
- 
+# add or remove any zones you need. Please ensure you also add/remove the corresonponding case statements above
+# change the name to match your own zone configurations
+# if you don't want to delete a zone, you can also comment out the name: field to hide it from home assistant
+
 binary_sensor:
     #zone status open/close for each zone 
   - platform: template
@@ -307,39 +331,42 @@ binary_sensor:
     #panel trouble status on/off
   - platform: template
     id: tr
-    name: "$systemName Trouble Status"
+    name: "$systemName Trouble State"
     device_class: problem
     
     #battery status ok/low
   - platform: template
     id: bat
-    name: "$systemName Battery Status"
+    name: "$systemName Battery State"
     device_class: problem
 
     #AC power status ok/no power
   - platform: template
     id: ac
-    name: "$systemName AC Status"
+    name: "$systemName AC State"
     device_class: plug
-    
-    #panic alarm on/off
-  - platform: template
-    id: panic
-    name: "$systemName Panic Status"
-    device_class: safety
     
     #fire alarm on/off
   - platform: template
     id: f1
-    device_class: safety
-    name: "$systemName Fire partition 1 Status"
+    device_class: smoke
+    name: "$systemName Fire partition 1 State"
     
     #fire alarm on/off
   - platform: template
     id: f2
-    device_class: safety
-    name: "$systemName Fire partition 2 Status"    
+    device_class: smoke
+    name: "$systemName Fire partiti    #alarm on/off 
     
+  - platform: template
+    id: p1_alm
+    name: "$systemName partition 1 Alarm State"
+    
+    #alarm on/off
+  - platform: template
+    id: p2_alm
+    name: "$systemName partition 2 Alarm State"   2 State"    
+  
 #relay PGM channels. Will show the state of the activate relay channel on/off
 #uncomment the name: field if you wish to see it in home assistant
   - platform: template
@@ -462,6 +489,11 @@ switch:
     turn_off_action:
       - lambda: |-
           disconnectKeybus();
+          
   - platform: restart
     id: restart_switch
+    
+  - platform: safe_mode
+    name: "$systemName (Safe Mode)" 
+    id: safe_restart    
 

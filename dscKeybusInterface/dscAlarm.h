@@ -1462,12 +1462,12 @@ void update() override {
         }
       }
 
-      if (dsc.keypadFireAlarm ) {
+    if (dsc.keypadFireAlarm  ) {
         dsc.keypadFireAlarm = false;
         //partitionMsgChangeCallback("Keypad Fire Alarm",defaultPartition);
       }
 
-      if (dsc.keypadPanicAlarm ) {
+      if (dsc.keypadPanicAlarm  ) {
         dsc.keypadPanicAlarm = false;
         //partitionMsgChangeCallback("Keypad Panic Alarm",defaultPartition);
       }
@@ -1480,14 +1480,14 @@ void update() override {
             panelStatusChangeCallback(trStatus, true, 0); // Trouble alarm tripped
 
             if ( troubleFetch && !dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
-                partitionStatus[defaultPartition-1].keyPressTime = millis();
+               // partitionStatus[defaultPartition-1].keyPressTime = millis();
                // dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
             }          
          
         } else {
             panelStatusChangeCallback(trStatus, false, 0); // Trouble alarm restored
             if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked && troubleFetch) {
-                partitionStatus[defaultPartition-1].keyPressTime = millis();
+               // partitionStatus[defaultPartition-1].keyPressTime = millis();
                 //dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery  
             }             
         }
@@ -3083,7 +3083,7 @@ void update() override {
       byte zone = dsc.panelData[panelByte] - 8;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].alarm = true;
-      itoa(dsc.panelData[panelByte] - 8, charBuffer, 10);
+      itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = " ";
@@ -3093,10 +3093,10 @@ void update() override {
     if (dsc.panelData[panelByte] >= 0x29 && dsc.panelData[panelByte] <= 0x48) {
       lcdLine1 = F("Zone alarm");
       strcpy_P(lcdMessage, PSTR(" restored:"));
-      //byte zone = dsc.panelData[panelByte] - 40;
-      // if (zone > 0 && zone < maxZones) 
-      // zoneStatus[zone-1].alarm=false;      
-      itoa(dsc.panelData[panelByte] - 40, charBuffer, 10);
+      byte zone = dsc.panelData[panelByte] - 40;
+       if (zone > 0 && zone < maxZones) 
+         zoneStatus[zone-1].alarm=false;      
+      itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;

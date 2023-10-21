@@ -951,8 +951,8 @@ void dscKeybusInterface::processAlarmZonesStatus(byte zonesByte, byte zoneCount,
 
   bitWrite(alarmZones[zonesByte], (zoneCount - (zonesRange * 8)), writeValue);
 
-  if (bitRead(previousAlarmZones[zonesByte], (zoneCount - (zonesRange * 8))) != writeValue) {
-    bitWrite(previousAlarmZones[zonesByte], (zoneCount - (zonesRange * 8)), writeValue);
+  if (bitRead(alarmZones[zonesByte], (zoneCount - (zonesRange * 8))) != writeValue) {
+    bitWrite(alarmZones[zonesByte], (zoneCount - (zonesRange * 8)), writeValue);
     bitWrite(alarmZonesChanged[zonesByte], (zoneCount - (zonesRange * 8)), 1);
 
     alarmZonesStatusChanged = true;
