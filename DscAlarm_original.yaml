@@ -38,6 +38,7 @@ substitutions:
   
 esphome:
   name: $systemName
+  friendly_name: $systemName
   platform: ESP32
   board: nodemcu-32s
   #platform: ESP8266
@@ -126,16 +127,10 @@ custom_component:
     DSCkeybus->onPartitionStatusChange([&](std::string statusCode, int partition) {
        switch(partition) {
          case 1: id(p1).publish_state(statusCode);
-                 if (statusCode.compare("triggered")==0) 
-                    id(p1_alm).publish_state(true); 
-                 else
-                    id(p1_alm).publish_state(false); 
+                id(p1_alm).publish_state(statusCode.compare("triggered")==0); 
                  break;   
          case 2: id(p2).publish_state(statusCode); 
-                 if (statusCode.compare("triggered")==0) 
-                    id(p2_alm).publish_state(true); 
-                 else
-                    id(p2_alm).publish_state(false); 
+                 id(p2_alm).publish_state(statusCode.compare("triggered")==0); 
                  break;  
       } 
     });
@@ -242,19 +237,7 @@ custom_component:
       }
     });
     
-    //init some template binary sensors to defaults
-    id(r1).publish_state(0);
-    id(r2).publish_state(0);
-    id(r3).publish_state(0);
-    id(r4).publish_state(0);
-    id(r5).publish_state(0);
-    id(r6).publish_state(0);
-    id(r7).publish_state(0);
-    id(r8).publish_state(0);  
-    id(tr_msg).publish_state("");    
-    id(m1).publish_state("");
-    id(m2).publish_state(""); //comment out if only 1 partition
-       
+     
     return {DSCkeybus};
     
 # add or remove any zones you need. Please ensure you also add/remove the corresonponding case statements above
@@ -265,135 +248,135 @@ binary_sensor:
     #zone status open/close for each zone 
   - platform: template
     id: z1
-    name: "$systemName Front door(z1)"
+    name: "Front door(z1)"
     device_class: door
   - platform: template
     id: z2
-    name: "$systemName Garage door(z2)"
+    name: "Garage door(z2)"
     device_class: door
   - platform: template
     id: z3
-    name: "$systemName Back door(z3)"
+    name: "Back door(z3)"
     device_class: door
   - platform: template
     id: z4
-    name: "$systemName Living room window(z4)"
+    name: "Living room window(z4)"
     device_class: window
   - platform: template
     id: z5
-    name: "$systemName Dining room window(z5)"
+    name: "Dining room window(z5)"
     device_class: window
   - platform: template
     id: z6
-    name: "$systemName Family room window LF(z6)"
+    name: "Family room window LF(z6)"
     device_class: window
   - platform: template
     id: z7
-    name: "$systemName Family room window RF(z7)"
+    name: "Family room window RF(z7)"
     device_class: window
   - platform: template
     id: z8
-    name: "$systemName Basement windows(z8)"
+    name: "Basement windows(z8)"
     device_class: window
   - platform: template
     id: z9
-    name: "$systemName Upstairs motion(z9)"
+    name: "Upstairs motion(z9)"
     device_class: motion
   - platform: template
     id: z10
-    name: "$systemName Basement motion(z10)"
+    name: "Basement motion(z10)"
     device_class: motion
   - platform: template
     id: z11
-    name: "$systemName Main floor motion(z11)"
+    name: "Main floor motion(z11)"
     device_class: motion
   - platform: template
     id: z17
-    name: "$systemName Test sensor(z17)"
+    name: "Test sensor(z17)"
     device_class: motion    
     
   - platform: template
     id: rdy
-    name: "$systemName Partition 1 Ready"
+    name: "Partition 1 Ready"
 
   - platform: template
     id: arm
-    name: "$systemName Partition 1 Armed"
+    name: "Partition 1 Armed"
     
   - platform: template
     id: rdy_2
-    name: "$systemName Partition 2 Ready"
+    name: "Partition 2 Ready"
 
   - platform: template
     id: arm_2
-    name: "$systemName Partition 2 Armed"    
+    name: "Partition 2 Armed"    
 
     #panel trouble status on/off
   - platform: template
     id: tr
-    name: "$systemName Trouble Status"
+    name: "Trouble Status"
     device_class: problem
     
     #battery status ok/low
   - platform: template
     id: bat
-    name: "$systemName Battery Status"
+    name: "Battery Status"
     device_class: problem
 
     #AC power status ok/no power
   - platform: template
     id: ac
-    name: "$systemName AC Status"
+    name: "AC Status"
     device_class: plug
     
     #fire alarm on/off
   - platform: template
     id: f1
     device_class: smoke
-    name: "$systemName Fire partition 1 Status"
+    name: "Fire partition 1 Status"
     
     #fire alarm on/off
   - platform: template
     id: f2
     device_class: smoke
-    name: "$systemName Fire partition 2 Status"
+    name: "Fire partition 2 Status"
 
     #alarm on/off 
   - platform: template
     id: p1_alm
-    name: "$systemName partition 1 Alarm Status"
+    name: "partition 1 Alarm Status"
     
     #alarm on/off
   - platform: template
     id: p2_alm
-    name: "$systemName partition 2 Alarm Status"  
+    name: "partition 2 Alarm Status"  
   
 #relay PGM channels. Will show the state of the activate relay channel on/off
 #uncomment the name: field if you wish to see it in home assistant
   - platform: template
     id: r1
-    name: "$systemName PGM 1"
+    name: "PGM 1"
   - platform: template
     id: r2
-    name: "$systemName PGM 2"
+    name: "PGM 2"
   - platform: template
     id: r3
-    name: "$systemName PGM 3"
+    name: "PGM 3"
   - platform: template
     id: r4
-    name: "$systemName PGM 4"
+    name: "PGM 4"
   - platform: template
     id: r5
-    #name: "$systemName PGM 5"
+    #name: "PGM 5"
   - platform: template
     id: r6
-    #name: "$systemName PGM 6"
+    #name: "PGM 6"
   - platform: template
     id: r7
-    #name: "$systemName PGM 7"
+    #name: "PGM 7"
   - platform: template
     id: r8
-    #name: "$systemName PGM 8"
+    #name: "PGM 8"
   
     
 # this sensor below is optional - example use of pin d8 as a zone trigger pin for the emulated zone expander  
@@ -414,73 +397,73 @@ text_sensor:
     #general system status online/disconnected 
   - platform: template
     id: system_status
-    name: "$systemName System Status"
+    name: "System Status"
     icon: "mdi:shield"
     #battery level status for wireless channels, tamper , in alarm, etc for individual zones - future
   - platform: template
     id: zone_status
-    name: "$systemName zone status "
+    name: "zone status "
     icon: "mdi:shield"  
     # partition status ie read/unavailable, in alarm, etc
   - platform: template
     id: p1
-    name: "$systemName Partition 1 Status "
+    name: "Partition 1 Status "
     icon: "mdi:shield"
   - platform: template
     id: p2
-    name: "$systemName Partition 2 Status " # uncomment to show in home assistant.  
+    name: "Partition 2 Status " # uncomment to show in home assistant.  
     icon: "mdi:shield"  
     # more verbose message regarding the partition status. ie zones open, bypassed, etc
 
   - platform: template
     id: m1
-    name: "$systemName Partition 1 Msg "
+    name: "Partition 1 Msg "
     icon: "mdi:alert-box"
   - platform: template
     id: m2
-    name: "$systemName Partition 2 Msg " # uncomment to show in home assistant
+    name: "Partition 2 Msg " # uncomment to show in home assistant
     icon: "mdi:alert-box"
    
   - platform: template
     id: line1
-    name: "$systemName line1"
+    name: "line1"
     icon: "mdi:alert-box"
   - platform: template
     id: line2
-    name: "$systemName line2"
+    name: "line2"
     icon: "mdi:alert-box"  
   - platform: template
     id: line1_2
-    name: "$systemName line1 partition 2"
+    name: "line1 partition 2"
     icon: "mdi:alert-box"
   - platform: template
     id: line2_2
-    name: "$systemName line2 partition 2"
+    name: "line2 partition 2"
     icon: "mdi:alert-box" 
     
   - platform: template
     id: event
-    name: "$systemName event"
+    name: "event"
     icon: "mdi:alert-box"  
     
   - platform: template
     id: beeps
-    name: "$systemName beeps"
+    name: "beeps"
     icon: "mdi:alert-box" 
   - platform: template
     id: beeps_2
-    name: "$systemName partition 2 beeps"
+    name: "partition 2 beeps"
     icon: "mdi:alert-box"   
     
   - platform: template
     id: tr_msg
-    name: "$systemName Trouble Msg " # uncomment to show in home assistant
+    name: "Trouble Msg " # uncomment to show in home assistant
     icon: "mdi:alert-box"
         
 switch:
     #shows status of connection status to panel.  You can disconnect before upload using the switch.
   - platform: template
-    name: "$systemName Connection"
+    name: "Connection"
     id: connection_status_switch
     lambda: |-
       return dsc.keybusConnected;
@@ -495,6 +478,6 @@ switch:
     id: restart_switch
     
   - platform: safe_mode
-    name: "$systemName (Safe Mode)" 
+    name: "(Safe Mode)" 
     id: safe_restart    
 

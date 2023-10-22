@@ -29,8 +29,99 @@ using namespace esphome;
 #endif
 
 #define maxZonesDefault 32 //set to 64 if your system supports it
+#define maxRelays 8
 
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
+
+#if !defined(ARDUINO_MQTT)
+/*
+const std::string WHITESPACE = " \n\r\t\f\v";
+ 
+std::string ltrim(const std::string &s)
+{
+    size_t start = s.find_first_not_of(WHITESPACE);
+    return (start == std::string::npos) ? "" : s.substr(start);
+}
+ 
+std::string rtrim(const std::string &s)
+{
+    size_t end = s.find_last_not_of(WHITESPACE);
+    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+}
+ 
+std::string trim(const std::string &s) {
+    return rtrim(ltrim(s));
+}
+
+std::map<std::string,binary_sensor::BinarySensor *> binaryMap;
+std::map<std::string,binary_sensor::BinarySensor *>::iterator itb;
+
+std::map<std::string,text_sensor::TextSensor *> textMap;
+std::map<std::string,text_sensor::TextSensor *>::iterator itt;
+*/
+void publishBinaryState(std::string * str,bool open) {
+  // itb=binaryMap.find(*str);
+  // if (itb != binaryMap.end()) itb->second->publish_state(open);
+  std::vector<binary_sensor::BinarySensor *> bs = App.get_binary_sensors();
+  for (auto *obj : bs ) {
+    std::string name=obj->get_name();
+    if (name.find(*str) != std::string::npos){
+      obj->publish_state(open) ;
+      return;
+    }
+  }
+}
+    
+void publishTextState(std::string * str,std::string * text) {
+   
+   //itt=textMap.find(*str);
+  // if (itt != textMap.end()) itt->second->publish_state(*text);  
+ std::vector<text_sensor::TextSensor *> ts = App.get_text_sensors();
+ for (auto *obj : ts ) {
+   std::string name=obj->get_name();
+   if (name.find(*str) != std::string::npos ){
+    obj->publish_state(*text) ;
+    return;
+   }
+ }
+}
+
+/*
+void createSensorMapFromId() {
+ std::vector<text_sensor::TextSensor *> ts = App.get_text_sensors();
+ for (auto *obj : ts ) {
+   std::string name=obj->get_name();
+   //std::string id=obj->get_object_id();
+   int p=name.find(" id:");
+   if (p != std::string::npos ){
+        std::string s=trim(name.substr(p+4));       
+       // int pid=id.find("_id");       
+        textMap[s]=obj;
+        //name.erase(p);
+       // id.erase(pid);
+        //obj->set_name(name.c_str());
+        //obj->set_object_id(id.c_str());
+        
+   }
+ }
+  std::vector<binary_sensor::BinarySensor *> bs = App.get_binary_sensors();
+  for (auto *obj : bs ) {
+   std::string name=obj->get_name();
+  // std::string id=obj->get_object_id();
+   int p=name.find(" id:");
+   if (p != std::string::npos ){
+        std::string s=trim(name.substr(p+4));       
+       // int pid=id.find("_id");       
+        binaryMap[s]=obj;
+       // name.erase(p);
+       // id.erase(pid);
+        //obj->set_name(name.c_str());
+       // obj->set_object_id(id.c_str());
+   }
+  } 
+}
+*/
+#endif
 
 const char mm0[] PROGMEM = "Press # to exit";
 const char mm1[] PROGMEM = "Zone Bypass";
@@ -189,6 +280,8 @@ enum panelStatus {
   armStatus,
   chimeStatus
 };
+
+
 
 
 #if defined(ESPHOME_MQTT) && defined(ESP8266)
@@ -1424,6 +1517,8 @@ void update() override {
         if (firstrun) {
           beepsCallback("0", partition + 1);
           partitionStatus[partition].chime=0;
+          for (int x=1;x<=maxRelays;x++) 
+               relayChannelChangeCallback(x, false);
         }
         if (dsc.disabled[partition]) continue;
         setStatus(partition, forceRefresh || dsc.status[partition]==0xEE || dsc.status[partition]==0xA0);
