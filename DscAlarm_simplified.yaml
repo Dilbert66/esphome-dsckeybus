@@ -1,9 +1,8 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 substitutions:
-  # change the name to suit your needs. This is what esphome will use as the friendly name for your component.
-  # also used as a prefix for all fields
-  systemName: "dscalarm" 
 
+  systemName: "dscalarm" 
+  
   #you can enter a list of user codes mapped to their names for display in armed/disarmed event messages
   userCodes: "1:John,2:Sally,3:Bob" #
   
@@ -47,10 +46,6 @@ esphome:
   #platform: ESP8266
   #board: nodemcuv2
 
-  platformio_options:
-    build_flags: 
-        - "-Wl,-Map,output.map"  
-  
   includes:
     # subdirectory path where custom component *.h and *.cpp files are located
     - dscKeybusInterface/
@@ -75,8 +70,7 @@ esphome:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  #use_address: 192.168.2.148
-  
+
   ap:
     ssid: "$systemName"
     password: !secret wifi_password
@@ -89,16 +83,6 @@ api:
    password: !secret api_password  
    encryption:
     key: !secret encryption_key
-
-#mqtt:
- # broker: 192.168.2.175
-  #port: 1883
-  #username: mqttuser
-  #password: mqttuser
-  #discovery_prefix: "homeassistant"
-  #ssl_fingerprints:
-   # - 0ce84a11a63779b30119724776ecf4703de083b5      
-   
 
 ota:
    password: !secret ota_password
@@ -117,12 +101,13 @@ time:
 
 
 ###########################################################################################################   
-# edit binary and text sensors below to suit your alarm setup. 
-# ensure that you add the sensor identifier code in round brackets at the end of the name: eg. (z1)
+# edit binary and text sensors below to suit your alarm setup.
+# you can safely add or remove any sensors as needed. 
+# ensure that you add the correct sensor identifier code in round brackets at the end of the sensor name: eg. (z1)
 
 binary_sensor:
 ### zone setup ###
-# zone status open/close for each zone 
+# open/close status for each zone 
 # zone id code = (z+zone number)  
   - platform: template
     name: "Front door (z1)"
@@ -261,7 +246,7 @@ text_sensor:
     icon: "mdi:shield"
 
 # battery level status for wireless channels, tamper , in alarm, etc for individual zones
-# zone status id code = (ss)    
+# zone status id code = (zs)    
   - platform: template
     name: "zone status (zs)"
     icon: "mdi:shield"  
@@ -314,7 +299,7 @@ text_sensor:
     icon: "mdi:alert-box" 
   
 # partition beeps
-#beeps id code = (bp_ + partition number)
+# beeps id code = (bp_ + partition number)
   - platform: template
     name: "beeps (bp_1)"
     icon: "mdi:alert-box" 
