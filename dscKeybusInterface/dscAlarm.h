@@ -1624,11 +1624,10 @@ void update() override {
           dsc.armedChanged[partition] = false; // Resets the partition armed status flag
 
           if (dsc.armed[partition] && !dsc.alarm[partition]) {
-        
+            clearZoneAlarms(partition + 1);
             panelStatusChangeCallback(armStatus, true, partition + 1);
             partitionStatus[partition].armed=true;
             if ((dsc.armedAway[partition] || dsc.armedStay[partition]) && dsc.noEntryDelay[partition]) { 
-    
               partitionStatusChangeCallback( String(FPSTR(STATUS_NIGHT)).c_str(), partition + 1);
               partitionStatus[partition].armedStay=false;   
               partitionStatus[partition].armedNight=true;
@@ -1636,16 +1635,13 @@ void update() override {
               partitionStatus[partition].exitdelay=false;  
             }
             else if (dsc.armedStay[partition] ) {
-   
               partitionStatusChangeCallback( String(FPSTR(STATUS_STAY)).c_str(), partition + 1);
               partitionStatus[partition].armedStay=true;   
               partitionStatus[partition].armedNight=false;
               partitionStatus[partition].armedAway=false;
               partitionStatus[partition].exitdelay=false;              
             } else {
-        
-                partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
-                clearZoneAlarms(partition + 1);
+               partitionStatusChangeCallback( String(FPSTR(STATUS_ARM)).c_str(), partition + 1);
               partitionStatus[partition].armedStay=false;   
               partitionStatus[partition].armedNight=false;
               partitionStatus[partition].armedAway=true;
