@@ -80,7 +80,7 @@ logger:
   level: DEBUG
 
 api:
-   password: !secret api_password  
+   #password: !secret api_password  
    encryption:
     key: !secret encryption_key
 
@@ -100,10 +100,11 @@ time:
  - platform: sntp
 
 
-###########################################################################################################   
-# edit binary and text sensors below to suit your alarm setup.
-# you can safely add or remove any sensors as needed. 
-# ensure that you add the correct sensor identifier code in round brackets at the end of the sensor name: eg. (z1)
+##########################################################################
+# Edit binary and text sensors below to suit your alarm setup.
+# You can safely add or remove any sensors as needed. 
+# Ensure that you add the correct sensor identifier code in round brackets 
+# at the end of the sensor name: eg. (z1)
 
 binary_sensor:
 ### zone setup ###
@@ -328,7 +329,7 @@ text_sensor:
      
 
  # end of panel sensor setup - no need to edit anything below.
-#########################################################################################################
+##############################################################################
   - platform: debug
     device:
       name: "Device Info"    
@@ -444,8 +445,4 @@ custom_component:
     return {DSCkeybus};
   components:
     - id: DSCComponent
-      
 
-
-
-  

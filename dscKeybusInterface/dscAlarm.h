@@ -1623,7 +1623,7 @@ void update() override {
         if (dsc.armedChanged[partition] || forceRefresh ) {
           dsc.armedChanged[partition] = false; // Resets the partition armed status flag
 
-          if (dsc.armed[partition]) {
+          if (dsc.armed[partition] && !dsc.alarm[partition]) {
         
             panelStatusChangeCallback(armStatus, true, partition + 1);
             partitionStatus[partition].armed=true;
@@ -1635,7 +1635,7 @@ void update() override {
               partitionStatus[partition].armedAway=false;
               partitionStatus[partition].exitdelay=false;  
             }
-            else if (dsc.armedStay[partition]) {
+            else if (dsc.armedStay[partition] ) {
    
               partitionStatusChangeCallback( String(FPSTR(STATUS_STAY)).c_str(), partition + 1);
               partitionStatus[partition].armedStay=true;   
@@ -1651,7 +1651,7 @@ void update() override {
               partitionStatus[partition].armedAway=true;
               partitionStatus[partition].exitdelay=false;
             }
-          } else if (!dsc.exitDelay[partition]) {
+          } else if (!dsc.exitDelay[partition] && !dsc.alarm[partition]) {
             if (!forceRefresh) {
                 clearZoneBypass(partition + 1);
             } 
@@ -1661,7 +1661,8 @@ void update() override {
               partitionStatus[partition].armedStay=false;   
               partitionStatus[partition].armedNight=false;
               partitionStatus[partition].armedAway=false;  
-              partitionStatus[partition].exitdelay=false;                
+              partitionStatus[partition].exitdelay=false;   
+              partitionStatus[partition].alarm=false;      
           }
         }
         // Publishes exit delay status
@@ -1695,7 +1696,8 @@ void update() override {
               partitionStatus[partition].armedStay=false;   
               partitionStatus[partition].armedNight=false;
               partitionStatus[partition].armedAway=false;
-              partitionStatus[partition].armed=false;              
+              partitionStatus[partition].armed=false;    
+              partitionStatus[partition].alarm=false;  
             }
             panelStatusChangeCallback(rdyStatus, false, partition + 1);
             partitionStatus[partition].ready=false;                
@@ -1747,32 +1749,6 @@ void update() override {
           }
         }
        }
-
-      // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
-      //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
-      //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
-      //   ...
-      //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64	
-
-      if (dsc.alarmZonesStatusChanged || forceRefresh) {
-        dsc.alarmZonesStatusChanged = false; // Resets the alarm zones status flag
-        for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
-          for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-
-            if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) { // Checks an individual alarm zone status flag
-              bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0); // Resets the individual alarm zone status flag
-              zone = zoneBit + (zoneGroup * 8);
-
-              if (zone >= maxZones ) continue;
-              if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
-                zoneStatus[zone].alarm = true;
-                // } else {
-                //  zoneStatus[zone].alarm = false;
-              }
-            }
-          }
-        }
-      }
 
       std::string zoneStatusMsg;
       zoneStatusMsg = "";
@@ -2059,6 +2035,7 @@ void update() override {
     case 0x3E:
       lcdLine1 = F("Disarmed     ");
       lcdLine2 = F(" ");
+      
       break;
     case 0x40:
       lcdLine1 = F("Keypad       ");
@@ -3189,8 +3166,8 @@ void update() override {
       lcdLine1 = F("Zone alarm");
       strcpy_P(lcdMessage, PSTR(" restored:"));
       byte zone = dsc.panelData[panelByte] - 40;
-       if (zone > 0 && zone < maxZones) 
-         zoneStatus[zone-1].alarm=false;      
+       //if (zone > 0 && zone < maxZones) 
+         //zoneStatus[zone-1].alarm=false;      
       itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
@@ -3199,7 +3176,7 @@ void update() override {
 
     if (dsc.panelData[panelByte] >= 0x56 && dsc.panelData[panelByte] <= 0x75) {
       strcpy_P(lcdMessage, PSTR("Zone tamper:"));
-      byte zone = dsc.panelData[panelByte] - 85;
+      byte zone = dsc.panelData[panelByte] - 0x55;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].tamper = true;
       itoa(zone, charBuffer, 10);
@@ -3212,7 +3189,7 @@ void update() override {
     if (dsc.panelData[panelByte] >= 0x76 && dsc.panelData[panelByte] <= 0x95) {
       lcdLine1 = F("Zone tamper");
       strcpy_P(lcdMessage, PSTR(" restored: "));
-      byte zone = dsc.panelData[panelByte] - 117;
+      byte zone = dsc.panelData[panelByte] - 0x75;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].tamper = false;
       itoa(zone, charBuffer, 10);
@@ -3786,10 +3763,10 @@ void update() override {
 
     if (dsc.panelData[panelByte] <= 0x1F) {
       strcpy_P(lcdMessage, PSTR("Zone alarm: "));
-      byte zone = dsc.panelData[panelByte] - 33;
+      byte zone = dsc.panelData[panelByte] + 33;
       if (zone > 0 && zone < maxZones)
         zoneStatus[zone - 1].alarm = true;
-      itoa(dsc.panelData[panelByte] + 33, charBuffer, 10);
+      itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine1 = lcdMessage;
       lcdLine2 = F(" ");
@@ -3797,10 +3774,10 @@ void update() override {
     } else if (dsc.panelData[panelByte] >= 0x20 && dsc.panelData[panelByte] <= 0x3F) {
       lcdLine1 = F("Zone alarm");
       strcpy_P(lcdMessage, PSTR(" rest: "));
-     // byte zone = dsc.panelData[panelByte] + 1;
+      byte zone = dsc.panelData[panelByte] + 1;
       //   if (zone > 0 && zone < maxZones) 
       //    zoneStatus[zone-1].alarm=false;      
-      itoa(dsc.panelData[panelByte] + 1, charBuffer, 10);
+      itoa(zone, charBuffer, 10);
       strcat(lcdMessage, charBuffer);
       lcdLine2 = lcdMessage;
       decoded = true;
