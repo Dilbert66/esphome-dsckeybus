@@ -330,9 +330,6 @@ text_sensor:
 
  # end of panel sensor setup - no need to edit anything below.
 ##############################################################################
-  - platform: debug
-    device:
-      name: "Device Info"    
 
 switch:
     #shows status of connection status to panel.  You can disconnect before upload using the switch.
