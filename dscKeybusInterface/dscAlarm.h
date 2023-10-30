@@ -557,12 +557,19 @@ void begin() {
     for (int p = 0; p<dscPartitions;p++) {
         partitionStatus[p].editIdx=0;
         partitionStatus[p].digits=0;
+        beepsCallback("0", p+1);    
+        partitionMsgChangeCallback("",p+1);
+        line1DisplayCallback("ESP Module Start", p+1);    
+        line2DisplayCallback("", p+1);
     }
     for (int x=0;x<dscZones;x++)
         programZones[x]=0;
 
     system1 = 0;
     system0 = 0;
+    troubleMsgStatusCallback("");
+    eventInfoCallback("ESP module start");  
+    zoneMsgStatusCallback("");
   }
  private:  
 std::string getUserName(char * code) {
@@ -1471,15 +1478,11 @@ void update() override {
       static unsigned long startWait = millis();
       if (millis() - startWait > 60000 && delayedStart) {
         delayedStart = false;
-        troubleMsgStatusCallback("");
         if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
           partitionStatus[defaultPartition-1].keyPressTime = millis();
           dsc.write("*21#7##", defaultPartition); //fetch panel troubles /zone module low battery
         }
-        for (byte partition = 1; partition <= dscPartitions; partition++) {
-          if (dsc.disabled[partition - 1]) continue;
-          beepsCallback("0", partition);
-        }
+
 #if defined(EXPANDER)          
        // dsc.clearZoneRanges(); // start with clear expanded zones
 #endif
