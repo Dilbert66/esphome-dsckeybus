@@ -1450,11 +1450,12 @@ void update() override {
       beepTime = millis();
 
     }
+    /*
     if (millis() - eventTime > 30000) {
       eventInfoCallback("");
       eventTime = millis();
     }
-    
+    */
  
     static unsigned long refreshTime;
     if (!firstrun && millis() - refreshTime > 60000 ) {
@@ -1468,7 +1469,7 @@ void update() override {
  
       static bool delayedStart = true;
       static unsigned long startWait = millis();
-      if (millis() - startWait > 30000 && delayedStart) {
+      if (millis() - startWait > 60000 && delayedStart) {
         delayedStart = false;
         troubleMsgStatusCallback("");
         if (!dsc.disabled[defaultPartition-1] && !partitionStatus[defaultPartition-1].locked) {
@@ -2543,7 +2544,6 @@ void update() override {
 
   // Processes status data not natively handled within the library
   void processStatus() {
-    #ifndef dscClassicSeries
     switch (dsc.panelData[0]) {
     case 0x0F:
     case 0x0A:
@@ -2645,8 +2645,7 @@ void update() override {
       processEventBufferEC();
       break;
     }
-    #endif
-  }
+   }
 
   void printPanelTone(byte panelByte) {
 
