@@ -31,15 +31,15 @@ dsc_alarm_panel:
   expanderaddr1: "0" # 1st zone expander emulator address to use . Set to 0 to disable. 
   expanderaddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
 
-  #ESP32 Pins
+  ##ESP32 Pins
   dscclockpin: "22"
   dscreadpin: "21"
   dscwritepin: "18"
   
-  #ESP8266 Pins
-  #dscClockPin: "5"
-  #dscReadPin: "4"
-  #dscWritePin: "15"  
+  ##ESP8266 Pins
+  #dscclockpin: "5"
+  #dscreadpin: "4"
+  #dscwritepin: "15"  
   
 
   clean_build: "false" #default is false.  set to true if getting duplication errors in linking step or first time install of this yaml file  
@@ -53,7 +53,6 @@ esp32:
 #esp8266:    
   #board: nodemcuv2
   #framework:
-    #type: arduino
     #version: recommended 
 
 #location of alarm panel code.  You can use the github release version  or 
