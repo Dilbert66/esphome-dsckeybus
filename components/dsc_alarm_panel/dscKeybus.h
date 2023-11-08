@@ -221,7 +221,8 @@ class dscKeybusInterface {
 
     //end expander
     static volatile pgmBufferType pgmBuffer;
-    bool keybusVersion1;    
+    bool keybusVersion1;  
+    bool validCRC();    
     
   private:
 
@@ -359,7 +360,7 @@ class dscKeybusInterface {
     bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
 #endif    
 
-    bool validCRC();
+
     void writeKeys(const char * writeKeysArray);
     static void dscClockInterrupt();
     static bool redundantPanelData(byte   previousCmd[], volatile byte   currentCmd[], byte checkedBytes = dscReadSize);

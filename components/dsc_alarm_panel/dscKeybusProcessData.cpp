@@ -454,7 +454,6 @@ void dscKeybusInterface::processPanel_0x6E() {
  *  pgmOutputs[0], Bit 0 = PGM 1 ... Bit 7 = PGM 8
  *  pgmOutputs[1], Bit 0 = PGM 9 ... Bit 5 = PGM 14
  */
- 
 void dscKeybusInterface::processPanel_0x87() {
   if (!validCRC()) return;
 

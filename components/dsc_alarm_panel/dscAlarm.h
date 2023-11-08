@@ -1,11 +1,14 @@
 //for project documenation visit https://github.com/Dilbert66/esphome-dsckeybus
 
-#ifndef _dscalarm_h
-#define _dscalarm_h
+#pragma once
 
 #if !defined(ARDUINO_MQTT)
 #include "esphome.h"
-using namespace esphome;
+#include "esphome/core/component.h"
+#include "esphome/core/application.h"
+#include "esphome/components/time/real_time_clock.h"
+#include "esphome/components/api/custom_api_device.h"
+
 #if defined(USE_MQTT)
 #define ESPHOME_MQTT
 #endif
@@ -32,96 +35,49 @@ using namespace esphome;
 #define maxRelays 8
 
 dscKeybusInterface dsc(dscClockPinDefault, dscReadPinDefault, dscWritePinDefault);
+namespace esphome {
+namespace alarm_panel {
 
 #if !defined(ARDUINO_MQTT)
-/*
-const std::string WHITESPACE = " \n\r\t\f\v";
- 
-std::string ltrim(const std::string &s)
-{
-    size_t start = s.find_first_not_of(WHITESPACE);
-    return (start == std::string::npos) ? "" : s.substr(start);
-}
- 
-std::string rtrim(const std::string &s)
-{
-    size_t end = s.find_last_not_of(WHITESPACE);
-    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
-}
- 
-std::string trim(const std::string &s) {
-    return rtrim(ltrim(s));
-}
-
-std::map<std::string,binary_sensor::BinarySensor *> binaryMap;
-std::map<std::string,binary_sensor::BinarySensor *>::iterator itb;
-
-std::map<std::string,text_sensor::TextSensor *> textMap;
-std::map<std::string,text_sensor::TextSensor *>::iterator itt;
-*/
-void publishBinaryState(std::string * str,bool open) {
-  // itb=binaryMap.find(*str);
-  // if (itb != binaryMap.end()) itb->second->publish_state(open);
+void publishBinaryState(const char * cstr,uint8_t partition,bool open) {
+  std::string str=cstr;
+  if (partition) str=str + std::to_string(partition);
   std::vector<binary_sensor::BinarySensor *> bs = App.get_binary_sensors();
   for (auto *obj : bs ) {
-    std::string name=obj->get_name();
-    if (name.find(*str) != std::string::npos){
+    std::string id=obj->get_type_id();
+    if (id.find(str) != std::string::npos){
       obj->publish_state(open) ;
-      return;
+      break;
+    } else {      
+        std::string name=obj->get_name();
+        if (name.find("(" + str + ")") != std::string::npos){
+            obj->publish_state(open) ;
+            break;;
+        }
     }
   }
 }
     
-void publishTextState(std::string * str,std::string * text) {
-   
-   //itt=textMap.find(*str);
-  // if (itt != textMap.end()) itt->second->publish_state(*text);  
+void publishTextState(const char * cstr,uint8_t partition,std::string * text) {
+  std::string str=cstr;
+  if (partition) str=str + std::to_string(partition);    
  std::vector<text_sensor::TextSensor *> ts = App.get_text_sensors();
  for (auto *obj : ts ) {
-   std::string name=obj->get_name();
-   if (name.find(*str) != std::string::npos ){
+   std::string id=obj->get_type_id();
+   if (id.find(str) != std::string::npos ){
     obj->publish_state(*text) ;
     return;
+   } else { 
+     std::string name=obj->get_name();
+     if (name.find("(" + str + ")") != std::string::npos ){
+        obj->publish_state(*text) ;
+        return;
+     }
    }
  }
 }
-
-/*
-void createSensorMapFromId() {
- std::vector<text_sensor::TextSensor *> ts = App.get_text_sensors();
- for (auto *obj : ts ) {
-   std::string name=obj->get_name();
-   //std::string id=obj->get_object_id();
-   int p=name.find(" id:");
-   if (p != std::string::npos ){
-        std::string s=trim(name.substr(p+4));       
-       // int pid=id.find("_id");       
-        textMap[s]=obj;
-        //name.erase(p);
-       // id.erase(pid);
-        //obj->set_name(name.c_str());
-        //obj->set_object_id(id.c_str());
-        
-   }
- }
-  std::vector<binary_sensor::BinarySensor *> bs = App.get_binary_sensors();
-  for (auto *obj : bs ) {
-   std::string name=obj->get_name();
-  // std::string id=obj->get_object_id();
-   int p=name.find(" id:");
-   if (p != std::string::npos ){
-        std::string s=trim(name.substr(p+4));       
-       // int pid=id.find("_id");       
-        binaryMap[s]=obj;
-       // name.erase(p);
-       // id.erase(pid);
-        //obj->set_name(name.c_str());
-       // obj->set_object_id(id.c_str());
-   }
-  } 
-}
-*/
 #endif
+
 
 const char mm0[] PROGMEM = "Press # to exit";
 const char mm1[] PROGMEM = "Zone Bypass";
@@ -285,15 +241,15 @@ enum panelStatus {
 
 
 #if defined(ESPHOME_MQTT) && defined(ESP8266)
-class DSCkeybushome: public CustomMQTTDevice, public Component { 
+class DSCkeybushome: public api::CustomMQTTDevice, public Component { 
 #elif defined(ESPHOME_MQTT) && defined(ESP32)
-class DSCkeybushome: public CustomMQTTDevice, public RealTimeClock {
+class DSCkeybushome: public api::CustomMQTTDevice, public time::RealTimeClock {
 #elif defined(ARDUINO_MQTT)
 class DSCkeybushome { 
 #elif defined(ESP32)
-class DSCkeybushome: public CustomAPIDevice, public RealTimeClock {
+class DSCkeybushome: public api::CustomAPIDevice, public time::RealTimeClock {
 #else
-class DSCkeybushome: public CustomAPIDevice, public Component {  
+class DSCkeybushome: public api::CustomAPIDevice, public Component {  
 #endif
   public: DSCkeybushome(byte dscClockPin = 0, byte dscReadPin = 0, byte dscWritePin = 0): dscClockPin(dscClockPin),
   dscReadPin(dscReadPin),
@@ -376,21 +332,30 @@ class DSCkeybushome: public CustomAPIDevice, public Component {
   }  
 #endif   
 
-  char expanderAddr1,
-  expanderAddr2,
-  expanderAddr3;
-  byte debug;
-  const char * accessCode;
-  const char * userCodes;
+  void set_accessCode(const char * ac) { accessCode=ac; }
+  void set_maxZones(int mz) {maxZones=mz;}
+  void set_userCodes(const char * uc) { userCodes=uc;}
+  void set_defaultPartition(uint8_t dp) {defaultPartition=dp;}  
+  void set_debug(uint8_t db) {debug=db;}  
+  void set_expanderAddr(uint8_t idx,uint8_t addr) { if (idx==1) expanderAddr1=addr; else if (idx==2) expanderAddr2=addr;}
+
+  int activePartition = 1;
   unsigned long cmdWaitTime;
   bool extendedBufferFlag=false;
   bool troubleFetch=false;
-  int defaultPartition = 1;
-  int activePartition = 1;
-  byte maxZones = maxZonesDefault;
+
+
 
   private: 
-
+  
+  byte debug;
+  const char * accessCode;
+  const char * userCodes;
+  byte maxZones = maxZonesDefault; 
+  int defaultPartition = 1;
+  
+  uint8_t expanderAddr1=0;
+  uint8_t expanderAddr2=0;
   uint8_t zone;
   byte dscClockPin,
   dscReadPin,
@@ -572,7 +537,7 @@ void begin() {
     zoneMsgStatusCallback("");
   }
  private:  
-std::string getUserName(char * code) {
+  std::string getUserName(char * code) {
   std::string name = code;
   
   if (userCodes  && *userCodes) {
@@ -4165,7 +4130,6 @@ if (showEvent)
   }  
 
 };
-#if !defined(ARDUINO_MQTT)
-DSCkeybushome * DSCkeybus;
-#endif
-#endif
+
+
+}}//namespaces
