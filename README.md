@@ -6,13 +6,13 @@ Using a heavily modified DSC keybus interface library from https://github.com/ta
 
 This library is designed around the "external components" feature of ESPHome (https://esphome.io/components/external_components.html).  The previous version of this library was using the older "custom components" feature which is being deprecated.  Using external components is a much better alternative and allows for much easier install and customization.
 
-To install first copy the DscAlarm.yaml file from here to your esphome directory. You can then edit it either directly or using the ESPHome dashboard to match your alarm panel setup.  The yaml is self explanatory.  Secondly, for the main library support code you have two choices:
+To install, first copy the DscAlarm.yaml file from here to your esphome directory. You can then edit it either directly or using the ESPHome dashboard to match your alarm panel setup.  The yaml is self explanatory.  Secondly, for the main library support code installation you have two choices:
 
- 1: You can leave the yaml external_components source line uncommented and it will automatically fetch the required code from my esphome-components repository.  
+ 1: You can leave the yaml external_components source line uncommented and it will automatically fetch the required code from my esphome-components repository during the compile.  
  
  or alternatively:
  
- 2: If you prefer a more manual approach, you can comment out the github source line and uncomment the source "my_components" line.  You will then need to create a matching my_components directory in your esphome home path.  Name it anything you like as long as it matches the source line in the yaml.  You then copy all content from the "components" directory located in repository https://github.com/Dilbert66/esphome-components/tree/main/ to this new directory.
+ 2: If you prefer a more manual approach, you can comment out the github source line and uncomment the source "my_components" line.  You will then need to create a matching my_components directory in your esphome home path.  Name it anything you like as long as it matches the source line in the yaml.  You then copy all content from the "components" directory located in repository https://github.com/Dilbert66/esphome-components/tree/main/ to this new directory. Please note that for any future updates, you will again need to manually copy the files from the components repository to your esphome folder.
 
 The following services are published to home assistant for use in various scripts.  Please note that you will also need to have a transistor on the green data line to give you write access to the bus as shown in the wiring diagram.
 
