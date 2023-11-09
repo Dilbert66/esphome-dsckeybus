@@ -315,10 +315,8 @@ view_bottom: true
 	
 ```	
 
-<<<<<<< HEAD
 ![dscinterface](https://user-images.githubusercontent.com/7193213/135171111-a1f723cf-43fc-4d4a-bdb9-61645630c7be.png)
 
-=======
 ## MQTT Support
 If you would like to use MQTT communications with Homeassistant or alternatively use ESPHOME with other platforms that can support MQTT, you can modify the configuration to use the MQTT protocol instead of the native HA API integration.  This simply involves the addtion of an mqtt: configuration section in the yaml and to remove the api: section.   Please see the ESPHOME MQTT documentation more details: https://esphome.io/components/mqtt.html .  For an example on how to configure the alarm-panel-card to use MQTT services, please see the lovelace.yaml file.  
 
@@ -344,9 +342,6 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 ## Alternative ground isolated version
 ![image](https://user-images.githubusercontent.com/7193213/193299293-5ac6c36c-e589-4857-8854-33118530fee5.png)
 
-<<<<<<< HEAD
-
-=======
 * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: GPIO5, GPIO4 and GPIO15.
 * esp32: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: GPIO22, GPIO21 and GPIO18.
   Note: You can use a Wemos D1 Mini PRO (ESP32) with the same foot print as an original esp8266 based d1 mini. In that case use pins GPIO22,GPIO21 and GPIO5
