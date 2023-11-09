@@ -116,11 +116,6 @@ ota:
    on_begin:
        switch.turn_off: connection_status_switch   
    
-status_led:
-  pin:
-    number: GPIO2
-    inverted: no
-  
 time:
  - platform: sntp
 
