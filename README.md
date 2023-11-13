@@ -337,7 +337,6 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 ![image](https://user-images.githubusercontent.com/7193213/193299136-eb453cc3-6b2b-4224-a018-fefc0edb01b1.png)
 ### Non-isolated simple version	
 ![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
->>>>>>> 3f94996fb2b669e0c49316cbca196b5121f8c244
 
 ## Alternative ground isolated version
 ![image](https://user-images.githubusercontent.com/7193213/193299293-5ac6c36c-e589-4857-8854-33118530fee5.png)
@@ -349,7 +348,6 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 * Write access to the Keybus requires an NPN transistor and a resistor.  Most small signal NPN transistors should be suitable.
 * When powering the ESP from an external power supply such as USB (recommended) ensure you still connect the ground to the DSC panel if you are not using the isolated circuit version.
 	
->>>>>>> 3f94996fb2b669e0c49316cbca196b5121f8c244
 ## OTA updates
 In order to make OTA updates with an ESP8266, the connection switch in frontend must be switched to OFF since the DSC library is using interrupts. This is not normally necessary with an ESP32.
 
