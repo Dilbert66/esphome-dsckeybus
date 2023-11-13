@@ -39,10 +39,10 @@ dsc_alarm_panel:
   ##ESP8266 Pins
   #dscclockpin: "5"
   #dscreadpin: "4"
-  #dscwritepin: "15"  
+  #dscwritepin: "15" 
   
 
-  clean_build: "false" #default is false.  set to true if getting duplication errors in linking step or first time install of this yaml file  
+  clean_build: "false" #default is false.  set to true if getting duplication errors in linking step.  
 
 esp32: 
   board: nodemcu-32s
@@ -56,10 +56,10 @@ esp32:
     #version: recommended 
 
 #location of alarm panel code.  You can use the github release version  or 
-#copy the code to directory "my_components" in your main esphome directory     
-# see here for more info: https://esphome.io/components/external_components    
+#copy the code to directory "my_components" in your main esphome directory   
+# see here for more info: https://esphome.io/components/external_components       
 external_components:
-  - source: github://Dilbert66/esphome-components@dev #uncomment to use github repository
+  - source: github://Dilbert66/esphome-components@main #uncomment to use github repository
   #- source:  my_components #uncomment to use local directory 
     components: [dsc_alarm_panel,binary_sensor,text_sensor] 
     refresh: 10min
@@ -68,12 +68,12 @@ esphome:
   name: $name
   friendly_name: $friendlyName
 
+#output sympols to output.map for debugging. You can remove if not needed
   platformio_options:
     build_flags: 
         - "-Wl,-Map,output.map"  
-  
 
-#ESP32 only .  Syncs the time with the panel every 7200 seconds ( 2hours)
+#you can remove/disable this section if you don't want your panel time updated automatically  
 interval:
   - interval: 7200s
     then:
@@ -83,7 +83,6 @@ interval:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  #use_address: $name.local
   
   ap:
     ssid: "$name"
@@ -94,21 +93,23 @@ logger:
   level: DEBUG
 
 api:
-   #password: !secret api_password  
    encryption:
     key: !secret encryption_key
     
     
-#exmple mqtt setup. Replaces api
+#to use mqtt disable the api: section above. This enables you to use esphome with 
+#non homeassistant systems
+#modify the mqtt section to your needs
+#See: https://esphome.io/components/mqtt.html
+
 #mqtt:
- # broker: 192.168.2.175
+  #broker: 192.168.2.175
   #port: 1883
   #username: mqttuser
   #password: mqttuser
   #discovery_prefix: "homeassistant"
-  #ssl_fingerprints:
-   # - 0ce84a11a63779b30119724776ecf4703de083b5      
-   
+  #topic_prefix: $name
+ 
 
 ota:
    password: !secret ota_password
