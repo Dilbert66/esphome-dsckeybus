@@ -430,7 +430,7 @@ switch:
       - switch.toggle: restart_switch
     turn_off_action:
       - lambda: |-
-          alarm_panel::disconnectKeybus();
+          disconnectKeybus();
 
   - platform: restart
     id: restart_switch
