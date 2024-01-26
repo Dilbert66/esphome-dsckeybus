@@ -334,14 +334,11 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 Notes: You need to set the dscreadpin = to the dscwritepin in the yaml config.  eg: dscwritepin: 22, dscreadpin: 22, dscclockpin: 21
 This version uses a bidrectional read/write configuration for the green line. The yellow line is read only.
 
-### Isolated version
-![image](https://user-images.githubusercontent.com/7193213/193299136-eb453cc3-6b2b-4224-a018-fefc0edb01b1.png)
-### Non-isolated simple version	
+### Resistor divider version	
 ![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
 
-## Alternative ground isolated version
+## Optocoupler ground isolated version
 ![image](https://user-images.githubusercontent.com/7193213/193299293-5ac6c36c-e589-4857-8854-33118530fee5.png)
-
 
 * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: GPIO5, GPIO4 and GPIO15.
 * esp32: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: GPIO22, GPIO21 and GPIO18.
