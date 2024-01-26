@@ -313,8 +313,6 @@ view_bottom: true
 	
 ```	
 
-![dscinterface](https://user-images.githubusercontent.com/7193213/135171111-a1f723cf-43fc-4d4a-bdb9-61645630c7be.png)
-
 ## MQTT Support
 If you would like to use MQTT communications with Homeassistant or alternatively use ESPHOME with other platforms that can support MQTT, you can modify the configuration to use the MQTT protocol instead of the native HA API integration.  This simply involves the addtion of an mqtt: configuration section in the yaml and to remove the api: section.   Please see the ESPHOME MQTT documentation more details: https://esphome.io/components/mqtt.html .  For an example on how to configure the alarm-panel-card to use MQTT services, please see the lovelace.yaml file.  
 
@@ -331,6 +329,11 @@ Sensor data will follow the HA MQTT discovery format. See here for details: http
 If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino example sketch in the mqtt_example folder.  Follow the instructions at the top of the file.
 	
 ## Wiring
+### Mosfet level converter version - recommended
+![interface-mosfet](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/04cf2009-a31e-49c3-bcac-cd5b0f8a5b28)
+Notes: You need to set the dscreadpin = to the dscwritepin in the yaml config.  eg: dscwritepin: 22, dscreadpin: 22, dscclockpin: 21
+This version uses a bidrectional read/write configuration for the green line. The yellow line is read only.
+
 ### Isolated version
 ![image](https://user-images.githubusercontent.com/7193213/193299136-eb453cc3-6b2b-4224-a018-fefc0edb01b1.png)
 ### Non-isolated simple version	
