@@ -330,7 +330,7 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 	
 ## Wiring
 ### Mosfet level converter version - recommended
-![interface-mosfet](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/04cf2009-a31e-49c3-bcac-cd5b0f8a5b28)
+![image](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/f5a42dd6-c6b5-48aa-97eb-4ee51d001bcd)
 
 Notes: You need to set dscreadpin = dscwritepin in the yaml config.  eg: dscwritepin: 22, dscreadpin: 22, dscclockpin: 21
 This version uses a bidrectional read/write configuration for the green line. The yellow line is read only.
