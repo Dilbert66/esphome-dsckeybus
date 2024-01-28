@@ -332,7 +332,7 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 ### Mosfet level converter version - recommended
 ![image](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/60923dff-4837-431b-8a3d-7ff19c04bea9)
 
-Notes: You need to set dscreadpin = dscwritepin in the yaml config.  eg: dscwritepin: 22, dscreadpin: 22, dscclockpin: 21
+Notes: You need to set dscreadpin = dscwritepin in the yaml config.  eg: dscwritepin: 21, dscreadpin: 21, dscclockpin: 22
 This version uses a bidrectional read/write configuration for the green line. The yellow line is read only.
 
 ### Resistor divider version	
