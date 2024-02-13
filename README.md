@@ -334,6 +334,7 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 
 Notes: You need to set dscreadpin = dscwritepin in the yaml config.  eg: dscwritepin: 21, dscreadpin: 21, dscclockpin: 22
 This version uses a bidrectional read/write configuration for the green line. The yellow line is read only.
+Thanks to utmba95 for the design suggestion and testing.
 
 ### Resistor divider version	
 ![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
