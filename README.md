@@ -330,14 +330,17 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 	
 ## Wiring
 ### Mosfet level converter version - recommended
-![image](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/60923dff-4837-431b-8a3d-7ff19c04bea9)
+![image](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/46abd72b-fec5-4fc3-af86-cf55fbc81a26)
+
+
 
 Notes: You need to set dscreadpin = dscwritepin in the yaml config.  eg: dscwritepin: 21, dscreadpin: 21, dscclockpin: 22
 This version uses a bidrectional read/write configuration for the green line. The yellow line is read only.
 Thanks to utmba95 for the design suggestion and testing.
 
 ### Resistor divider version	
-![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
+![image](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/a91c331e-be00-4852-9092-06d7c95168db)
+
 
 Notes: Write access to the Keybus requires an NPN transistor and a resistor.  Most small signal NPN transistors should be suitable.
 
