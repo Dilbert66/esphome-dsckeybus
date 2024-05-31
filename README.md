@@ -355,4 +355,7 @@ In order to make OTA updates with an ESP8266, the connection switch in frontend 
 * Wiring and DSC library from https://github.com/taligentx/dscKeybusInterface
 * ESPHOME diy examples from https://esphome.io/guides/diy.html
 
+If you like this project and wish to supplement my coffee intake, please click the button below to donate! Thank you!
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/Dilbert66)
+
 
