@@ -360,8 +360,13 @@ Notes: Write access to the Keybus requires an NPN transistor and a resistor.  Mo
 ## OTA updates
 In order to make OTA updates with an ESP8266, the connection switch in frontend must be switched to OFF since the DSC library is using interrupts. This is not normally necessary with an ESP32.
 
+## Useful tools
+jpmeijers has generously provided a python script to allow getting the installer code from a DSC panel.  See the README and associated files in the extras\crack_installer_code folder
+
 ## References
 * ESPHOME yaml and component structure based on code from https://github.com/Margriko/Paradox-ESPHome
 * Wiring and DSC library from https://github.com/taligentx/dscKeybusInterface
 * ESPHOME diy examples from https://esphome.io/guides/diy.html
+* Thanks to jpmeijers for the unlock script
+* Also many thanks to the various people who have helped updating this library by testing and posting logs.
 
