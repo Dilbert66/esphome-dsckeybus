@@ -81,7 +81,7 @@ def main():
             break
 
         print("sending #*8")
-        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"#*8\",\"partition\":1}")
+        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##*8\",\"partition\":1}")
         if not wait_for_data():
             print("no response")
         else:
