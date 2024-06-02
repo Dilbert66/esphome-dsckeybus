@@ -194,7 +194,7 @@ alarm_control_panel:
 ```	 
 
 ## Custom Alarm Panel Card
-I've added a sample lovelace alarm-panel card copied from the repository at https://github.com/GalaxyGateway/HA-Cards. I've customized it to work with this ESP library's services.  To configure the card, just place the main script alarm-keypad-card.js and associated *.mp3 sound files into the /config/www directory of your homeassistant installation and add a new resource in your lovelace configuration pointing to /local/alarm-keypad-card.js?id=1. You can then configure the card as shown below. Just substitute your service name to your application. This is an example for using it in a multi partition environment where you can have separate distinct cards for each partition just by changing the services used and partition numbers.
+I've added a sample lovelace alarm-panel card copied from the repository at https://github.com/GalaxyGateway/HA-Cards. I've customized it to work with this ESP library's services.  To configure the card, just place the main script alarm-keypad-card.js and associated *.mp3 sound files from the ha_keypad_card folder into the /config/www directory of your homeassistant installation and add a new resource in your lovelace configuration pointing to /local/alarm-keypad-card.js?id=1. You can then configure the card as shown below. Just substitute your service name to your application. This is an example for using it in a multi partition environment where you can have separate distinct cards for each partition just by changing the services used and partition numbers.
 
 *** NOTE *** :  Every time you update this file, you will need to increase the id=xx number in the url by 1 in order to force the browser to reload it.
 
