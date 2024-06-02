@@ -1,0 +1,90 @@
+# Complete Home Assistant integration example when using the MQTT integration
+# Shows the followingh:
+#  - Alarm control panel with remote code validation for disarm only
+#  - Binary sensors, including AC and Batery Status
+#  - Zones 1, 17 - 19
+#  - Bypass for zones 17 - 19, only when disarmed
+mqtt:
+  alarm_control_panel:
+    - name: "AlarmPanel"
+      state_topic: "DSC/Get/Partition1/Status"
+      availability_topic: "DSC/Get/Status"
+      command_topic: "DSC/Set"
+      payload_disarm:   "D"
+      payload_arm_home: "S"
+      payload_arm_away: "A"
+      code: REMOTE_CODE
+      code_arm_required: false
+      code_disarm_required: true
+      code_trigger_required: false
+      command_template: >
+        {'state':'{{action}}','partition':1{% if code != None %},'code':'{{code}}'{% endif %}}
+  sensor:
+    - name: "AlarmMessage"
+      state_topic: "DSC/Get/Partition1/Message"
+      availability_topic: "DSC/Get/Status"
+      icon: "mdi:shield"
+  binary_sensor:
+    - name: "Trouble"
+      state_topic: "dsc/Get/Trouble"
+      device_class: "problem"
+      payload_on: "1"
+      payload_off: "0"
+    - name: "dscac"
+      state_topic: "DSC/Get/AC"
+      device_class: "power"
+    - name: "dscbattery"
+      state_topic: "DSC/Get/Battery"
+      device_class: "battery"
+    - name: "DscZone1"
+      state_topic: "DSC/Get/Zone1"
+      device_class: "occupancy"
+    - name: "DscZone17"
+      state_topic: "DSC/Get/Zone17"
+      device_class: "motion"
+    - name: "DscZone18"
+      state_topic: "DSC/Get/Zone18"
+      device_class: "motion"
+    - name: "DscZone19"
+      state_topic: "DSC/Get/Zone19"
+      device_class: "motion"
+  switch:
+    - name: "DSC Bypass 17"
+      availability:
+        - topic: "DSC/Get/Partition1/Status"
+          payload_available: "disarmed"
+          payload_not_available: "armed"
+          value_template: "{{ 'disarmed' if 'disarmed' in value else 'armed' }}"
+      state_topic: "DSC/Get/ZoneExtStatus"
+      command_topic: "DSC/Set"
+      state_on: "ON"
+      state_off: "OFF"
+      payload_on:  "{'keys':'*117#','partition':1}"
+      payload_off: "{'keys':'*117#','partition':1}"
+      value_template: "{{ 'ON' if 'BY:17' in value else 'OFF' }}"
+    - name: "DSC Bypass 18"
+      availability:
+        - topic: "DSC/Get/Partition1/Status"
+          payload_available: "disarmed"
+          payload_not_available: "armed"
+          value_template: "{{ 'disarmed' if 'disarmed' in value else 'armed' }}"
+      state_topic: "DSC/Get/ZoneExtStatus"
+      command_topic: "DSC/Set"
+      state_on: "ON"
+      state_off: "OFF"
+      payload_on:  "{'keys':'*118#','partition':1}"
+      payload_off: "{'keys':'*118#','partition':1}"
+      value_template: "{{ 'ON' if 'BY:18' in value else 'OFF' }}"
+    - name: "DSC Bypass 19"
+      availability:
+        - topic: "DSC/Get/Partition1/Status"
+          payload_available: "disarmed"
+          payload_not_available: "armed"
+          value_template: "{{ 'disarmed' if 'disarmed' in value else 'armed' }}"
+      state_topic: "DSC/Get/ZoneExtStatus"
+      command_topic: "DSC/Set"
+      state_on: "ON"
+      state_off: "OFF"
+      payload_on:  "{'keys':'*119#','partition':1}"
+      payload_off: "{'keys':'*119#','partition':1}"
+      value_template: "{{ 'ON' if 'BY:19' in value else 'OFF' }}"
