@@ -80,8 +80,8 @@ def main():
             print("!!! ALL CODES TESTED !!!")
             break
 
-        print("sending *8")
-        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"*8\",\"partition\":1}")
+        print("sending #*8")
+        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"#*8\",\"partition\":1}")
         if not wait_for_data():
             print("no response")
         else:
@@ -130,7 +130,7 @@ def main():
                 print("unknown response, retrying")
                 start_code = start_code - 1
                 user_data.clear()
-
+"""
         while len(user_data) == 0 or user_data[0] != b"03: Zones open":
             user_data.clear()
 
@@ -139,7 +139,7 @@ def main():
             if not wait_for_data():
                 break
             print(user_data[0])
-
+"""
         user_data.clear()
         time.sleep(delay)
 
