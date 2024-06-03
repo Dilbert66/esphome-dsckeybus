@@ -8,7 +8,7 @@ mqtt_username = "mqtt"
 mqtt_password = "xxxx"
 
 device_name = "dsc-alarm"  # could be "dscalarm"
-sensor_name = "/sensor/partition_1_msg__msg_1_/state"
+sensor_name = "/sensor/msg_partition_1/state"
 start_code = 0
 end_code = 9999
 delay = 0
