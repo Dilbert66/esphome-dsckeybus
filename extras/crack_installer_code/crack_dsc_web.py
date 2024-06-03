@@ -4,7 +4,6 @@ import requests
 import asyncio
 import aiohttp
 from aiosseclient import aiosseclient
-#import sseclient
 import json
 
 esp_host = "http://dscalarm.local"
@@ -31,16 +30,18 @@ async def maintask():
     global start_code       
     session=requests.Session()
     start_batch_time = time.time()    
-    session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##','partition':1})
-    await wait_for_data()
-    user_data.clear()     
+  
     while True:
         await asyncio.sleep(0)
         if start_code > end_code:
             print("!!! ALL CODES TESTED !!!")
             break
-
-        print("sending","#*8")
+            
+        session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##','partition':1})
+        await wait_for_data()
+        user_data.clear() 
+        
+        print("sending","*8")
         session.get(esp_host+"/alarm_panel/alarm_panel/set",params={'keys':'*8','partition':1})
         if not await wait_for_data():
             print("no response")
@@ -89,10 +90,7 @@ async def maintask():
                 print("unknown response, retrying")
                 start_code = start_code - 1
                 user_data.clear()
-                
-        session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##','partition':1})
-        await wait_for_data()
-        user_data.clear()                
+               
         await asyncio.sleep(delay)
 
 """        
