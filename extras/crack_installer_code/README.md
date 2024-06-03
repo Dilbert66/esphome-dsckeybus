@@ -41,6 +41,12 @@ web_server:
   config_url: https://dilbert66.github.io/config_files/config_dsc.yml
   js_url: https://dilbert66.github.io/js_files/www.js
 
+Also make sure that you have this entry in your yaml text_sensor: section:
+
+# partition message id code = (msg_ + partition number) 
+  - platform: template_alarm
+    id: msg_1
+    name: "Partition 1 Msg (msg_1)"
 
 This script is best run in a virtual environment, or open this folder in PyCharm.
 It also runs fine in Windows's python environment.

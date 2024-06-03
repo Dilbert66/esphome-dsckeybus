@@ -8,10 +8,11 @@ from aiosseclient import aiosseclient
 import json
 
 esp_host = "http://dscalarm.local"
-sensor_id="text_sensor-partition_1_msg__msg_1_-msg_1"
+
 start_code = 0000
 end_code = 9999
 delay = 0
+sensor_id="msg_1"
 
 user_data = []
 
@@ -21,7 +22,7 @@ async def checkevents():
       if event.event=="state":
         try:
           d=json.loads(event.data)
-          if d['id']==sensor_id:
+          if ('id_code' in d and d['id_code']==sensor_id) or 'id' in d and d['id'] == sensor_id:
             user_data.append(d['value'])
         except json.JSONDecodeError as e:
           print ("data=" + event.data)
