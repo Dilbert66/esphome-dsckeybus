@@ -7,9 +7,9 @@ from aiosseclient import aiosseclient
 #import sseclient
 import json
 
-esp_host = "http://dscalarmc3.local"
+esp_host = "http://dscalarm.local"
 sensor_id="text_sensor-partition_1_msg__msg_1_-msg_1"
-start_code = 5550
+start_code = 0000
 end_code = 9999
 delay = 0
 
