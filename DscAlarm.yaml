@@ -63,15 +63,7 @@ external_components:
   #- source:  my_components #uncomment to use local directory 
     components: [dsc_alarm_panel,template_alarm] 
     refresh: 10min
-    
-    
-#web keypad component. Remove or comment if not needed
-# each included files will be downloaded automatically and compiled within the flash.  
-# there will be no need for internet access when running.
-#For www.js build details and source: https://github.com/Dilbert66/esphome-webserver-custom/tree/keypad
-#Component source: https://github.com/Dilbert66/esphome-components/tree/keypad/components/web_keypad
-### Note: this is an ESP32 only component. The esp8266 does not support the resources needed.
-   
+        
 esphome:
   name: $name
   friendly_name: $friendlyName
@@ -148,63 +140,63 @@ binary_sensor:
 # zone id code = z+zone number  
   - platform: template_alarm
     id: z1
-    name: "Front door (z1)"
+    name: "Front door z1"
     device_class: door
 
   - platform: template_alarm
     id: z2
-    name: "Garage door (z2)"
+    name: "Garage door z2"
     device_class: door
       
 
   - platform: template_alarm
     id: z3  
-    name: "Back door (z3)"
+    name: "Back door z3"
     device_class: door
 
   - platform: template_alarm
     id: z4  
-    name: "Living room window (z4)"
+    name: "Living room window z4"
     device_class: window
    
   - platform: template_alarm
     id: z5
-    name: "Dining room window (z5)"
+    name: "Dining room window z5"
     device_class: window
       
   - platform: template_alarm
     id: z6
-    name: "Family room window LF (z6)"
+    name: "Family room window LF z6"
     device_class: window
       
   - platform: template_alarm
     id: z7  
-    name: "Family room window RF (z7)"
+    name: "Family room window RF z7"
     device_class: window
       
   - platform: template_alarm
     id: z8  
-    name: "Basement windows (z8)"
+    name: "Basement windows z8"
     device_class: window
      
   - platform: template_alarm
     id: z9
-    name: "Upstairs motion (z9)"
+    name: "Upstairs motion z9"
     device_class: motion
      
   - platform: template_alarm
     id: z10  
-    name: "Basement motion (z10)"
+    name: "Basement motion z10"
     device_class: motion
      
   - platform: template_alarm
     id: z11  
-    name: "Main floor motion (z11)"
+    name: "Main floor motion z11"
     device_class: motion
      
   - platform: template_alarm
     id: z17  
-    name: "Test sensor (z17)"
+    name: "Top floor motion z17"
     device_class: motion    
    
 ### non zone sensors ###
@@ -212,41 +204,41 @@ binary_sensor:
 # ready id code = rdy_ + partition number
   - platform: template_alarm
     id: rdy_1  
-    name: "Partition 1 Ready (rdy_1)"
+    name: "Ready partition 1"
      
   - platform: template_alarm
     id: rdy_2  
-    name: "Partition 2 Ready (rdy_2)"    
+    name: "Ready partition 2"    
      
 # partition arm indicators
 # arm id code = arm_ + partition number
   - platform: template_alarm
     id: arm_1  
-    name: "Partition 1 Armed (arm_1)"
+    name: "Armed partition 1"
      
   - platform: template_alarm
     id: arm_2  
-    name: "Partition 2 Armed (arm_2)"   
+    name: "Armed partition 2"   
       
 # panel trouble status indicator
 # trouble id code = tr
   - platform: template_alarm
     id: tr  
-    name: "Trouble Status (tr)"
+    name: "Trouble Status"
     device_class: problem
      
 # bat id code = bat
 # panel battery status indicator
   - platform: template_alarm
     id: bat  
-    name: "Battery Status (bat)"
+    name: "Battery Status"
     device_class: problem
      
 # ac id code = ac
 # panel AC power indicator
   - platform: template_alarm
     id: ac  
-    name: "AC Status (ac)"
+    name: "AC Status"
     device_class: plug
      
 # partition fire alarm indicators
@@ -254,90 +246,90 @@ binary_sensor:
   - platform: template_alarm
     id: fa_1  
     device_class: smoke
-    name: "Fire partition 1 Status (fa_1)"
+    name: "Fire Status partition 1"
        
   - platform: template_alarm
     id: fa_2  
     device_class: smoke
-    name: "Fire partition 2 Status (fa_2)"  
+    name: "Fire Status partition 2"  
 
 # partition in alarm indicators
 # alarm id code = al_ + partition number  
   - platform: template_alarm
     id: al_1  
-    name: "partition 1 Alarm Status (al_1)"
+    name: "Alarm Status partition 1"
      
   - platform: template_alarm
     id: al_2  
-    name: "partition 2 Alarm Status (al_2)"  
+    name: "Alarm Status partition 2"  
      
 # relay PGM channels. Will show the state of the activate relay channel on/off
 # relay id code = r + channel number
   - platform: template_alarm
     id: r1  
-    name: "PGM 1 (r1)"
+    name: "PGM 1"
 
   - platform: template_alarm
     id: r2  
-    name: "PGM 2 (r2)"
+    name: "PGM 2"
      
   - platform: template_alarm
     id: r3  
-    name: "PGM 3 (r3)"
+    name: "PGM 3"
      
   - platform: template_alarm
     id: r4  
-    name: "PGM 4 (r4)"
+    name: "PGM 4"
 
   #- platform: template_alarm
-  #  name: "PGM 5 (r5)"
+  #  name: "PGM 5"
 
   #- platform: template_alarm
-  #  name: "PGM 6 (r6)"
+  #  name: "PGM 6"
 
   #- platform: template_alarm
-  #  name: "PGM 7 (r7)"
+  #  name: "PGM 7"
 
   #- platform: template_alarm
-  #  name: "PGM 8 (r8)"
+  #  name: "PGM 8"
               
 text_sensor:
 # general system status online/disconnected 
 # system status id code = ss
   - platform: template_alarm
     id: ss  
-    name: "System Status (ss)"
+    name: "System Status"
     icon: "mdi:shield"
 
 # battery level status for wireless channels, tamper , in alarm, etc for individual zones
 # zone status id code = zs    
   - platform: template_alarm
     id: zs  
-    name: "zone status (zs)"
+    name: "Zone Status"
     icon: "mdi:shield"  
 
 # partition status ie ready/not ready, triggered, etc
 # partition status id code = ps_ + partition number   
   - platform: template_alarm
     id: ps_1  
-    name: "Partition 1 Status (ps_1)"
+    name: "Status partition 1"
     icon: "mdi:shield"
 
   - platform: template_alarm
     id: ps_2  
-    name: "Partition 2 Status (ps_2)" 
+    name: "Status partition 2" 
     icon: "mdi:shield"  
 
 # more verbose message regarding the partition status. ie zones open, bypassed, etc
 # partition message id code = msg_ + partition number    
   - platform: template_alarm
     id: msg_1  
-    name: "Partition 1 Msg (msg_1)"
+    name: "Msg partition 1"
     icon: "mdi:alert-box"
 
   - platform: template_alarm
     id: msg_2  
-    name: "Partition 2 Msg (msg_2)"
+    name: "Msg partition 2"
     icon: "mdi:alert-box"
 
 # virtual lcd keypad line1 and line2 messages for each partition   
@@ -346,49 +338,49 @@ text_sensor:
 # partition 1
   - platform: template_alarm
     id: ln1_1  
-    name: "line1 Partition 1 (ln1_1)"
+    name: "line1 partition 1"
     icon: "mdi:alert-box"
 
   - platform: template_alarm
     id: ln2_1  
-    name: "line2 Partition 1 (ln2_1)"
+    name: "line2 partition 1"
     icon: "mdi:alert-box"  
 
 # partition 2
   - platform: template_alarm
     id: ln1_2  
-    name: "line1 partition 2 (ln1_2)"
+    name: "line1 partition 2"
     icon: "mdi:alert-box"
 
   - platform: template_alarm
     id: ln2_2  
-    name: "line2 partition 2 (ln2_2)"
+    name: "line2 partition 2"
     icon: "mdi:alert-box" 
 
 # generic event messages from panel
 # panel event id code = evt
   - platform: template_alarm
     id: evt  
-    name: "event (evt)"
+    name: "event"
     icon: "mdi:alert-box" 
   
 # partition beeps
 # beeps id code = bp_ + partition number
   - platform: template_alarm
     id: bp_1  
-    name: "beeps (bp_1)"
+    name: "beeps partition 1"
     icon: "mdi:alert-box" 
 
   - platform: template_alarm
     id: bp_2  
-    name: "partition 2 beeps (bp_2)"
+    name: "beeps partition 2"
     icon: "mdi:alert-box"   
 
  # panel trouble messages  
  # panel msg id code = tr_msg
   - platform: template_alarm
     id: tr_msg  
-    name: "Trouble Msg (tr_msg)" 
+    name: "Trouble Msg" 
     icon: "mdi:alert-box"
 
 # this sensor below is optional - example use of pin d8 as a zone trigger pin for the emulated zone expander  
