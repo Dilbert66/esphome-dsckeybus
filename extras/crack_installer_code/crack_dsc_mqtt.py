@@ -8,7 +8,7 @@ mqtt_username = "mqtt"
 mqtt_password = "xxxx"
 
 device_name = "dsc-alarm"  # could be "dscalarm"
-
+sensor_name = "/sensor/partition_1_msg__msg_1_/state"
 start_code = 0
 end_code = 9999
 delay = 0
@@ -41,7 +41,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
         print(f"Failed to connect: {reason_code}. loop_forever() will retry connection")
     else:
-        client.subscribe(device_name + "/sensor/partition_1_msg__msg_1_/state")
+        client.subscribe(device_name + sensor_name)
 
 
 def wait_for_data(timeout=10):
@@ -71,6 +71,8 @@ def main():
     time.sleep(1)
     for msg in user_data:
         print(msg)
+    mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")
+    wait_for_data()           
     user_data.clear()
 
     start_batch_time = time.time()
@@ -81,7 +83,7 @@ def main():
             break
 
         print("sending #*8")
-        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##*8\",\"partition\":1}")
+        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"*8\",\"partition\":1}")
         if not wait_for_data():
             print("no response")
         else:
@@ -130,6 +132,11 @@ def main():
                 print("unknown response, retrying")
                 start_code = start_code - 1
                 user_data.clear()
+                
+        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")
+        wait_for_data()        
+        user_data.clear()
+        time.sleep(delay)                
 """
         while len(user_data) == 0 or user_data[0] != b"03: Zones open":
             user_data.clear()
@@ -139,9 +146,10 @@ def main():
             if not wait_for_data():
                 break
             print(user_data[0])
-"""
+
         user_data.clear()
         time.sleep(delay)
+"""       
 
     mqttc.loop_stop()
 
