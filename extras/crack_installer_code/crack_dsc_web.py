@@ -68,9 +68,9 @@ async def maintask():
             if user_data[0] == "E4: Installer menu":
                 print("!!!! CODE FOUND !!!!")
                 print("====    " + test_code + "    ====")
-                session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##','partition':1})
                 global end_run
-                end_run=True
+                end_run=True                
+                session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##','partition':1})
                 break
 
             if user_data[0] == "8F: Invalid code":

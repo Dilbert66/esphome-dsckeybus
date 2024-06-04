@@ -7,8 +7,8 @@ mqtt_port = 1883
 mqtt_username = "mqtt"
 mqtt_password = "xxxx"
 
-device_name = "dsc-alarm"  # could be "dscalarm"
-sensor_name = "/sensor/msg_partition_1/state"
+device_name = "dscalarm"  # Whatever name you gave it in your yaml
+sensor_name = "/sensor/msg_partition_1/state" 
 start_code = 0
 end_code = 9999
 delay = 0
@@ -108,6 +108,7 @@ def main():
             if user_data[0] == b"E4: Installer menu":
                 print("!!!! CODE FOUND !!!!")
                 print("====    " + test_code + "    ====")
+                mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")                
                 break
 
             if user_data[0] == b"8F: Invalid code":
