@@ -14,7 +14,7 @@ delay = 0
 sensor_id="msg_1"
 
 user_data = []
-endRun=False
+end_run=False
 
 async def checkevents():
     async for event in aiosseclient(esp_host + "/events"):
@@ -22,11 +22,11 @@ async def checkevents():
       if event.event=="state":
         try:
           d=json.loads(event.data)
-          if ('id_code' in d and d['id_code']==sensor_id) or 'id' in d and d['id'] == sensor_id:
+          if ('id_code' in d and d['id_code']==sensor_id) or ('id' in d and d['id'] == sensor_id):
             user_data.append(d['value'])
         except json.JSONDecodeError as e:
           print ("data=" + event.data)
-      if endRun: 
+      if end_run: 
           break
           
 async def maintask():   
@@ -69,6 +69,8 @@ async def maintask():
                 print("!!!! CODE FOUND !!!!")
                 print("====    " + test_code + "    ====")
                 session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##','partition':1})
+                global end_run
+                end_run=True
                 break
 
             if user_data[0] == "8F: Invalid code":
@@ -95,8 +97,6 @@ async def maintask():
                 user_data.clear()
                
         await asyncio.sleep(delay)
-    global endRun
-    endRun=True
     
 """        
         while len(user_data) == 0 or user_data[0] != "03: Zones open" or user_data[0] != "01: Ready":
@@ -107,7 +107,6 @@ async def maintask():
                 break
             print(user_data[0])                
 """    
-
 
 async def wait_for_data(timeout=10):
     start_time = time.time()
