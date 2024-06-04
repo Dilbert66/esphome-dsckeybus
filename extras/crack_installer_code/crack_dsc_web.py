@@ -14,6 +14,7 @@ delay = 0
 sensor_id="msg_1"
 
 user_data = []
+endRun=False
 
 async def checkevents():
     async for event in aiosseclient(esp_host + "/events"):
@@ -25,6 +26,8 @@ async def checkevents():
             user_data.append(d['value'])
         except json.JSONDecodeError as e:
           print ("data=" + event.data)
+      if endRun: 
+          break
           
 async def maintask():   
     global start_code       
@@ -92,7 +95,9 @@ async def maintask():
                 user_data.clear()
                
         await asyncio.sleep(delay)
-
+    global endRun
+    endRun=True
+    
 """        
         while len(user_data) == 0 or user_data[0] != "03: Zones open" or user_data[0] != "01: Ready":
             user_data.clear()
@@ -115,9 +120,5 @@ async def wait_for_data(timeout=10):
 async def main():
     await asyncio.gather(checkevents(),maintask());
    
-
-
-
-
 if __name__ == '__main__':
     asyncio.run(main())
