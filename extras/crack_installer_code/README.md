@@ -30,8 +30,10 @@ Use these entries in your yaml config file to set it up:
 
 external_components:
   - source: github://Dilbert66/esphome-components@dev 
-    components: [dsc_alarm_panel,template_alarm,web_server] 
+    components: [dsc_alarm_panel,template_alarm,web_server,mg_lib] 
     refresh: 10s
+
+mg_lib:
 
 web_server:
   port: 80  
