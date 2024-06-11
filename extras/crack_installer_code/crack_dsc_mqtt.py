@@ -4,12 +4,12 @@ import paho.mqtt.client as mqtt
 
 mqtt_host = "192.168.1.xx"
 mqtt_port = 1883
-mqtt_username = "mqtt"
-mqtt_password = "xxxx"
+mqtt_username = "mqttuser"
+mqtt_password = "mqttpass"
 
-device_name = "dscalarm"  # Whatever name you gave it in your yaml
-sensor_name = "/sensor/msg_partition_1/state" 
-start_code = 0
+device_name = "dscalarm"  # What you called your device in your yaml
+sensor_name = "/sensor/msg_partition_1/state"
+start_code = 0000
 end_code = 9999
 delay = 0
 
@@ -41,13 +41,13 @@ def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
         print(f"Failed to connect: {reason_code}. loop_forever() will retry connection")
     else:
-        client.subscribe(device_name + sensor_name)
+        client.subscribe(device_name + sensor_name )
 
 
 def wait_for_data(timeout=10):
     start_time = time.time()
     while start_time + timeout > time.time():
-        time.sleep(0.01)
+        time.sleep(0.001)
         if len(user_data) > 0:
             return True
     return False
@@ -69,11 +69,6 @@ def main():
     mqttc.loop_start()
 
     time.sleep(1)
-    for msg in user_data:
-        print(msg)
-    mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")
-    wait_for_data()           
-    user_data.clear()
 
     start_batch_time = time.time()
 
@@ -82,15 +77,27 @@ def main():
             print("!!! ALL CODES TESTED !!!")
             break
 
-        print("sending #*8")
-        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"*8\",\"partition\":1}")
+        print("sending ##*8")
+        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##*8\",\"partition\":1}")
         if not wait_for_data():
             print("no response")
-        else:
-            print(user_data[0])
-
-        if len(user_data) != 0 and user_data[0] == b"B7: Installer code":
-            user_data.clear()
+            continue
+                
+        x=user_data.pop(0)
+        
+        if (x == b"03: Zones open" or x== b"01: Ready"):
+            if (len(user_data) > 0):
+                x=user_data.pop(0)
+            else:
+                wait_for_data()
+                if len(user_data) > 0:
+                    x=user_data.pop(0)
+                else:
+                    continue
+        print (x) 
+        
+        
+        if x == b"B7: Installer code":
 
             test_code = '{num:04d}'.format(num=start_code)
             start_code = start_code + 1
@@ -100,22 +107,22 @@ def main():
             if not wait_for_data():
                 break
 
-            print(user_data[0])
+            x=user_data.pop(0)                
+            print(x)
             # Log code and result to a file
             with open("codes.txt", 'a') as file1:
-                file1.write(test_code + "\t" + str(user_data[0]) + "\n")
+                file1.write(test_code + "\t" + str(x) + "\n")
 
-            if user_data[0] == b"E4: Installer menu":
+            if x == b"E4: Installer menu":
                 print("!!!! CODE FOUND !!!!")
                 print("====    " + test_code + "    ====")
                 mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")                
                 break
 
-            if user_data[0] == b"8F: Invalid code":
+            if x == b"8F: Invalid code":
                 # Expected response for invalid code, so continue
-                user_data.clear()                 
                 pass
-            elif user_data[0] == b"10: Keypad lockout":
+            elif x == b"10: Keypad lockout":
                 # Lockout, wait for it to clear
                 print("Keypad lockout, waiting to clear")
                 user_data.clear()
@@ -132,23 +139,12 @@ def main():
                     continue
             else:
                 print("unknown response, retrying")
-                print(user_data[0])                  
+                print(x)                  
                 start_code = start_code - 1
-                user_data.clear()
                 
-            
-        while len(user_data) == 0 or user_data[0] != "03: Zones open" or user_data[0] != "01: Ready":
-            user_data.clear()
-            print("sending ##")
-            mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")
-            if wait_for_data():
-                if user_data[0] == b"03: Zones open" or user_data[0] == b"01: Ready":
-                   user_data.clear()
-                   break
-                else:
-                   print(user_data[0])  
-               
-        time.sleep(delay) 
+        time.sleep(delay)              
+        
+
 
     mqttc.loop_stop()
 

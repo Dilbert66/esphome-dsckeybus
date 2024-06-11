@@ -16,6 +16,14 @@ sensor_id="msg_1"
 user_data = []
 end_run=False
 
+async def wait_for_data(timeout=10):
+    start_time = time.time()
+    while start_time + timeout > time.time():
+        await asyncio.sleep(0.001)
+        if len(user_data) > 0:
+            return True
+    return False
+
 async def checkevents():
     async for event in aiosseclient(esp_host + "/events"):
       await asyncio.sleep(0)
@@ -29,30 +37,36 @@ async def checkevents():
       if end_run: 
           break
           
+          
 async def maintask():   
     global start_code       
     session=requests.Session()
     start_batch_time = time.time()    
-  
+    
     while True:
         await asyncio.sleep(0)
         if start_code > end_code:
             print("!!! ALL CODES TESTED !!!")
             break
             
-        session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##','partition':1})
-        await wait_for_data()
-        user_data.clear() 
-        
-        print("sending","*8")
-        session.get(esp_host+"/alarm_panel/alarm_panel/set",params={'keys':'*8','partition':1})
+        print("sending","##*8")
+        session.get(esp_host+"/alarm_panel/alarm_panel/set",params={'keys':'##*8','partition':1})
         if not await wait_for_data():
             print("no response")
-        else:
-            print(user_data[0])
+            continue
         
-        if len(user_data) != 0 and user_data[0] == "B7: Installer code":
-            user_data.clear()        
+        x=user_data.pop(0)
+        if (x == "03: Zones open" or x== "01: Ready"):
+            if (len(user_data) > 0):
+                x=user_data.pop(0)
+            else:
+                await wait_for_data()
+                if len(user_data) > 0:
+                    x=user_data.pop(0)
+                else:
+                    continue
+        print (x)    
+        if  x == "B7: Installer code":
             test_code = '{num:4d}'.format(num=start_code)
             start_code = start_code + 1
 
@@ -60,12 +74,13 @@ async def maintask():
             session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':test_code,'partition':1})
             if not await wait_for_data():
                 break
-            print(user_data[0])
+            x=user_data.pop(0)                
+            print(x)
             # Log code and result to a file
             with open("codes.txt", 'a') as file1:
-                file1.write(test_code + "\t" + user_data[0] + "\n")
+                file1.write(test_code + "\t" + x + "\n")
 
-            if user_data[0] == "E4: Installer menu":
+            if x == "E4: Installer menu":
                 print("!!!! CODE FOUND !!!!")
                 print("====    " + test_code + "    ====")
                 global end_run
@@ -73,11 +88,10 @@ async def maintask():
                 session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##','partition':1})
                 break
 
-            if user_data[0] == "8F: Invalid code":
+            if x == "8F: Invalid code":
                 # Expected response for invalid code, so continue
-                user_data.clear()                  
                 pass
-            elif user_data[0] == "10: Keypad lockout":
+            elif x == "10: Keypad lockout":
                 # Lockout, wait for it to clear
                 print("Keypad lockout, waiting to clear")
                 user_data.clear()
@@ -94,31 +108,15 @@ async def maintask():
                     continue
             else:
                 print("unknown response, retrying")
-                print(user_data[0])                
+                print(x)  
                 start_code = start_code - 1
-                user_data.clear()
-               
-        while len(user_data) == 0 or user_data[0] != "03: Zones open" or user_data[0] != "01: Ready":
-            user_data.clear()
-            print("sending ##")
-            session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##'})
-            if await wait_for_data():
-                if user_data[0] == "03: Zones open" or user_data[0] == "01: Ready":
-                   user_data.clear()
-                   break
-                   
-        await asyncio.sleep(delay)    
-
-async def wait_for_data(timeout=10):
-    start_time = time.time()
-    while start_time + timeout > time.time():
-        await asyncio.sleep(0.001)
-        if len(user_data) > 0:
-            return True
-    return False
+  
+        await asyncio.sleep(delay)
+      
 
 async def main():
     await asyncio.gather(checkevents(),maintask());
-   
+
+
 if __name__ == '__main__':
     asyncio.run(main())
