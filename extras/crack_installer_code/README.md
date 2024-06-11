@@ -1,61 +1,65 @@
 # Crack Installer Code
 
-There are now 2 versions of this code. One that works using MQTT and the other using the built ESPHOME web_server component on the ESP.
+There are now 2 versions of this code. One that works using MQTT and the other using the Esphome web_server component on an ESP32.
 
 MQTT version: 
 
 This Python script does a brute force attack to try and find the installer code. 
 The ESP32 needs to be set up to use MQTT, as this script uses MQTT to send and receive messages via the ESP32.
 
-This script can run on any computer with access to Home Assistant's MQTT broker.
-This script is best run in a virtual environment, or open this folder in PyCharm.
-It also runs fine in Windows's python environment.
-After cloning or downloading this repo, switch to the `Crack_Installer_Code` directory and run `python3 -m venv .venv`, 
-then activate the environment with `source .venv/bin/activate`
-The only dependency of this script is `paho-mqtt`. You can do a `pip -i requirements.txt` to install it.
+Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
 
-At the top of `crack_dsc_mqtt.py` change the MQTT credentials to use you Home Assistant MQTT instance. 
-Change the `device_name` to the ESPHome device's name.
-You can configure a start and end code for the range of codes to test. This is useful if you want to stop and restart later.
+The is one dependency for this script which is the `paho-mqtt` module.
+You can install it with the pip command `pip3 install paho-mqtt`.
 
-On my alarm I was able to test 10 codes every 120 seconds. That means going through the whole 0000 to 9999 range will take quite a few hours.
-The reason for this is the keypad lockout that happens when too many invalid codes are entered. 
-After waiting for the remainder of the 2 minutes, the lockout is cleared an one can continue the attack.
+At the top of `crack_dsc_mqtt.py` change the MQTT credentials and address to use for your Home Assistant MQTT instance.  Also change the `device_name` to the ESPHome device's name.
 
-Web API version:
+You can also configure a start and end code for the range of codes to test. This is useful if you want to stop and restart later.
 
-The ESP32 needs to have the custom web_server component installed from the repository github://Dilbert66/esphome-components@dev, as this script uses the REST API of this component.
+The system should be able to complete the full sequence of 10000 numbers in a few hours. 
 
-Use these entries in your yaml config file to set it up:
+Simply run the script from the commmand line using "python crack_dsc_mqtt.py"
+
+
+Web API version (ESP32 only):
+If you don't use mqtt, I offer this version which uses the web_keypad module's REST api to talk to your DSC panel. It provides full standalone access to your ESP without the need for any external systems.
+
+You will first need to be using an ESP32 and be using the custom web_server component installed from the repository github://Dilbert66/esphome-components@dev. Have a look at the example DSCAlarm.yaml file from that repository for more info.  The main changes needed are as noted below.
+
+Use these additional entries in your DSC yaml config file to set it up. Note the addition of "web_keypad and mg_lib components to the list:
 
 external_components:
   - source: github://Dilbert66/esphome-components@dev 
-    components: [dsc_alarm_panel,template_alarm,web_server,mg_lib] 
+    components: [dsc_alarm_panel,template_alarm,web_keypad,mg_lib] 
     refresh: 10s
 
 mg_lib:
 
+#default web server setup.
 web_server:
   port: 80  
   partitions: 1
   log: false
-  local: true
   config_url: https://dilbert66.github.io/config_files/config_dsc.yml
   js_url: https://dilbert66.github.io/js_files/www.js
 
-Also make sure that you have this entry in your yaml text_sensor: section:
+Also make sure that you also have this entry  (id: msg_1) in your yaml text_sensor: section:
 
 # partition message id code = (msg_ + partition number) 
   - platform: template_alarm
     id: msg_1
-    name: "Partition 1 Msg (msg_1)"
+    name: "Partition 1 Message"
 
-This script is best run in a virtual environment, or open this folder in PyCharm.
-It also runs fine in Windows's python environment.
-Simply run the crack_dsc_web.py from the commmand line.
-The only dependency of this script is `aiosseclient`. You can install it with `pip3 install aiosseclient`
+Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
 
-Change the `device_name` to the ESPHome device's name.
+The are 2 dependencies for this script. First is `aiosseclient` and the other is `aiohttp`.
+You can install them with `pip3 install aiosseclient` and `pip3 install aiohttp`
+
+Change the `device_name` at the top of the crack_dsc_web.py script to the ESPHome device's name.
 
 You can configure a start and end code for the range of codes to test. This is useful if you want to stop and restart later.
+
+The system should be able to complete the full sequence of 10000 numbers in a few hours. 
+
+Simply run the script from the commmand line using "python crack_dsc_web.py"
 
