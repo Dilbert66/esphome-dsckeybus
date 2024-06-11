@@ -113,6 +113,7 @@ def main():
 
             if user_data[0] == b"8F: Invalid code":
                 # Expected response for invalid code, so continue
+                user_data.clear()                 
                 pass
             elif user_data[0] == b"10: Keypad lockout":
                 # Lockout, wait for it to clear
@@ -131,26 +132,23 @@ def main():
                     continue
             else:
                 print("unknown response, retrying")
+                print(user_data[0])                  
                 start_code = start_code - 1
                 user_data.clear()
                 
-        mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")
-        wait_for_data()        
-        user_data.clear()
-        time.sleep(delay)                
-"""
-        while len(user_data) == 0 or user_data[0] != b"03: Zones open":
+            
+        while len(user_data) == 0 or user_data[0] != "03: Zones open" or user_data[0] != "01: Ready":
             user_data.clear()
-
             print("sending ##")
             mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")
-            if not wait_for_data():
-                break
-            print(user_data[0])
-
-        user_data.clear()
-        time.sleep(delay)
-"""       
+            if wait_for_data():
+                if user_data[0] == b"03: Zones open" or user_data[0] == b"01: Ready":
+                   user_data.clear()
+                   break
+                else:
+                   print(user_data[0])  
+               
+        time.sleep(delay) 
 
     mqttc.loop_stop()
 

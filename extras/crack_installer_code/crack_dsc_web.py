@@ -75,6 +75,7 @@ async def maintask():
 
             if user_data[0] == "8F: Invalid code":
                 # Expected response for invalid code, so continue
+                user_data.clear()                  
                 pass
             elif user_data[0] == "10: Keypad lockout":
                 # Lockout, wait for it to clear
@@ -93,20 +94,20 @@ async def maintask():
                     continue
             else:
                 print("unknown response, retrying")
+                print(user_data[0])                
                 start_code = start_code - 1
                 user_data.clear()
                
-        await asyncio.sleep(delay)
-    
-"""        
         while len(user_data) == 0 or user_data[0] != "03: Zones open" or user_data[0] != "01: Ready":
             user_data.clear()
             print("sending ##")
             session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':'##'})
-            if not await wait_for_data():
-                break
-            print(user_data[0])                
-"""    
+            if await wait_for_data():
+                if user_data[0] == "03: Zones open" or user_data[0] == "01: Ready":
+                   user_data.clear()
+                   break
+                   
+        await asyncio.sleep(delay)    
 
 async def wait_for_data(timeout=10):
     start_time = time.time()
