@@ -67,7 +67,7 @@ async def maintask():
                     continue
         print (x)    
         if  x == "B7: Installer code":
-            test_code = '{num:4d}'.format(num=start_code)
+            test_code = '{num:#04d}'.format(num=start_code)
             start_code = start_code + 1
 
             print("sending code:",test_code)

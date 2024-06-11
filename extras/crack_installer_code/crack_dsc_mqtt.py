@@ -99,10 +99,10 @@ def main():
         
         if x == b"B7: Installer code":
 
-            test_code = '{num:04d}'.format(num=start_code)
+            test_code = '{num:#04d}'.format(num=start_code)
             start_code = start_code + 1
 
-            print("sending code", test_code)
+            print("sending code:", test_code)
             mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"" + test_code + "\",\"partition\":1}")
             if not wait_for_data():
                 break
