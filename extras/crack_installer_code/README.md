@@ -1,6 +1,26 @@
 # Crack Installer Code
 
-There are now 2 versions of this code. One that works using MQTT and the other using the Esphome web_server component on an ESP32.
+There are 3 variations of this script. One that works using the ESPHOME API, one using ESPHOME MQTT and the other using the Esphome custom web_keypad component.
+
+ESPHOME API version:
+
+If using the esphome API, you can use version which uses the python aioesphomeapito library module to talk to your ESPHOME device. It provides full standalone access to your ESP without the need for any external systems.
+
+Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
+
+The is only one dependency for this script which is  `aioesphomeapito` .
+You can install it with `pip3 install aioesphomeapito`.
+
+Change the `device_address` at the top of the crack_dsc_api.py script to the ESPHome device's name.
+Change the `passkey` to your secret ESPHOME encryption key
+Change the `sensor_id` to the name of the sensor in your yaml used for partition messages (id: msg_1) (if you have changed it , otherwise leave as is)
+
+You can configure a start and end code for the range of codes to test. This is useful if you want to stop and restart later.
+
+The system should be able to complete the full sequence of 10000 numbers in a few hours. 
+
+Simply run the script from the commmand line using "python crack_dsc_api.py"
+
 
 MQTT version: 
 
@@ -19,6 +39,7 @@ You can also configure a start and end code for the range of codes to test. This
 The system should be able to complete the full sequence of 10000 numbers in a few hours. 
 
 Simply run the script from the commmand line using "python crack_dsc_mqtt.py"
+
 
 
 Web API version (ESP32 only):
