@@ -1,35 +1,35 @@
 # Crack Installer Code
 
-There are 3 variations of this script. One that works using the ESPHOME API, one using ESPHOME MQTT and the other using the Esphome custom web_keypad component.
+These Python scripts do a brute force attack to try and find the installer code on your DSC system.
+There are 3 variations of these scripts. One that works using the ESPHOME API, one using ESPHOME MQTT and the other using the Esphome custom web_keypad component.
 
 ESPHOME API version:
 
-If using the esphome API, you can use version which uses the python aioesphomeapito library module to talk to your ESPHOME device. It provides full standalone access to your ESP without the need for any external systems.
+If using the esphome API, you can run this version which uses the python 'aioesphomeapi' library module to talk to your ESPHOME device. 
 
 Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
 
-For a Linux install this script is best run in a virtual environment, or open this folder in PyCharm. After cloning or downloading this repo, switch to the Crack_Installer_Code directory and run python3 -m venv .venv, then activate the environment with source .venv/bin/activate 
+For a Linux install this script is best run in a virtual environment. After cloning or downloading this repo, switch to the Crack_Installer_Code directory and run python3 -m venv .venv, then activate the environment with source .venv/bin/activate 
 
-The is only one dependency for this script which is  `aioesphomeapito` .
-You can install it with `pip3 install aioesphomeapito`.
+There is only one dependency for this script which is  `aioesphomeapi` .
+You can install it with `pip3 install aioesphomeapi`.
 
 Change the `device_address` at the top of the crack_dsc_api.py script to the ESPHome device's name.
 Change the `passkey` to your secret ESPHOME encryption key
-Change the `sensor_id` to the name of the sensor in your yaml used for partition messages (id: msg_1) (if you have changed it , otherwise leave as is)
+Change the `sensor_id` to the name or object_id of the sensor in your yaml used for partition messages (id: msg_1) (only if you have changed it from the default , otherwise leave as is)
 
 You can configure a start and end code for the range of codes to test. This is useful if you want to stop and restart later.
 
 The system should be able to complete the full sequence of 10000 numbers in a few hours. 
 
-Simply run the script from the commmand line using "python crack_dsc_api.py"
+Simply run the script from the commmand line using "python3 crack_dsc_api.py"
 
 
 MQTT version: 
 
-This Python script does a brute force attack to try and find the installer code. 
 The ESP32 needs to be set up to use MQTT, as this script uses MQTT to send and receive messages via the ESP32.
 
-Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
+Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in the Windows python environment from here: https://www.python.org/downloads/windows/
 
 For a Linux install this script is best run in a virtual environment, or open this folder in PyCharm. After cloning or downloading this repo, switch to the Crack_Installer_Code directory and run python3 -m venv .venv, then activate the environment with source .venv/bin/activate 
 
@@ -42,12 +42,13 @@ You can also configure a start and end code for the range of codes to test. This
 
 The system should be able to complete the full sequence of 10000 numbers in a few hours. 
 
-Simply run the script from the commmand line using "python crack_dsc_mqtt.py"
+Simply run the script from the commmand line using "python3 crack_dsc_mqtt.py"
 
 
 
 Web API version (ESP32 only):
-If you don't use mqtt, I offer this version which uses the web_keypad module's REST api to talk to your DSC panel. It provides full standalone access to your ESP without the need for any external systems.
+
+If you don't use mqtt or the api, you can run this version which uses the web_keypad module's REST api to talk to your DSC panel. It provides full standalone access to your ESP without the need for any external systems.
 
 You will first need to be using an ESP32 and be using the custom web_server component installed from the repository github://Dilbert66/esphome-components@dev. Have a look at the example DSCAlarm.yaml file from that repository for more info.  The main changes needed are as noted below.
 
@@ -75,7 +76,7 @@ Also make sure that you also have this entry  (id: msg_1) in your yaml text_sens
     id: msg_1
     name: "Partition 1 Message"
 
-Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
+Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in the Windows python environment from here: https://www.python.org/downloads/windows/
 
 For a Linux install this script is best run in a virtual environment, or open this folder in PyCharm. After cloning or downloading this repo, switch to the Crack_Installer_Code directory and run python3 -m venv .venv, then activate the environment with source .venv/bin/activate 
 
@@ -88,5 +89,5 @@ You can configure a start and end code for the range of codes to test. This is u
 
 The system should be able to complete the full sequence of 10000 numbers in a few hours. 
 
-Simply run the script from the commmand line using "python crack_dsc_web.py"
+Simply run the script from the commmand line using "python3 crack_dsc_web.py"
 
