@@ -8,6 +8,8 @@ If using the esphome API, you can use version which uses the python aioesphomeap
 
 Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
 
+For a Linux install this script is best run in a virtual environment, or open this folder in PyCharm. After cloning or downloading this repo, switch to the Crack_Installer_Code directory and run python3 -m venv .venv, then activate the environment with source .venv/bin/activate 
+
 The is only one dependency for this script which is  `aioesphomeapito` .
 You can install it with `pip3 install aioesphomeapito`.
 
@@ -28,6 +30,8 @@ This Python script does a brute force attack to try and find the installer code.
 The ESP32 needs to be set up to use MQTT, as this script uses MQTT to send and receive messages via the ESP32.
 
 Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
+
+For a Linux install this script is best run in a virtual environment, or open this folder in PyCharm. After cloning or downloading this repo, switch to the Crack_Installer_Code directory and run python3 -m venv .venv, then activate the environment with source .venv/bin/activate 
 
 The is one dependency for this script which is the `paho-mqtt` module.
 You can install it with the pip command `pip3 install paho-mqtt`.
@@ -72,6 +76,8 @@ Also make sure that you also have this entry  (id: msg_1) in your yaml text_sens
     name: "Partition 1 Message"
 
 Just pick your favorite Python 3.x instance in Linux or Windows and run it. It runs fine in Windows's python environment from here: https://www.python.org/downloads/windows/
+
+For a Linux install this script is best run in a virtual environment, or open this folder in PyCharm. After cloning or downloading this repo, switch to the Crack_Installer_Code directory and run python3 -m venv .venv, then activate the environment with source .venv/bin/activate 
 
 The are 2 dependencies for this script. First is `aiosseclient` and the other is `aiohttp`.
 You can install them with `pip3 install aiosseclient` and `pip3 install aiohttp`
