@@ -59,11 +59,41 @@ esp32:
 #copy the code to directory "my_components" in your main esphome directory   
 # see here for more info: https://esphome.io/components/external_components       
 external_components:
-  - source: github://Dilbert66/esphome-components@dev #uncomment to use github repository
+  - source: github://Dilbert66/esphome-components@dev #uncomment to use github repository (dev branch selected)
   #- source:  my_components #uncomment to use local directory 
-    components: [dsc_alarm_panel,binary_sensor,text_sensor] 
+    components: [dsc_alarm_panel,template_alarm,web_keypad,mg_lib] 
     refresh: 10min
-        
+    
+    
+#web keypad component. Remove or comment if not needed
+# each included files will be downloaded automatically and compiled within the flash.  
+# there will be no need for internet access when running.
+#For www.js build details and source: https://github.com/Dilbert66/esphome-webserver-custom/tree/keypad
+#Component source: https://github.com/Dilbert66/esphome-components/tree/keypad/components/web_keypad
+### Note: this is an ESP32 only component. The esp8266 does not support the resources needed.
+
+mg-lib:
+
+web_keypad:
+  port: 80 
+  partitions: 1  # a keypad will be shown for each partition
+  log: false
+  auth:          #this section is optional. Enable if you need authentication/encryption
+    username: test
+    password: test
+    encryption: true  #set true to use AES256HMAC encryption/auth for sent keys and returned LCD messages
+                      #set to false to use Digest authentication - no encryption
+  config_url: https://dilbert66.github.io/config_files/config_dsc.yml  
+  js_url: https://dilbert66.github.io/js_files/www.js
+  ## If you prefer to use locally hosted compile time files comment the two lines above and uncomment below
+  #config_local: ./config_dsc.yml    
+  #js_local: ./www.js    
+  
+  ## custom function call to send keypresses if other than dsc/vista components are used. Parmeters are a string keys and int partition
+  #service_lambda: |- 
+      #$panelId->alarm_keypress_partition(keys,partition);      
+
+  
 esphome:
   name: $name
   friendly_name: $friendlyName
@@ -117,10 +147,11 @@ api:
   #discovery_prefix: "homeassistant"
   #topic_prefix: $name
  
+safe_mode: 
 
 ota:
    password: !secret ota_password
-   safe_mode: True
+   platform: esphome
    on_begin:
        switch.turn_off: connection_status_switch   
    
@@ -138,63 +169,63 @@ binary_sensor:
 ### zone setup ###
 # zone status open/close for each zone 
 # zone id code = z+zone number  
-  - platform: template
+  - platform: template_alarm
     id: z1
     name: "Front door z1"
     device_class: door
 
-  - platform: template
+  - platform: template_alarm
     id: z2
     name: "Garage door z2"
     device_class: door
       
 
-  - platform: template
+  - platform: template_alarm
     id: z3  
     name: "Back door z3"
     device_class: door
 
-  - platform: template
+  - platform: template_alarm
     id: z4  
     name: "Living room window z4"
     device_class: window
    
-  - platform: template
+  - platform: template_alarm
     id: z5
     name: "Dining room window z5"
     device_class: window
       
-  - platform: template
+  - platform: template_alarm
     id: z6
     name: "Family room window LF z6"
     device_class: window
       
-  - platform: template
+  - platform: template_alarm
     id: z7  
     name: "Family room window RF z7"
     device_class: window
       
-  - platform: template
+  - platform: template_alarm
     id: z8  
     name: "Basement windows z8"
     device_class: window
      
-  - platform: template
+  - platform: template_alarm
     id: z9
     name: "Upstairs motion z9"
     device_class: motion
      
-  - platform: template
+  - platform: template_alarm
     id: z10  
     name: "Basement motion z10"
     device_class: motion
      
-  - platform: template
+  - platform: template_alarm
     id: z11  
     name: "Main floor motion z11"
     device_class: motion
      
-  - platform: template
+  - platform: template_alarm
     id: z17  
     name: "Top floor motion z17"
     device_class: motion    
@@ -202,132 +233,132 @@ binary_sensor:
 ### non zone sensors ###
 # partition ready indicators
 # ready id code = rdy_ + partition number
-  - platform: template
+  - platform: template_alarm
     id: rdy_1  
     name: "Ready partition 1"
      
-  - platform: template
+  - platform: template_alarm
     id: rdy_2  
     name: "Ready partition 2"    
      
 # partition arm indicators
 # arm id code = arm_ + partition number
-  - platform: template
+  - platform: template_alarm
     id: arm_1  
     name: "Armed partition 1"
      
-  - platform: template
+  - platform: template_alarm
     id: arm_2  
     name: "Armed partition 2"   
       
 # panel trouble status indicator
 # trouble id code = tr
-  - platform: template
+  - platform: template_alarm
     id: tr  
     name: "Trouble Status"
     device_class: problem
      
 # bat id code = bat
 # panel battery status indicator
-  - platform: template
+  - platform: template_alarm
     id: bat  
     name: "Battery Status"
     device_class: problem
      
 # ac id code = ac
 # panel AC power indicator
-  - platform: template
+  - platform: template_alarm
     id: ac  
     name: "AC Status"
     device_class: plug
      
 # partition fire alarm indicators
 # fire id code = fa_ + partition number  
-  - platform: template
+  - platform: template_alarm
     id: fa_1  
     device_class: smoke
     name: "Fire Status partition 1"
        
-  - platform: template
+  - platform: template_alarm
     id: fa_2  
     device_class: smoke
     name: "Fire Status partition 2"  
 
 # partition in alarm indicators
 # alarm id code = al_ + partition number  
-  - platform: template
+  - platform: template_alarm
     id: al_1  
     name: "Alarm Status partition 1"
      
-  - platform: template
+  - platform: template_alarm
     id: al_2  
     name: "Alarm Status partition 2"  
      
 # relay PGM channels. Will show the state of the activate relay channel on/off
 # relay id code = r + channel number
-  - platform: template
+  - platform: template_alarm
     id: r1  
     name: "PGM 1"
 
-  - platform: template
+  - platform: template_alarm
     id: r2  
     name: "PGM 2"
      
-  - platform: template
+  - platform: template_alarm
     id: r3  
     name: "PGM 3"
      
-  - platform: template
+  - platform: template_alarm
     id: r4  
     name: "PGM 4"
 
-  #- platform: template
+  #- platform: template_alarm
   #  name: "PGM 5"
 
-  #- platform: template
+  #- platform: template_alarm
   #  name: "PGM 6"
 
-  #- platform: template
+  #- platform: template_alarm
   #  name: "PGM 7"
 
-  #- platform: template
+  #- platform: template_alarm
   #  name: "PGM 8"
               
 text_sensor:
 # general system status online/disconnected 
 # system status id code = ss
-  - platform: template
+  - platform: template_alarm
     id: ss  
     name: "System Status"
     icon: "mdi:shield"
 
 # battery level status for wireless channels, tamper , in alarm, etc for individual zones
 # zone status id code = zs    
-  - platform: template
+  - platform: template_alarm
     id: zs  
     name: "Zone Status"
     icon: "mdi:shield"  
 
 # partition status ie ready/not ready, triggered, etc
 # partition status id code = ps_ + partition number   
-  - platform: template
+  - platform: template_alarm
     id: ps_1  
     name: "Status partition 1"
     icon: "mdi:shield"
 
-  - platform: template
+  - platform: template_alarm
     id: ps_2  
     name: "Status partition 2" 
     icon: "mdi:shield"  
 
 # more verbose message regarding the partition status. ie zones open, bypassed, etc
 # partition message id code = msg_ + partition number    
-  - platform: template
+  - platform: template_alarm
     id: msg_1  
     name: "Msg partition 1"
     icon: "mdi:alert-box"
 
-  - platform: template
+  - platform: template_alarm
     id: msg_2  
     name: "Msg partition 2"
     icon: "mdi:alert-box"
@@ -336,52 +367,63 @@ text_sensor:
 # partition line1 id code = ln1_ + partition number
 # partition line2 id code = ln2_ + partition number
 # partition 1
-  - platform: template
+  - platform: template_alarm
     id: ln1_1  
     name: "line1 partition 1"
     icon: "mdi:alert-box"
 
-  - platform: template
+  - platform: template_alarm
     id: ln2_1  
     name: "line2 partition 1"
     icon: "mdi:alert-box"  
 
 # partition 2
-  - platform: template
+  - platform: template_alarm
     id: ln1_2  
     name: "line1 partition 2"
     icon: "mdi:alert-box"
 
-  - platform: template
+  - platform: template_alarm
     id: ln2_2  
     name: "line2 partition 2"
     icon: "mdi:alert-box" 
 
 # generic event messages from panel
 # panel event id code = evt
-  - platform: template
+  - platform: template_alarm
     id: evt  
     name: "event"
     icon: "mdi:alert-box" 
   
 # partition beeps
 # beeps id code = bp_ + partition number
-  - platform: template
+  - platform: template_alarm
     id: bp_1  
     name: "beeps partition 1"
     icon: "mdi:alert-box" 
 
-  - platform: template
+  - platform: template_alarm
     id: bp_2  
     name: "beeps partition 2"
     icon: "mdi:alert-box"   
 
  # panel trouble messages  
  # panel msg id code = tr_msg
-  - platform: template
+  - platform: template_alarm
     id: tr_msg  
     name: "Trouble Msg" 
     icon: "mdi:alert-box"
+
+
+ #optional. Example button config to send a keypad cmd. This one sends a PGM1 relay on cmd on partition 1
+button:
+    - platform: template
+      name: Gate Button
+      id: gate1
+      icon: "mdi:emoticon-outline"    
+      on_press:
+        - lambda: |-
+            $panelId->alarm_keypress_partition("*71",1);   
 
 # this sensor below is optional - example use of pin d8 as a zone trigger pin for the emulated zone expander  
 # this emulates the hardware connection for a pc5108 board. Use a pull down/pull up resistor.  Adjust logic accordingly for the correct logic output. ie invert
@@ -390,10 +432,10 @@ text_sensor:
  #   device_class: window
  #   on_press:       #pin high=on(open), pin low=off(closed)
  #     - lambda: |-
- #         dsc.setZoneFault(17,1);  #set zone 17 as open
+ #         $panelId->setZoneFault(17,1);  #set zone 17 as open
  #   on_release:
  #     - lambda: |-
- #         dsc.setZoneFault(17,0);  #set zone 17 as closed
+ #         $panelId->setZoneFault(17,0);  #set zone 17 as closed
  
 
 
