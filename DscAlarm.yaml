@@ -45,7 +45,7 @@ dsc_alarm_panel:
   #if true the available states will be:
   #triggered,armed_home,armed_away,armed_night,pending,arming,disarmed,ready,not_ready
   #if false the states will be:
-  #triggered,armed_home,armed_away,armed_night,disarmed
+  #triggered,armed_home,armed_away,armed_night,disarmed,arming,pending
   #the default is "true"
   detailed_partition_state: true
  
