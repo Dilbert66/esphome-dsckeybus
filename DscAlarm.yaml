@@ -1,4 +1,5 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
+#this is a fork modified for my setup
 substitutions:
   name: "dscalarm" #unique network name
   friendlyName: "DSC Alarm" #friendly name for this device
@@ -19,7 +20,7 @@ dsc_alarm_panel:
   maxzones: "64" # maximum amount of zones your system supports
   
   # dsc debug level: 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
-  dscdebuglevel: "2"  
+  dscdebuglevel: "0"  
    
   #zone expander addresses:
   # 9  - zones 9-16
@@ -60,7 +61,7 @@ esp32:
 #copy the code to directory "my_components" in your main esphome directory   
 # see here for more info: https://esphome.io/components/external_components       
 external_components:
-  - source: github://Dilbert66/esphome-components@main #uncomment to use github repository
+  - source: github://brucehat/esphome-components@main #uncomment to use github repository
   #- source:  my_components #uncomment to use local directory 
     components: [dsc_alarm_panel,binary_sensor,text_sensor] 
     refresh: 10min
@@ -140,70 +141,208 @@ binary_sensor:
 
   - platform: template
     id_code: z2
-    name: "Garage door (z2)"
-    device_class: door
+    name: "Entrance Area (z2)"
+    device_class: motion
     publish_initial_state: true         
 
   - platform: template
     id_code: z3  
-    name: "Back door (z3)"
-    device_class: door
+    name: "Play Room (z3)"
+    device_class: motion
     publish_initial_state: true         
 
   - platform: template
     id_code: z4  
-    name: "Living room window (z4)"
-    device_class: window
+    name: "Play Room Door (z4)"
+    device_class: door
     publish_initial_state: true         
 
   - platform: template
     id_code: z5
-    name: "Dining room window (z5)"
-    device_class: window
+    name: "Lounge (z5)"
+    device_class: motion
     publish_initial_state: true         
 
   - platform: template
-    id_code: z1  
-    name: "Family room window LF (z6)"
-    device_class: window
+    id_code: z6  
+    name: "Lounge Door (z6)"
+    device_class: door
     publish_initial_state: true         
 
   - platform: template
     id_code: z7  
-    name: "Family room window RF (z7)"
-    device_class: window
+    name: "Dining Room (z7)"
+    device_class: motion
     publish_initial_state: true         
 
   - platform: template
     id_code: z8  
-    name: "Basement windows (z8)"
+    name: "Dining Room Door (z8)"
+    device_class: door
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z17
+    name: "Kitchen Wall (z17)"
+    device_class: motion
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z18  
+    name: "Kitchen Window (z18)"
+    device_class: motion
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z19  
+    name: "Vegetable Garden (z19)"
+    device_class: motion
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z20  
+    name: "Atrium Door (z20)"
+    device_class: door    
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z21
+    name: "Garage Internal (z21)"
+    device_class: motion
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z22
+    name: "Linen Room (z22)"
     device_class: window
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z23  
+    name: "Shower Door (z23)"
+    device_class: door
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z24  
+    name: "Garage Outside (z24)"
+    device_class: motion
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z25
+    name: "Patio Garden (z25)"
+    device_class: motion
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z26  
+    name: "Pool Garden (z26)"
+    device_class: motion
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z33  
+    name: "Family Room (z33)"
+    device_class: motion
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z34  
+    name: "Family Room Door (z34)"
+    device_class: door
     publish_initial_state: true        
 
   - platform: template
-    id_code: z9
-    name: "Upstairs motion (z9)"
+    id_code: z35
+    name: "Kitchen Door (z35)"
+    device_class: door
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z36  
+    name: "Kitchen (z36)"
     device_class: motion
     publish_initial_state: true        
 
   - platform: template
-    id_code: z10  
-    name: "Basement motion (z10)"
+    id_code: z37  
+    name: "Outside Playroom (z37)"
     device_class: motion
     publish_initial_state: true        
 
   - platform: template
-    id_code: z11  
-    name: "Main floor motion (z11)"
+    id_code: z38  
+    name: "Cameron Room Door (z38)"
+    device_class: door    
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z39
+    name: "Main Bed Door (z39)"
+    device_class: door
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z40
+    name: "Spare Room Door (z40)"
+    device_class: door
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z41  
+    name: "Main Bedroom (z41)"
+    device_class: motion
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z42  
+    name: "Upstairs Passage (z42)"
+    device_class: motion
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z44
+    name: "Outside Garage (z44)"
+    device_class: motion
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z45  
+    name: "Driveway (z45)"
+    device_class: motion
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z47  
+    name: "Garage Door (z47)"
+    device_class: door
+    publish_initial_state: true         
+
+  - platform: template
+    id_code: z48  
+    name: "Garage Internal Door (z48)"
+    device_class: door
+    publish_initial_state: true        
+
+  - platform: template
+    id_code: z49
+    name: "Garage Roof (z49)"
     device_class: motion
     publish_initial_state: true        
 
   - platform: template
-    id_code: z17  
-    name: "Test sensor (z17)"
-    device_class: motion    
+    id_code: z50  
+    name: "Main Bathroom Roof (z50)"
+    device_class: motion
     publish_initial_state: true        
 
+  - platform: template
+    id_code: z51  
+    name: "Upstairs Patio (z51)"
+    device_class: motion
+    publish_initial_state: true        
+      
 ### non zone sensors ###
 # partition ready indicators
 # ready id code = rdy_ + partition number
