@@ -7,15 +7,16 @@ substitutions:
 dsc_alarm_panel:
   id: $panelId
   #you can enter a list of user codes mapped to their names for display in armed/disarmed event messages
-  usercodes: "1:John,2:Sally,3:Bob" #
+  usercodes: "1:Hatherell,2:Faith,40:Master" # 
+  # usercodes: "1:John,2:Sally,3:Bob" #
   
   #Only comes into effect if a password prompt occurs when arming eg. night mode
-  accesscode: !secret access_code 
+  accesscode: !secret DSC_access_code 
   
   #used to select the default partition associated with the alarm panel messages
   defaultpartition: "1" 
   
-  maxzones: "32" # maximum amount of zones your system supports
+  maxzones: "64" # maximum amount of zones your system supports
   
   # dsc debug level: 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
   dscdebuglevel: "2"  
@@ -32,9 +33,9 @@ dsc_alarm_panel:
   expanderaddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
 
   ##ESP32 Pins
-  dscclockpin: "22"
-  dscreadpin: "21"
-  dscwritepin: "18"
+  dscclockpin: "21"
+  dscreadpin: "22"
+  dscwritepin: "05"
   
   ##ESP8266 Pins
   #dscclockpin: "5"
@@ -94,7 +95,7 @@ logger:
 
 api:
    encryption:
-    key: !secret encryption_key
+    key: !secret DSC_api_encryption_key
     
     
 #to use mqtt disable the api: section above. This enables you to use esphome with 
@@ -112,7 +113,7 @@ api:
  
 
 ota:
-   password: !secret ota_password
+   password: !secret DSC_ota_password
    safe_mode: True
    on_begin:
        switch.turn_off: connection_status_switch   
