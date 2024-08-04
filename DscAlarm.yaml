@@ -41,6 +41,13 @@ dsc_alarm_panel:
   #dscclockpin: "5"
   #dscreadpin: "4"
   #dscwritepin: "15" 
+  
+  #if true the available states will be:
+  #triggered,armed_home,armed_away,armed_night,entry_delay,exit_delay,disarmed,ready,not_ready
+  #if false the states will be:
+  #triggered,armed_home,armed_away,armed_night,disarmed
+  #the default is "true"
+  detailed_partition_state: true
  
   clean_build: "false" #default is false.  set to true if getting duplication errors in linking step.  
 
