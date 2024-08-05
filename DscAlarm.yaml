@@ -112,10 +112,11 @@ api:
   #discovery_prefix: "homeassistant"
   #topic_prefix: $name
  
+safe_mode: 
 
 ota:
+   platform: esphome
    password: !secret DSC_ota_password
-   safe_mode: True
    on_begin:
        switch.turn_off: connection_status_switch   
    
@@ -577,6 +578,3 @@ switch:
     
   - platform: safe_mode
     name: "Safe Mode" 
-
-
-
