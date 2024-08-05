@@ -8,7 +8,7 @@ substitutions:
 dsc_alarm_panel:
   id: $panelId
   #you can enter a list of user codes mapped to their names for display in armed/disarmed event messages
-  usercodes: "1:Hatherell,2:Faith,40:Master" # 
+  usercodes: "1:Family,2:Helper,40:Master" # 
   # usercodes: "1:John,2:Sally,3:Bob" #
   
   #Only comes into effect if a password prompt occurs when arming eg. night mode
