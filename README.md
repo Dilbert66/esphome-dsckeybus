@@ -194,8 +194,18 @@ alarm_control_panel:
 ```	 
 
 ## Custom Alarm Panel Card
-I've added a sample lovelace alarm-panel card copied from the repository at https://github.com/GalaxyGateway/HA-Cards. I've customized it to work with this ESP library's services.  To configure the card, just place the main script alarm-keypad-card.js and associated *.mp3 sound files from the ha_keypad_card folder into the /config/www directory of your homeassistant installation and add a new resource in your lovelace configuration pointing to /local/alarm-keypad-card.js?id=1. You can then configure the card as shown below. Just substitute your service name to your application. This is an example for using it in a multi partition environment where you can have separate distinct cards for each partition just by changing the services used and partition numbers.
+I've added a sample lovelace alarm-panel card copied from the repository at https://github.com/GalaxyGateway/HA-Cards. I've customized it to work with this ESP library's services.   I've also added two new text fields that will be used by the card to display the panel prompts the same way a real keypad does. To configure the card, just place the `alarm-keypad-card.js` and `*.mp3` files from the ha_keypad_card folder into the `/config/www` directory of your homeassistant installation and add a new resource in your lovelace configuration pointing to `/local/alarm-keypad-card.js`. <br>
+Add a reference to alarm-keypad-card.js in Lovelace. There’s two ways to do that:<br>
+1. Using UI:  go to settings (cog icon bottom left in sidebar menu), click on 'dashboards', click on top right 3 dots option then on Resources,
+  bottom right 'add resource' option, in window, paste the url as '/local/alarm-keypad-card.js?id=1', select javascript module.
 
+2. Using YAML: Add following code to lovelace section
+
+```yaml
+resources:
+- url: /local/alarm-keypad-card.js?id=1
+  type: module
+```
 *** NOTE *** :  Every time you update this file, you will need to increase the id=xx number in the url by 1 in order to force the browser to reload it.
 
 ### Panel Card example
