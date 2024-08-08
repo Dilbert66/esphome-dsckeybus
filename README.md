@@ -350,10 +350,6 @@ If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino e
 ### Non-isolated simple version	
 ![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
 
-## Alternative ground isolated version
-![image](https://user-images.githubusercontent.com/7193213/193299293-5ac6c36c-e589-4857-8854-33118530fee5.png)
-
-
 * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: GPIO5, GPIO4 and GPIO15.
 * esp32: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: GPIO22, GPIO21 and GPIO18.
   Note: You can use a Wemos D1 Mini PRO (ESP32) with the same foot print as an original esp8266 based d1 mini. In that case use pins GPIO22,GPIO21 and GPIO5
