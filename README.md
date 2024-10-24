@@ -217,8 +217,8 @@ resources:
 type: custom:alarm-keypad-card
 title: DSCALARM_ESPHOME
 unique_id: dsc1
-disp_line1: sensor.dscalarm_line1_partition_1
-disp_line2: sensor.dscalarm_line2_partition_2
+disp_line1: sensor.dscalarm_ln1_1
+disp_line2: sensor.dscalarm_ln2_1
 service_type: esphome
 service: dscalarm_alarm_keypress_partition
 status_A: READY
@@ -229,10 +229,10 @@ status_E: ''
 status_F: ''
 status_G: ''
 status_H: ''
-sensor_A: binary_sensor.dscalarm_ready_partition_1
-sensor_B: binary_sensor.dscalarm_ready_partition_1
-sensor_C: binary_sensor.dscalarm_trouble_status
-sensor_D: binary_sensor.dscalarm_ac_status
+sensor_A: binary_sensor.dscalarm_rdy_1
+sensor_B: binary_sensor.dscalarm_arm_1
+sensor_C: binary_sensor.dscalarm_tr
+sensor_D: binary_sensor.dscalarm_ac
 sensor_E: ''
 sensor_F: ''
 sensor_G: ''
@@ -317,7 +317,7 @@ text_9: NIGHT
 text_star: SELECT
 text_pound: ENTER
 text_0: ''  
-beep: sensor.dscalarm_beeps_partition_1
+beep: sensor.dscalarm_bp_1
 scale: 1
 view_pad: true
 view_display: true
