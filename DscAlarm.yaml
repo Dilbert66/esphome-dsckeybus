@@ -42,11 +42,7 @@ dsc_alarm_panel:
   #dscreadpin: "4"
   #dscwritepin: "15" 
   
-  #the program will check every <trouble_fetch_update_time> seconds for updated trouble messages. Time in seconds.  Min is 30;
-  #set to 0 to disable periodic. default: 60
-  trouble_fetch_update_time: 60
-
-  #enable sending *21 cmd to panel in order to fetch trouble codes on startup and periodically. default: true
+  #enable sending *21 cmd to panel in order to fetch trouble codes on startup and when the trouble status changes. default: true
   trouble_fetch: true
 
   #if true the available states will be:
