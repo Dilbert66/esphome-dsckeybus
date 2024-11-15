@@ -42,7 +42,12 @@ dsc_alarm_panel:
   #dscreadpin: "4"
   #dscwritepin: "15" 
   
-  #enable sending *21 cmd to panel in order to fetch trouble codes on startup and when the trouble status changes. default: true
+  #periodic check for trouble messages in seconds. Minium 30s. Defaults to 120s (2 minutes)
+  trouble_fetch_update_time: 120
+
+  #flag to have the esp check for trouble statuses for devices/zones when the trouble light goes on or off
+  #Note: It will prevent the physical panel from beeping to let you know as the check resets the beep.
+  #Sends *21 and *27 to the panel. Default: true
   trouble_fetch: true
 
   #if true the available states will be:
