@@ -25,7 +25,7 @@ class AlarmKeypadCard extends LitElement {
         .keypad_display {
           background: #35758c;
           border-radius: 10px;
-          width: 200px;
+          width: 260px;
           height: 50px;
           margin: auto;
           padding-top: 15px;
@@ -33,11 +33,12 @@ class AlarmKeypadCard extends LitElement {
           margin-bottom: 20px;
         }
         .keypad_state {
-          padding-left: 30px;
           font-size: calc(var(--base-unit) * 1);
           line-height: 1.1;
           color: black;
           font-family: monospace;
+          display: flex;
+          justify-content: center;
         }
         #keypad_state1 {
           padding-bottom: 10px;
