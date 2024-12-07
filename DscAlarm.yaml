@@ -76,7 +76,7 @@ esp32:
 external_components:
   - source: github://Dilbert66/esphome-components@dev #uncomment to use github repository (dev branch selected)
   #- source:  my_components #uncomment to use local directory 
-    components: [dsc_alarm_panel,web_keypad,mg_lib] 
+    components: [dsc_alarm_panel,web_keypad] 
     refresh: 10min
     
     
@@ -87,7 +87,6 @@ external_components:
 #Component source: https://github.com/Dilbert66/esphome-components/tree/keypad/components/web_keypad
 ### Note: this is an ESP32 only component. The esp8266 does not support the resources needed.
 
-mg-lib:
 
 web_keypad:
   port: 80 
