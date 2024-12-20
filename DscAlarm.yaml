@@ -17,7 +17,6 @@ dsc_alarm_panel:
   
   maxzones: "32" # maximum amount of zones your system supports
   
-  autopopulate: true # auto populate seen enabled zones
   # dsc debug level: 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
   dscdebuglevel: "2"  
    
