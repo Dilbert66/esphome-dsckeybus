@@ -473,6 +473,7 @@ switch:
   - platform: template
     name: "Connection"
     id: connection_status_switch
+    optimistic: true
     restore_mode: DISABLED
     lambda: |-
       return dsc.keybusConnected;
