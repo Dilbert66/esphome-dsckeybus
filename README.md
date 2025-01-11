@@ -324,6 +324,7 @@ view_display: true
 view_status: true
 view_status_2: false
 view_bottom: true
+vibration_duration: 50
 	
 ```	
 
