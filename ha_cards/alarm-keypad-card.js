@@ -25,7 +25,7 @@ class AlarmKeypadCard extends LitElement {
         .keypad_display {
           background: #35758c;
           border-radius: 10px;
-          width: 200px;
+          width: 260px;
           height: 50px;
           margin: auto;
           padding-top: 15px;
@@ -33,11 +33,12 @@ class AlarmKeypadCard extends LitElement {
           margin-bottom: 20px;
         }
         .keypad_state {
-          padding-left: 30px;
           font-size: calc(var(--base-unit) * 1);
           line-height: 1.1;
           color: black;
           font-family: monospace;
+          display: flex;
+          justify-content: center;
         }
         #keypad_state1 {
           padding-bottom: 10px;
@@ -470,6 +471,7 @@ class AlarmKeypadCard extends LitElement {
         _view_status2: Boolean,
         _button_left: Boolean,
         _scale: String,
+        _vibrate: Number,
     };
   }
 
@@ -484,7 +486,6 @@ class AlarmKeypadCard extends LitElement {
       this._view_display=(config.view_display != null) ? config.view_display : true;
       this._kpdservice= config.service;
       this._kpdservicetype= config.service_type;
-      this._view_display= (config.view_display != null) ? config.view_display : true;
       this._view_pad= (config.view_pad != null) ? config.view_pad : true;
       this._button_left= (config.button_left != null) ? config.button_left : false;      
       this._view_bottom= (config.view_bottom != null) ? config.view_bottom : false;
@@ -539,6 +540,7 @@ class AlarmKeypadCard extends LitElement {
       this._text_9=(config.text_9 != null)?config.text_9:"";         
       this._text_star=(config.text_star != null)?config.text_star:"";
       this._text_pound=(config.text_pound != null)?config.text_pound:"";
+      this._vibrate=(config.vibration_duration != null)?config.vibration_duration:5;
    }
 
   set hass(hass) {
@@ -639,6 +641,9 @@ class AlarmKeypadCard extends LitElement {
          case '#': key=this._key_pound; break;
          
      }
+     if ('vibrate' in navigator) {
+        navigator.vibrate(this._vibrate);
+     } 
      this._hass.callService(this._kpdservicetype, this._kpdservice,key);
    
   }

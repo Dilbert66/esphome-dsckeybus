@@ -109,7 +109,7 @@ view_status: true
 view_status_2: false
 view_bottom: true
 button_left: false
-
+vibration_duration: 5
 
 type: custom:alarm-keypad-card
 title: DSCALARM_MQTT
@@ -203,4 +203,4 @@ view_status: true
 view_status_2: false
 view_bottom: true
 button_left: false
-
+vibration_duration: 5
