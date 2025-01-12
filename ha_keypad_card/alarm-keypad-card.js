@@ -540,7 +540,7 @@ class AlarmKeypadCard extends LitElement {
       this._text_9=(config.text_9 != null)?config.text_9:"";         
       this._text_star=(config.text_star != null)?config.text_star:"";
       this._text_pound=(config.text_pound != null)?config.text_pound:"";
-      this._vibrate=(config.vibration_duration != null)?config.vibration_duration:50;
+      this._vibrate=(config.vibration_duration != null)?config.vibration_duration:5;
    }
 
   set hass(hass) {
