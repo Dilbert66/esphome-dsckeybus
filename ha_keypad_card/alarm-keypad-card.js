@@ -110,7 +110,7 @@ class AlarmKeypadCard extends LitElement {
         }
         
         .mdc-icon:not(:disabled) {
-          color: #212121;
+          color: var(--primary-text-color);
         }
         
         .mdc-icon.active ha-icon {
