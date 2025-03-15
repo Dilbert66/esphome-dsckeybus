@@ -210,15 +210,15 @@ resources:
 
 ### Panel Card example
 	
-![dscpanel](https://user-images.githubusercontent.com/7193213/169652187-bb5e88ce-ec94-48e7-b674-6346cd7520c7.png)
+![dscpanel](https://github.com/feldsam/esphome-dsckeybus/blob/keypad-ng/ha_cards/card-example.png?raw=true)
 
 ### Panel card example lovelace configuration
 ```
 type: custom:alarm-keypad-card
 title: DSCALARM_ESPHOME
 unique_id: dsc1
-disp_line1: sensor.dscalarm_line1
-disp_line2: sensor.dscalarm_line2
+disp_line1: sensor.dscalarm_line1_ln1_1
+disp_line2: sensor.dscalarm_line2_ln2_1
 service_type: esphome
 service: dscalarm_alarm_keypress_partition
 status_A: READY
@@ -229,10 +229,10 @@ status_E: ''
 status_F: ''
 status_G: ''
 status_H: ''
-sensor_A: binary_sensor.dscalarm_partition_1_ready
-sensor_B: binary_sensor.dscalarm_partition_1_armed
-sensor_C: binary_sensor.dscalarm_trouble_status
-sensor_D: binary_sensor.dscalarm_ac_status
+sensor_A: binary_sensor.dscalarm_partition_1_ready_rdy_1
+sensor_B: binary_sensor.dscalarm_partition_1_armed_arm_1
+sensor_C: binary_sensor.dscalarm_trouble_status_tr
+sensor_D: binary_sensor.dscalarm_ac_status_ac
 sensor_E: ''
 sensor_F: ''
 sensor_G: ''
@@ -240,11 +240,19 @@ sensor_H: ''
 button_A: STAY
 button_B: AWAY
 button_C: NIGHT
-button_D:
-button_E:
+button_D: ''
+button_E: ''
 button_F: <
 button_G: '>'
-button_H: 
+button_H: ''
+button_disabled_A: false
+button_disabled_B: false
+button_disabled_C: false
+button_disabled_D: true
+button_disabled_E: true
+button_disabled_F: false
+button_disabled_G: false
+button_disabled_H: true 
 cmd_A:
   keys: S
   partition: 1
@@ -317,13 +325,15 @@ text_9: NIGHT
 text_star: SELECT
 text_pound: ENTER
 text_0: ''  
-beep: sensor.dscalarm_beeps
+beep: sensor.dscalarm_beeps_bp_1
 scale: 1
 view_pad: true
 view_display: true
 view_status: true
 view_status_2: false
 view_bottom: true
+button_left: false
+vibration_duration: 5
 	
 ```	
 
