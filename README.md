@@ -210,7 +210,7 @@ resources:
 
 ### Panel Card example
 	
-![dscpanel](https://user-images.githubusercontent.com/7193213/169652187-bb5e88ce-ec94-48e7-b674-6346cd7520c7.png)
+![dscpanel](https://github.com/feldsam/esphome-dsckeybus/blob/keypad-ng/ha_cards/card-example.png?raw=true)
 
 ### Panel card example lovelace configuration
 ```
@@ -240,11 +240,19 @@ sensor_H: ''
 button_A: STAY
 button_B: AWAY
 button_C: NIGHT
-button_D:
-button_E:
+button_D: ''
+button_E: ''
 button_F: <
 button_G: '>'
-button_H: 
+button_H: ''
+button_disabled_A: false
+button_disabled_B: false
+button_disabled_C: false
+button_disabled_D: true
+button_disabled_E: true
+button_disabled_F: false
+button_disabled_G: false
+button_disabled_H: true 
 cmd_A:
   keys: S
   partition: 1
@@ -324,6 +332,7 @@ view_display: true
 view_status: true
 view_status_2: false
 view_bottom: true
+button_left: false
 vibration_duration: 5
 	
 ```	

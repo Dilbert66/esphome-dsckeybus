@@ -1,5 +1,5 @@
 type: custom:alarm-keypad-card
-title: DSCALARM_ESPHOME
+title: DSCALARM_ESPHOME # can be set to empty string
 unique_id: dsc1
 disp_line1: sensor.dscalarm_ln1_1
 disp_line2: sensor.dscalarm_ln2_1
@@ -24,29 +24,37 @@ sensor_H: ''
 button_A: STAY
 button_B: AWAY
 button_C: NIGHT
-button_D:
-button_E:
+button_D: ''
+button_E: ''
 button_F: <
 button_G: '>'
-button_H: 
+button_H: ''
+button_disabled_A: false
+button_disabled_B: false
+button_disabled_C: false
+button_disabled_D: true
+button_disabled_E: true
+button_disabled_F: false
+button_disabled_G: false
+button_disabled_H: true
 cmd_A:
   keys: S
   partition: 1
 cmd_B:
   keys: W
-  partition: 1  
+  partition: 1
 cmd_C:
   keys: 'N'
   partition: 1
 cmd_D:
   keys:
-  partition: 1    
+  partition: 1
 cmd_E:
   keys:
-  partition: 1    
+  partition: 1
 cmd_H:
   keys:
-  partition: 1  
+  partition: 1
 cmd_F:
   keys: <
   partition: 1
