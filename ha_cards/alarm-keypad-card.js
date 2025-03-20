@@ -662,7 +662,7 @@ class AlarmKeypadCard extends LitElement {
     this._iconB= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?this._status_B_on_icon: this._status_B_off_icon:"";
     this._iconC= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?this._status_C_on_icon: this._status_C_off_icon:"";
     this._iconD= this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?this._status_D_on_icon: this._status_D_off_icon:"";
-    this._iconE= this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?this._status_E__on_icon: this._status_E_off_icon:"";
+    this._iconE= this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?this._status_E_on_icon: this._status_E_off_icon:"";
     this._iconF=this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")? this._status_F_on_icon: this._status_F_off_icon:"";
     this._iconG= this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?this._status_G_on_icon: this._status_G_off_icon:"";
     this._iconH= this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?this._status_H_on_icon: this._status_H_off_icon:"";
