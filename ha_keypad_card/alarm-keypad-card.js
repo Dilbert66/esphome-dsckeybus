@@ -1,4 +1,4 @@
-console.info("%c  ALARM-KEYPAD-CARD %c v0.2.0 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
+console.info("%c  ALARM-KEYPAD-CARD %c v0.2.1 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
 
 const LitElement = Object.getPrototypeOf(customElements.get("ha-panel-lovelace"));
 const html = LitElement.prototype.html;
@@ -34,8 +34,8 @@ class AlarmKeypadCard extends LitElement {
         @keyframes mdc-ripple-fg-opacity-out{from{animation-timing-function:linear;opacity:var(--mdc-ripple-fg-opacity, 0)}to{opacity:0}}.mdc-ripple-surface--test-edge-var-bug{--mdc-ripple-surface-test-edge-var: 1px solid #000;visibility:hidden}.mdc-ripple-surface--test-edge-var-bug::before{border:var(--mdc-ripple-surface-test-edge-var)}.mdc-button{font-family:Roboto,sans-serif;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;font-size:.875rem;line-height:2.25rem;font-weight:500;letter-spacing:.0892857143em;text-decoration:none;text-transform:uppercase;--mdc-ripple-fg-size: 0;--mdc-ripple-left: 0;--mdc-ripple-top: 0;--mdc-ripple-fg-scale: 1;--mdc-ripple-fg-translate-end: 0;--mdc-ripple-fg-translate-start: 0;-webkit-tap-highlight-color:rgba(0,0,0,0);will-change:transform,opacity;padding:0 8px 0 8px;display:inline-flex;position:relative;align-items:center;justify-content:center;box-sizing:border-box;min-width:64px;height:36px;border:none;outline:none;line-height:inherit;user-select:none;-webkit-appearance:none;overflow:hidden;vertical-align:middle;border-radius:4px}.mdc-button::before,.mdc-button::after{position:absolute;border-radius:50%;opacity:0;pointer-events:none;content:""}.mdc-button::before{transition:opacity 15ms linear,background-color 15ms linear;z-index:1}.mdc-button.mdc-ripple-upgraded::before{transform:scale(var(--mdc-ripple-fg-scale, 1))}.mdc-button.mdc-ripple-upgraded::after{top:0;left:0;transform:scale(0);transform-origin:center center}.mdc-button.mdc-ripple-upgraded--unbounded::after{top:var(--mdc-ripple-top, 0);left:var(--mdc-ripple-left, 0)}.mdc-button.mdc-ripple-upgraded--foreground-activation::after{animation:225ms mdc-ripple-fg-radius-in forwards,75ms mdc-ripple-fg-opacity-in forwards}.mdc-button.mdc-ripple-upgraded--foreground-deactivation::after{animation:150ms mdc-ripple-fg-opacity-out;transform:translate(var(--mdc-ripple-fg-translate-end, 0)) scale(var(--mdc-ripple-fg-scale, 1))}.mdc-button::before,.mdc-button::after{top:calc(50% - 100%);left:calc(50% - 100%);width:200%;height:200%}.mdc-button.mdc-ripple-upgraded::after{width:var(--mdc-ripple-fg-size, 100%);height:var(--mdc-ripple-fg-size, 100%)}.mdc-button::-moz-focus-inner{padding:0;border:0}.mdc-button:active{outline:none}.mdc-button:hover{cursor:pointer}.mdc-button:disabled{background-color:transparent;color:rgba(0,0,0,.37);cursor:default;pointer-events:none}.mdc-button.mdc-button--dense{border-radius:4px}.mdc-button:not(:disabled){background-color:transparent}.mdc-button:not(:disabled){color:currentColor;color:var(--mdc-theme-primary, currentColor)}.mdc-button::before,.mdc-button::after{background-color:currentColor}@supports not (-ms-ime-align: auto){.mdc-button::before,.mdc-button::after{background-color:var(--mdc-ripple-color, #03A9F4)}}.mdc-button:hover::before{opacity:.04}.mdc-button:not(.mdc-ripple-upgraded):focus::before,.mdc-button.mdc-ripple-upgraded--background-focused::before{transition-duration:75ms;opacity:.12}.mdc-button:not(.mdc-ripple-upgraded)::after{transition:opacity 150ms linear}.mdc-button:not(.mdc-ripple-upgraded):active::after{transition-duration:75ms;opacity:.64}.mdc-button.mdc-ripple-upgraded{--mdc-ripple-fg-opacity: 0.16}.mdc-button .mdc-button__icon{margin-left:0;margin-right:8px;display:inline-block;width:18px;height:18px;font-size:18px;vertical-align:top}[dir=rtl] .mdc-button .mdc-button__icon,.mdc-button .mdc-button__icon[dir=rtl]{margin-left:8px;margin-right:0}.mdc-button svg.mdc-button__icon{fill:currentColor}.mdc-button--raised .mdc-button__icon,.mdc-button--unelevated .mdc-button__icon,.mdc-button--outlined .mdc-button__icon{margin-left:-4px;margin-right:8px}[dir=rtl] .mdc-button--raised .mdc-button__icon,.mdc-button--raised .mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button--unelevated .mdc-button__icon,.mdc-button--unelevated .mdc-button__icon[dir=rtl],[dir=rtl] .mdc-button--outlined .mdc-button__icon,.mdc-button--outlined .mdc-button__icon[dir=rtl]{margin-left:8px;margin-right:-4px}.mdc-button--raised,.mdc-button--unelevated{padding:0 16px 0 16px}.mdc-button--raised:disabled,.mdc-button--unelevated:disabled{background-color:rgba(0,0,0,.12);color:rgba(0,0,0,.37)}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:currentColor}@supports not (-ms-ime-align: auto){.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){background-color:var(--mdc-theme-primary, currentColor)}}.mdc-button--raised:not(:disabled),.mdc-button--unelevated:not(:disabled){color:#fff;color:var(--mdc-theme-on-primary, #fff)}.mdc-button--raised::before,.mdc-button--raised::after,.mdc-button--unelevated::before,.mdc-button--unelevated::after{background-color:#fff}@supports not (-ms-ime-align: auto){.mdc-button--raised::before,.mdc-button--raised::after,.mdc-button--unelevated::before,.mdc-button--unelevated::after{background-color:var(--mdc-theme-on-primary, #fff)}}.mdc-button--raised:hover::before,.mdc-button--unelevated:hover::before{opacity:.08}.mdc-button--raised:not(.mdc-ripple-upgraded):focus::before,.mdc-button--raised.mdc-ripple-upgraded--background-focused::before,.mdc-button--unelevated:not(.mdc-ripple-upgraded):focus::before,.mdc-button--unelevated.mdc-ripple-upgraded--background-focused::before{transition-duration:75ms;opacity:.24}.mdc-button--raised:not(.mdc-ripple-upgraded)::after,.mdc-button--unelevated:not(.mdc-ripple-upgraded)::after{transition:opacity 150ms linear}.mdc-button--raised:not(.mdc-ripple-upgraded):active::after,.mdc-button--unelevated:not(.mdc-ripple-upgraded):active::after{transition-duration:75ms;opacity:.32}.mdc-button--raised.mdc-ripple-upgraded,.mdc-button--unelevated.mdc-ripple-upgraded{--mdc-ripple-fg-opacity: 0.32}.mdc-button--raised{box-shadow:0px 3px 1px -2px rgba(0, 0, 0, 0.2),0px 2px 2px 0px rgba(0, 0, 0, 0.14),0px 1px 5px 0px rgba(0,0,0,.12);transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1)}.mdc-button--raised:hover,.mdc-button--raised:focus{box-shadow:0px 2px 4px -1px rgba(0, 0, 0, 0.2),0px 4px 5px 0px rgba(0, 0, 0, 0.14),0px 1px 10px 0px rgba(0,0,0,.12)}.mdc-button--raised:active{box-shadow:0px 5px 5px -3px rgba(0, 0, 0, 0.2),0px 8px 10px 1px rgba(0, 0, 0, 0.14),0px 3px 14px 2px rgba(0,0,0,.12)}.mdc-button--raised:disabled{box-shadow:0px 0px 0px 0px rgba(0, 0, 0, 0.2),0px 0px 0px 0px rgba(0, 0, 0, 0.14),0px 0px 0px 0px rgba(0,0,0,.12)}.mdc-button--outlined{border-style:solid;padding:8px 8px 8px 8px;border-width:1px}.mdc-button--outlined:disabled{border-color:rgba(0,0,0,.37)}.mdc-button--outlined:not(:disabled){border-color:currentColor;border-color:var(--mdc-button-outline-color, currentColor)}.mdc-button--dense{height:32px;font-size:.8125rem}.material-icons{font-family:var(--mdc-icon-font, "Material Icons");font-weight:normal;font-style:normal;font-size:var(--mdc-icon-size, 24px);line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:"liga";-webkit-font-smoothing:antialiased}:host{display:inline-flex;outline:none}.mdc-button{flex:1}
 
         .keypad_display {
-          background: #E0E5EC;
-          color: #2C3E50; 
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
           border-radius: 10px;
           width: 260px;
           height: 50px;
@@ -47,7 +47,7 @@ class AlarmKeypadCard extends LitElement {
         .keypad_state {
           font-size: calc(var(--base-unit) * 1);
           line-height: 1.1;
-          color: black;
+          color: var(--primary-text-color);
           font-family: monospace;
           display: flex;
           justify-content: center;
@@ -109,8 +109,12 @@ class AlarmKeypadCard extends LitElement {
           margin-left: 4px;
         }
         
+        .icon-label:not(:disabled) {
+            color: var(--primary-text-color);
+        }
+        
         .mdc-icon:not(:disabled) {
-          color: var(--primary-text-color);
+          color: var(--disabled-text-color);
         }
         
         .mdc-icon.active ha-icon {
@@ -119,6 +123,10 @@ class AlarmKeypadCard extends LitElement {
         
         .mdc-icon.trouble ha-icon {
             color: rgb(244, 67, 54);
+        }
+
+        .mdc-icon.warning ha-icon {
+            color: orange;
         }
 
         .bottom {
@@ -171,16 +179,16 @@ class AlarmKeypadCard extends LitElement {
 
                 ${this._view_status?html`
                 <div class='pad'>
-                    <div class='mdc-button  mdc-icon ${this._status_A_state}'>${this._status_A}
+                    <div class='mdc-button  mdc-icon ${this._status_A_state}'><span class="icon-label">${this._status_A}</span>
                         <ha-icon id="icon-a" icon="${this._iconA}"/>
                     </div>
-                    <div class='mdc-button  mdc-icon ${this._status_B_state}'>${this._status_B}
+                    <div class='mdc-button  mdc-icon ${this._status_B_state}'><span class="icon-label">${this._status_B}</span>
                         <ha-icon id="icon-b" icon="${this._iconB}"/>
                     </div>
-                    <div class='mdc-button  mdc-icon ${this._status_C_state}'>${this._status_C}
+                    <div class='mdc-button  mdc-icon ${this._status_C_state}'><span class="icon-label">${this._status_C}</span>
                         <ha-icon id="icon-c" icon="${this._iconC}"/>
                     </div>
-                    <div class='mdc-button mdc-icon ${this._status_D_state}'>${this._status_D}
+                    <div class='mdc-button mdc-icon ${this._status_D_state}'><span class="icon-label">${this._status_D}</span>
                         <ha-icon id="icon-d" icon="${this._iconD}"/>
                     </div>                    
                 </div>`:''}
@@ -188,18 +196,18 @@ class AlarmKeypadCard extends LitElement {
 
                 ${this._view_status2?html`
                 <div class='pad'>
-                    <div class='mdc-button  mdc-icon'>${this._status_E}
+                    <div class='mdc-button  mdc-icon ${this._status_E_state}'><span class="icon-label">${this._status_E}</span>
                         <ha-icon id="icon-e" icon="${this._iconE}"/>
                     </div>
   
-                    <div class='mdc-button  mdc-icon'>${this._status_F}
+                    <div class='mdc-button  mdc-icon ${this._status_F_state}'><span class="icon-label">${this._status_F}</span>
                         <ha-icon id="icon-f" icon="${this._iconF}"/>
                     </div>
 
-                    <div class='mdc-button  mdc-icon'>${this._status_G}
+                    <div class='mdc-button  mdc-icon ${this._status_G_state}'><span class="icon-label">${this._status_G}</span>
                         <ha-icon id="icon-g" icon="${this._iconG}"/>
                     </div>
-                    <div class='mdc-button mdc-icon'>${this._status_H}
+                    <div class='mdc-button mdc-icon ${this._status_H_state}'><span class="icon-label">${this._status_H}</span>
                         <ha-icon id="icon-h" icon="${this._iconH}"/>
                     </div>                    
                 </div>`:''}
@@ -535,7 +543,6 @@ class AlarmKeypadCard extends LitElement {
   }
 
   setConfig(config) {
-      if (!config.unique_id) throw new Error('You need to define a unique_id');
       if (!config.disp_line1) throw new Error('You need to define a disp_line1');
       if (!config.disp_line2) throw new Error('You need to define a disp_line2');
       if (!config.service_type) throw new Error('You need to define a service type');
@@ -574,7 +581,34 @@ class AlarmKeypadCard extends LitElement {
       this._status_E=(config.status_E != null)?config.status_E:"E";
       this._status_F=(config.status_F != null)?config.status_F:"F";
       this._status_G=(config.status_G != null)?config.status_G:"G";
-      this._status_H=(config.status_H != null)?config.status_H:"H";        
+      this._status_H=(config.status_H != null)?config.status_H:"H"; 
+
+      this._status_A_on_icon=(config.status_A_on_icon != null)?config.status_A_on_icon:"mdi:check-circle-outline" 
+      this._status_A_off_icon=(config.status_A_off_icon != null)?config.status_A_off_icon:"mdi:circle-outline" 
+      this._status_B_on_icon=(config.status_B_on_icon != null)?config.status_B_on_icon:"mdi:check-circle-outline" 
+      this._status_B_off_icon=(config.status_B_off_icon != null)?config.status_B_off_icon:"mdi:circle-outline" 
+      this._status_C_on_icon=(config.status_C_on_icon != null)?config.status_C_on_icon:"mdi:check-circle-outline" 
+      this._status_C_off_icon=(config.status_C_off_icon != null)?config.status_C_off_icon:"mdi:circle-outline" 
+      this._status_D_on_icon=(config.status_D_on_icon != null)?config.status_D_on_icon:"mdi:check-circle-outline" 
+      this._status_D_off_icon=(config.status_D_off_icon != null)?config.status_D_off_icon:"mdi:circle-outline" 
+      this._status_E_on_icon=(config.status_E_on_icon != null)?config.status_E_on_icon:"mdi:check-circle-outline" 
+      this._status_E_off_icon=(config.status_E_off_icon != null)?config.status_E_off_icon:"mdi:circle-outline" 
+      this._status_F_on_icon=(config.status_F_on_icon != null)?config.status_F_on_icon:"mdi:check-circle-outline" 
+      this._status_F_off_icon=(config.status_F_off_icon != null)?config.status_F_off_icon:"mdi:circle-outline" 
+      this._status_G_on_icon=(config.status_G_on_icon != null)?config.status_G_on_icon:"mdi:check-circle-outline" 
+      this._status_G_off_icon=(config.status_G_off_icon != null)?config.status_G_off_icon:"mdi:circle-outline" 
+      this._status_H_on_icon=(config.status_H_on_icon != null)?config.status_H_on_icon:"mdi:check-circle-outline" 
+      this._status_H_off_icon=(config.status_H_off_icon != null)?config.status_H_off_icon:"mdi:circle-outline" 
+
+      this._status_A_type=(config.status_A_type != null)?config.status_A_type:"active"   
+      this._status_B_type=(config.status_B_type != null)?config.status_B_type:"active" 
+      this._status_C_type=(config.status_C_type != null)?config.status_C_type:"active" 
+      this._status_D_type=(config.status_D_type != null)?config.status_D_type:"active" 
+      this._status_E_type=(config.status_E_type != null)?config.status_E_type:"active" 
+      this._status_F_type=(config.status_F_type != null)?config.status_F_type:"active" 
+      this._status_G_type=(config.status_G_type != null)?config.status_G_type:"active" 
+      this._status_H_type=(config.status_H_type != null)?config.status_H_type:"active" 
+   
       this._cmd_A=(config.cmd_A != null)?config.cmd_A:"";
       this._cmd_B=(config.cmd_B != null)?config.cmd_B:"";
       this._cmd_C=(config.cmd_C != null)?config.cmd_C:"";
@@ -624,18 +658,29 @@ class AlarmKeypadCard extends LitElement {
     this._kpdf = this._hass.states[this._config.sensor_F];    
     this._kpdg = this._hass.states[this._config.sensor_G]; 
     this._kpdh = this._hass.states[this._config.sensor_H]; 
-    this._iconA= this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
-    this._iconB= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
-    this._iconC= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?'mdi:alert-circle':'mdi:circle-outline':"";
-    this._iconD= this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
-    this._iconE= this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
-    this._iconF=this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
-    this._iconG= this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
-    this._iconH= this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?'mdi:check-circle':'mdi:circle-outline':"";
-    this._status_A_state= this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?'active':'':"";
-    this._status_B_state= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?'active':'':"";
-    this._status_C_state= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?'trouble':'':"";
-    this._status_D_state= this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?'active':'':"";
+    this._iconA= this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?this._status_A_on_icon: this._status_A_off_icon:"";
+    this._iconB= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?this._status_B_on_icon: this._status_B_off_icon:"";
+    this._iconC= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?this._status_C_on_icon: this._status_C_off_icon:"";
+    this._iconD= this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?this._status_D_on_icon: this._status_D_off_icon:"";
+    this._iconE= this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?this._status_E__on_icon: this._status_E_off_icon:"";
+    this._iconF=this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")? this._status_F_on_icon: this._status_F_off_icon:"";
+    this._iconG= this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?this._status_G_on_icon: this._status_G_off_icon:"";
+    this._iconH= this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?this._status_H_on_icon: this._status_H_off_icon:"";
+
+    this._status_A_state= this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?this._status_A_type:'':"";
+    this._status_B_state= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?this._status_B_type:'':"";
+    this._status_C_state= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?this._status_C_type:'':"";
+    this._status_D_state= this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?this._status_D_type:'':"";
+
+    this._status_E_state= this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?this._status_E_type:'':"";
+    this._status_F_state= this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")?this._status_F_type:'':"";
+    this._status_G_state= this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?this._status_G_type:'':"";
+    this._status_H_state= this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?this._status_H_type:'':"";
+
+
+
+
+
   }
  
   displayChanged() {
