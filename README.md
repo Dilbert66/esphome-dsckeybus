@@ -210,7 +210,8 @@ resources:
 
 ### Panel Card example
 	
-![dscpanel](https://github.com/feldsam/esphome-dsckeybus/blob/keypad-ng/ha_cards/card-example.png?raw=true)
+![image](https://github.com/user-attachments/assets/3226351e-1c2f-491a-9586-f1a5f27cd2f1)
+
 
 ### Panel card example lovelace configuration
 ```
