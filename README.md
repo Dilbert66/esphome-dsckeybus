@@ -210,7 +210,8 @@ resources:
 
 ### Panel Card example
 	
-![dscpanel](https://user-images.githubusercontent.com/7193213/169652187-bb5e88ce-ec94-48e7-b674-6346cd7520c7.png)
+![image](https://github.com/user-attachments/assets/764c5d96-8335-4048-8bcc-85c49e20622e)
+
 
 ### Panel card example lovelace configuration
 ```
