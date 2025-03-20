@@ -36,6 +36,11 @@ dsc_alarm_panel:
   dscreadpin: "21"
   dscwritepin: "18"
   
+  ##WT32-ETH01 Pins
+  #dscclockpin: "15"
+  #dscreadpin: "14"
+  #dscwritepin: "4"
+  
   ##ESP8266 Pins
   #dscclockpin: "5"
   #dscreadpin: "4"
@@ -60,6 +65,7 @@ dsc_alarm_panel:
 
 esp32: 
   board: nodemcu-32s
+  #board: esp-wrover-kit # use with WT32-ETH01
   framework: 
     type: arduino
     version: recommended
@@ -137,6 +143,15 @@ wifi:
   ap:
     ssid: "$name"
     password: !secret wifi_password
+
+# Configuration for WT32-ETH01. Also comment out wifi section
+# ethernet:
+#   type: LAN8720
+#   mdc_pin: GPIO23
+#   mdio_pin: GPIO18
+#   clk_mode: GPIO0_IN
+#   phy_addr: 1
+#   power_pin: GPIO16
 
 logger:
   baud_rate: 115200
