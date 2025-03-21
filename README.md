@@ -210,7 +210,8 @@ resources:
 
 ### Panel Card example
 	
-![image](https://github.com/user-attachments/assets/764c5d96-8335-4048-8bcc-85c49e20622e)
+![image](https://github.com/user-attachments/assets/db4bdf2c-ed17-4ee0-b33e-f0bd9359d61a)
+
 
 
 ### Panel card example lovelace configuration
