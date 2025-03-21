@@ -217,7 +217,7 @@ resources:
 ### Panel card example lovelace configuration
 ```
 type: custom:alarm-keypad-card
-title: DSC keypad - partition 1
+title: DSC Keypad
 disp_line1: sensor.dscalarm_ln1_1
 disp_line2: sensor.dscalarm_ln2_1
 service_type: esphome
@@ -225,23 +225,23 @@ service: dscalarm_alarm_keypress_partition
 status_A: READY
 status_B: ARMED
 status_C: TROUBLE
-status_D: AC
 sensor_A: binary_sensor.dscalarm_rdy_1
 sensor_B: binary_sensor.dscalarm_arm_1
 sensor_C: binary_sensor.dscalarm_tr
 sensor_D: binary_sensor.dscalarm_ac
+status_D: AC
 status_A_off_icon: mdi:circle-off-outline
 status_A_on_icon: mdi:check-circle
 status_A_color: green
-status_C_color: orange
 status_C_on_icon: mdi:alert
 status_C_off_icon: mdi:triangle-outline
-status_B_color: red
+status_C_color: orange
 status_B_on_icon: mdi:shield-lock
 status_B_off_icon: mdi:shield-off-outline
-status_D_color: orange
+status_B_color: red
 status_D_on_icon: mdi:power-plug
 status_D_off_icon: mdi:power-plug-off-outline
+status_D_color: green
 button_A: STAY
 button_B: AWAY
 button_C: NIGHT
@@ -262,12 +262,6 @@ cmd_C:
 cmd_D:
   keys: C
   partition: 1
-cmd_E:
-  keys: null
-  partition: 1
-cmd_H:
-  keys: null
-  partition: 1
 cmd_F:
   keys: <
   partition: 1
@@ -276,6 +270,7 @@ cmd_G:
   partition: 1
 key_0:
   keys: "0"
+  partition: 1
 key_1:
   keys: "1"
   partition: 1
@@ -330,12 +325,10 @@ button_disabled_E: true
 button_disabled_F: false
 button_disabled_G: false
 button_disabled_H: true
-view_bottom: true
 scale: 1
-view_status_2: false
+left_buttons: false
 view_bottom: true
-button_left: false
-vibration_duration: 5
+
 	
 ```	
 
