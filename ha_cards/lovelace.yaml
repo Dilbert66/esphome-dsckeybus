@@ -7,11 +7,11 @@ service: dscalarm_alarm_keypress_partition
 status_A: READY
 status_B: ARMED
 status_C: TROUBLE
+status_D: AC
 sensor_A: binary_sensor.dscalarm_rdy_1
 sensor_B: binary_sensor.dscalarm_arm_1
 sensor_C: binary_sensor.dscalarm_tr
 sensor_D: binary_sensor.dscalarm_ac
-status_D: AC
 status_A_off_icon: mdi:circle-off-outline
 status_A_on_icon: mdi:check-circle
 status_A_color: green
