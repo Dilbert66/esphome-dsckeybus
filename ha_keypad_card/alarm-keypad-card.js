@@ -1,4 +1,4 @@
-console.info("%c  ALARM-KEYPAD-CARD %c v0.2.1 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
+console.info("%c  ALARM-KEYPAD-CARD %c v0.2.2 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
 
 const LitElement = Object.getPrototypeOf(customElements.get("ha-panel-lovelace"));
 const html = LitElement.prototype.html;
@@ -117,18 +117,6 @@ class AlarmKeypadCard extends LitElement {
           color: var(--disabled-text-color);
         }
         
-        .mdc-icon.active ha-icon {
-            color: rgb(76, 175, 80);
-        }
-        
-        .mdc-icon.trouble ha-icon {
-            color: rgb(244, 67, 54);
-        }
-
-        .mdc-icon.warning ha-icon {
-            color: orange;
-        }
-
         .bottom {
           padding-left: 2px;
           text-align:center;
@@ -179,16 +167,16 @@ class AlarmKeypadCard extends LitElement {
 
                 ${this._view_status?html`
                 <div class='pad'>
-                    <div class='mdc-button  mdc-icon ${this._status_A_state}'><span class="icon-label">${this._status_A}</span>
+                    <div class='mdc-button  mdc-icon' style='color:${this._status_A_state};'><span class="icon-label">${this._status_A}</span>
                         <ha-icon id="icon-a" icon="${this._iconA}"/>
                     </div>
-                    <div class='mdc-button  mdc-icon ${this._status_B_state}'><span class="icon-label">${this._status_B}</span>
+                    <div class='mdc-button  mdc-icon' style='color:${this._status_B_state};'><span class="icon-label">${this._status_B}</span>
                         <ha-icon id="icon-b" icon="${this._iconB}"/>
                     </div>
-                    <div class='mdc-button  mdc-icon ${this._status_C_state}'><span class="icon-label">${this._status_C}</span>
+                    <div class='mdc-button  mdc-icon' style='color:${this._status_C_state};'><span class="icon-label">${this._status_C}</span>
                         <ha-icon id="icon-c" icon="${this._iconC}"/>
                     </div>
-                    <div class='mdc-button mdc-icon ${this._status_D_state}'><span class="icon-label">${this._status_D}</span>
+                    <div class='mdc-button mdc-icon' style='color:${this._status_D_state};'><span class="icon-label">${this._status_D}</span>
                         <ha-icon id="icon-d" icon="${this._iconD}"/>
                     </div>                    
                 </div>`:''}
@@ -196,18 +184,18 @@ class AlarmKeypadCard extends LitElement {
 
                 ${this._view_status2?html`
                 <div class='pad'>
-                    <div class='mdc-button  mdc-icon ${this._status_E_state}'><span class="icon-label">${this._status_E}</span>
+                    <div class='mdc-button  mdc-icon' style='color:${this._status_E_state};'><span class="icon-label">${this._status_E}</span>
                         <ha-icon id="icon-e" icon="${this._iconE}"/>
                     </div>
   
-                    <div class='mdc-button  mdc-icon ${this._status_F_state}'><span class="icon-label">${this._status_F}</span>
+                    <div class='mdc-button  mdc-icon' style='color:${this._status_F_state};'><span class="icon-label">${this._status_F}</span>
                         <ha-icon id="icon-f" icon="${this._iconF}"/>
                     </div>
 
-                    <div class='mdc-button  mdc-icon ${this._status_G_state}'><span class="icon-label">${this._status_G}</span>
+                    <div class='mdc-button  mdc-icon' style='color:${this._status_G_state};'><span class="icon-label">${this._status_G}</span>
                         <ha-icon id="icon-g" icon="${this._iconG}"/>
                     </div>
-                    <div class='mdc-button mdc-icon ${this._status_H_state}'><span class="icon-label">${this._status_H}</span>
+                    <div class='mdc-button mdc-icon' style='color:${this._status_H_state};'><span class="icon-label">${this._status_H}</span>
                         <ha-icon id="icon-h" icon="${this._iconH}"/>
                     </div>                    
                 </div>`:''}
@@ -600,14 +588,14 @@ class AlarmKeypadCard extends LitElement {
       this._status_H_on_icon=(config.status_H_on_icon != null)?config.status_H_on_icon:"mdi:check-circle-outline" 
       this._status_H_off_icon=(config.status_H_off_icon != null)?config.status_H_off_icon:"mdi:circle-outline" 
 
-      this._status_A_type=(config.status_A_type != null)?config.status_A_type:"active"   
-      this._status_B_type=(config.status_B_type != null)?config.status_B_type:"active" 
-      this._status_C_type=(config.status_C_type != null)?config.status_C_type:"active" 
-      this._status_D_type=(config.status_D_type != null)?config.status_D_type:"active" 
-      this._status_E_type=(config.status_E_type != null)?config.status_E_type:"active" 
-      this._status_F_type=(config.status_F_type != null)?config.status_F_type:"active" 
-      this._status_G_type=(config.status_G_type != null)?config.status_G_type:"active" 
-      this._status_H_type=(config.status_H_type != null)?config.status_H_type:"active" 
+      this._status_A_color=(config.status_A_color != null)?config.status_A_color:"green"   
+      this._status_B_color=(config.status_B_color != null)?config.status_B_color:"green"   
+      this._status_C_color=(config.status_C_color != null)?config.status_C_color:"green"   
+      this._status_D_color=(config.status_D_color != null)?config.status_D_color:"green"   
+      this._status_E_color=(config.status_E_color != null)?config.status_E_color:"green"   
+      this._status_F_color=(config.status_F_color != null)?config.status_F_color:"green"   
+      this._status_G_color=(config.status_G_color != null)?config.status_G_color:"green"   
+      this._status_H_color=(config.status_H_color != null)?config.status_H_color:"green"   
    
       this._cmd_A=(config.cmd_A != null)?config.cmd_A:"";
       this._cmd_B=(config.cmd_B != null)?config.cmd_B:"";
@@ -667,15 +655,15 @@ class AlarmKeypadCard extends LitElement {
     this._iconG= this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?this._status_G_on_icon: this._status_G_off_icon:"";
     this._iconH= this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?this._status_H_on_icon: this._status_H_off_icon:"";
 
-    this._status_A_state= this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?this._status_A_type:'':"";
-    this._status_B_state= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?this._status_B_type:'':"";
-    this._status_C_state= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?this._status_C_type:'':"";
-    this._status_D_state= this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?this._status_D_type:'':"";
+    this._status_A_state= this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?this._status_A_color:'':"";
+    this._status_B_state= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?this._status_B_color:'':"";
+    this._status_C_state= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?this._status_C_color:'':"";
+    this._status_D_state= this._kpdd?(this._kpdd.state.toLowerCase() == "on" || this._kpdd.state == "1")?this._status_D_color:'':"";
 
-    this._status_E_state= this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?this._status_E_type:'':"";
-    this._status_F_state= this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")?this._status_F_type:'':"";
-    this._status_G_state= this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?this._status_G_type:'':"";
-    this._status_H_state= this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?this._status_H_type:'':"";
+    this._status_E_state= this._kpde?(this._kpde.state.toLowerCase() == "on" || this._kpde.state == "1")?this._status_E_color:'':"";
+    this._status_F_state= this._kpdf?(this._kpdf.state.toLowerCase() == "on" || this._kpdf.state == "1")?this._status_F_color:'':"";
+    this._status_G_state= this._kpdg?(this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1")?this._status_G_color:'':"";
+    this._status_H_state= this._kpdh?(this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1")?this._status_H_color:'':"";
 
 
 
