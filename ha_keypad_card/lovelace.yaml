@@ -24,9 +24,9 @@ status_C_color: orange
 status_D_on_icon: mdi:power-plug
 status_D_off_icon: mdi:power-plug-off-outline
 status_D_color: green
-lcd_bg_color: var(--input-fill-color)
+lcd_bg_color: var(--divider-color)
 lcd_text_color: var(--primary-text-color)
-button_bg_color: var(--input-disabled-fill-color)
+button_bg_color: var(--input-fill-color)
 button_text_color: var(--primary-text-color)
 sensor_label_color: var(--primary-text-color)
 button_hover_color: var(--secondary-background-color)

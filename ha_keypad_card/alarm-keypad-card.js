@@ -1,4 +1,4 @@
-console.info("%c  ALARM-KEYPAD-CARD %c v0.2.4 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
+console.info("%c  ALARM-KEYPAD-CARD %c v0.3.1 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
 
 import {
   LitElement,
@@ -341,6 +341,7 @@ class AlarmKeypadCard extends LitElement {
       this._view_status= (config.view_status != null) ? config.view_status : true;
       this._view_status2= (config.view_status_2 != null) ? config.view_status_2 : false;
       this._scale= (config.scale != null) ? "transform-origin: 0 0; zoom: "+config.scale+"; -moz-transform: scale("+config.scale+");" : "1";
+
       this._button_A=(config.button_A != null)?config.button_A:"A";
       this._button_B=(config.button_B != null)?config.button_B:"B";
       this._button_C=(config.button_C != null)?config.button_C:"C";
@@ -403,9 +404,9 @@ class AlarmKeypadCard extends LitElement {
       this._status_G_color=(config.status_G_color != null)?config.status_G_color:"green" ;  
       this._status_H_color=(config.status_H_color != null)?config.status_H_color:"green" ;  
 
-      this._lcdbgcolor=(config.lcd_bg_color != null)?config.lcd_bg_color:"var(--input-fill-color)"; 
+      this._lcdbgcolor=(config.lcd_bg_color != null)?config.lcd_bg_color:"var((--divider-color)"; 
       this._lcdtextcolor=(config.lcd_text_color != null)?config.lcd_text_color:"var(--primary-text-color)"; 
-      this._buttonbgcolor=(config.button_bg_color != null)?config.button_bg_color:"var(--input-disabled-fill-color)";  
+      this._buttonbgcolor=(config.button_bg_color != null)?config.button_bg_color:"var(--input-fill-color)";  
       this._buttontextcolor=(config.button_text_color != null)?config.button_text_color:"var(--primary-text-color)"; 
       this._sensorlabelcolor=(config.sensor_label_color != null)?config.sensor_label_color:"var(--primary-text-color)" ;  
       this._buttonhovercolor=(config.sensor_hover_color != null)?config.sensor_hover_color:"var(--secondary-background-color)" ; 
@@ -457,6 +458,7 @@ class AlarmKeypadCard extends LitElement {
     this._kpdf = this._hass.states[this._config.sensor_F];    
     this._kpdg = this._hass.states[this._config.sensor_G]; 
     this._kpdh = this._hass.states[this._config.sensor_H]; 
+
     this._iconA= this._kpda?(this._kpda.state.toLowerCase() == "on" || this._kpda.state == "1")?this._status_A_on_icon: this._status_A_off_icon:"";
     this._iconB= this._kpdb?(this._kpdb.state.toLowerCase() == "on" || this._kpdb.state == "1")?this._status_B_on_icon: this._status_B_off_icon:"";
     this._iconC= this._kpdc?(this._kpdc.state.toLowerCase() == "on" || this._kpdc.state == "1")?this._status_C_on_icon: this._status_C_off_icon:"";
@@ -606,12 +608,14 @@ static get styles() {
           background-color: var(--lcdbg);
           border-radius: 10px;
           width: 260px;
-          height: 50px;
+          height: 60px;
           margin: auto;
-          margin-bottom: 20px;
+          margin-top: 10px;
+          margin-bottom: 10px;
           border: 1px solid var(--disabled-color);
           overflow: auto;
           padding: 5px;
+          padding-top: 10px;
         }
         .display_line {
           font-size: calc(var(--base-unit) * .8);
