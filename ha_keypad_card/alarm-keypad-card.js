@@ -649,7 +649,6 @@ ha-card[color-scheme="light"] {
           font-family: monospace;
           display: flex;
           justify-content: center;
-          font-family: "Courier New", monospace;
         }
         #display_line1 {
           padding-bottom: 10px;
