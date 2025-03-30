@@ -254,7 +254,6 @@ style:
   "--buttonactivecolordark": var(--secondary-text-color)
   "--sensorlabelcolordark": var(--accent-color));
   "--buttonfocuscolordark": var(--outline-color)
-  "--inactivecolordark": var(--disabled-color)
   "--sensoroffcolordark": var(--disabled-text-color)
   "--bordercolordark": var(--disabled-color)
 
@@ -267,7 +266,6 @@ style:
   "--buttonhovercolorlight": var(--outline-hover-color)
   "--buttonactivecolorlight": var(--secondary-text-color)
   "--buttonfocuscolorlight": var(--outline-color)
-  "--inactivecolorlight": var(--disabled-color)
   "--bordercolorlight": var(--disabled-color)
 
 button_A: STAY
