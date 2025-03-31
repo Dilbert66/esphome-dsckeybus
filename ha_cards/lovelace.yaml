@@ -24,15 +24,30 @@ status_B_color: red
 status_D_on_icon: mdi:power-plug
 status_D_off_icon: mdi:power-plug-off-outline
 status_D_color: green
-lcd_bg_color: var(--input-fill-color)
-lcd_text_color: var(--primary-text-color)
-button_bg_color: var(--input-disabled-fill-color)
-button_text_color: var(--primary-text-color)
-sensor_label_color: var(--primary-text-color)
-button_hover_color: var(--secondary-background-color)
-button_active_color: var(secondary-text-color)
-button_focus_color: var(--secondary-background-color)
-sensor_off_color: var(--disabled-text-color)
+
+style:
+  "--lcdbgcolordark": var(--input-fill-color)
+  "--lcdtextcolordark": var(--primary-text-color)
+  "--buttonbgcolordark": var(--input-fill-color)
+  "--buttontextcolordark": var(--primary-color)
+  "--buttonhovercolordark": var(--outline-hover-color)
+  "--buttonactivecolordark": var(--secondary-text-color)
+  "--sensorlabelcolordark": var(--accent-color));
+  "--buttonfocuscolordark": var(--outline-color)
+  "--sensoroffcolordark": var(--disabled-text-color)
+  "--bordercolordark": var(--disabled-color)
+
+  "--sensoroffcolorlight": var(--disabled-text-color)
+  "--lcdbgcolorlight": var(--input-fill-color)
+  "--lcdtextcolorlight": var(--primary-text-color)
+  "--sensorlabelcolorlight": var(--accent-color));
+  "--buttonbgcolorlight": var(--input-fill-color)
+  "--buttontextcolorlight": var(--primary-color)
+  "--buttonhovercolorlight": var(--outline-hover-color)
+  "--buttonactivecolorlight": var(--secondary-text-color)
+  "--buttonfocuscolorlight": var(--outline-color)
+  "--bordercolorlight": var(--disabled-color)
+
 button_A: STAY
 button_B: AWAY
 button_C: NIGHT

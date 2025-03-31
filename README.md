@@ -242,6 +242,29 @@ status_B_color: red
 status_D_on_icon: mdi:power-plug
 status_D_off_icon: mdi:power-plug-off-outline
 status_D_color: green
+#optional styling and colors
+style:
+  "--lcdbgcolordark": var(--input-fill-color)
+  "--lcdtextcolordark": var(--primary-text-color)
+  "--buttonbgcolordark": var(--input-fill-color)
+  "--buttontextcolordark": var(--primary-color)
+  "--buttonhovercolordark": var(--outline-hover-color)
+  "--buttonactivecolordark": var(--secondary-text-color)
+  "--sensorlabelcolordark": var(--accent-color));
+  "--buttonfocuscolordark": var(--outline-color)
+  "--sensoroffcolordark": var(--disabled-text-color)
+  "--bordercolordark": var(--disabled-color)
+
+  "--sensoroffcolorlight": var(--disabled-text-color)
+  "--lcdbgcolorlight": var(--input-fill-color)
+  "--lcdtextcolorlight": var(--primary-text-color)
+  "--sensorlabelcolorlight": var(--accent-color));
+  "--buttonbgcolorlight": var(--input-fill-color)
+  "--buttontextcolorlight": var(--primary-color)
+  "--buttonhovercolorlight": var(--outline-hover-color)
+  "--buttonactivecolorlight": var(--secondary-text-color)
+  "--buttonfocuscolorlight": var(--outline-color)
+  "--bordercolorlight": var(--disabled-color)
 button_A: STAY
 button_B: AWAY
 button_C: NIGHT
