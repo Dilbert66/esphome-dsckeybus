@@ -1,4 +1,4 @@
-console.info("%c  ALARM-KEYPAD-CARD %c v0.4.0 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
+console.info("%c  ALARM-KEYPAD-CARD %c v0.4.1 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
 
 import {
   LitElement,
@@ -26,8 +26,8 @@ class AlarmKeypadCard extends LitElement {
 
                 ${this._view_status ? html`
                 <div class='pad'>
-                    <div class='mdc-button  mdc-icon' style='color:${this._status_A_state};'><span class="icon-label">${this._status_A}</span>
-                        <ha-icon id="icon-a" icon="${this._iconA}"/>
+                    <div class='mdc-button mdc-icon' style='color:${this._status_A_state};'><span class="icon-label">${this._status_A}</span>
+                        <ha-icon  id="icon-a" icon="${this._iconA}"  />
                     </div>
                     <div class='mdc-button  mdc-icon' style='color:${this._status_B_state};'><span class="icon-label">${this._status_B}</span>
                         <ha-icon id="icon-b" icon="${this._iconB}"/>
@@ -267,15 +267,6 @@ class AlarmKeypadCard extends LitElement {
       this.beepChanged();
     }
 
-    if (changedProperties.has("_config")) {
-
-      for (let i in this._style) {
-        var v = this._style[i].replace(/;/gi, '');
-        // console.log(i,v);
-        this.style.setProperty(i, v);
-      }
-
-    }
   }
 
 
@@ -368,14 +359,14 @@ class AlarmKeypadCard extends LitElement {
     this._button_disabled_G = (config.button_disabled_G) || this._cmd_G == "disabled" ? " disabled" : "";
     this._button_disabled_H = (config.button_disabled_H) || this._cmd_H == "disabled" ? " disabled" : "";
 
-    this._status_A = (config.status_A != null) ? config.status_A : "A";
-    this._status_B = (config.status_B != null) ? config.status_B : "B";
-    this._status_C = (config.status_C != null) ? config.status_C : "C";
-    this._status_D = (config.status_D != null) ? config.status_D : "D";
-    this._status_E = (config.status_E != null) ? config.status_E : "E";
-    this._status_F = (config.status_F != null) ? config.status_F : "F";
-    this._status_G = (config.status_G != null) ? config.status_G : "G";
-    this._status_H = (config.status_H != null) ? config.status_H : "H";
+    this._status_A = (config.status_A != null) ? config.status_A : "";
+    this._status_B = (config.status_B != null) ? config.status_B : "";
+    this._status_C = (config.status_C != null) ? config.status_C : "";
+    this._status_D = (config.status_D != null) ? config.status_D : "";
+    this._status_E = (config.status_E != null) ? config.status_E : "";
+    this._status_F = (config.status_F != null) ? config.status_F : "";
+    this._status_G = (config.status_G != null) ? config.status_G : "";
+    this._status_H = (config.status_H != null) ? config.status_H : "";
 
     this._status_A_on_icon = (config.status_A_on_icon != null) ? config.status_A_on_icon : "mdi:check-circle-outline";
     this._status_A_off_icon = (config.status_A_off_icon != null) ? config.status_A_off_icon : "mdi:circle-outline";
@@ -432,7 +423,12 @@ class AlarmKeypadCard extends LitElement {
 
     this._vibrate = (config.vibration_duration != null) ? config.vibration_duration : 5;
 
-    this._style = config.style != null ? config.style : "";
+       this._style = config.style != null ? config.style : "";
+       for (let i in this._style) {
+        var v = this._style[i].replace(/;/gi, '');
+         //console.log(i,v);
+        this.style.setProperty(i, v);
+       }
 
   }
 
@@ -571,7 +567,7 @@ class AlarmKeypadCard extends LitElement {
 
       :host {
            width: 100%;
-            
+           --mdc-icon-size: 18px;
        }
 
 ha-card[color-scheme="dark"] {
@@ -604,7 +600,7 @@ ha-card[color-scheme="light"] {
        ha-card {
           width: 100%;
           position: relative;
-          font-size: calc(var(--base-unit));
+          font-size: var(--base-unit);
           padding-bottom: 16px;
         }
 
@@ -628,7 +624,7 @@ ha-card[color-scheme="light"] {
          
         }
         .display_line {
-          font-size: calc(var(--base-unit) * .8);
+          font-size: 1rem;
           line-height: 1.1;
           color: var(--lcdtext);
           font-family: monospace;
@@ -653,6 +649,7 @@ ha-card[color-scheme="light"] {
         }
 
         .mdc-button {
+
           margin-top: 8px;
           margin-right: 8px;
           margin-bottom: 8px;
@@ -664,6 +661,8 @@ ha-card[color-scheme="light"] {
            border: 1px solid var(--bordercolor);
            color: var(--buttontext);
            background-color: var(--buttonbg);
+           font-size: 0.8rem;
+          /* max-height: 35px;*/
         }
         
         .mdc-button--outlined:hover {
@@ -689,16 +688,21 @@ ha-card[color-scheme="light"] {
         }
         
         .mdc-icon {
-          height: 42px;
+          height: 40px;
           margin-top: 4px;
           margin-right: 4px;
           margin-bottom: 4px;
           margin-left: 4px;
         }
+
+        ha-icon {
+            
+
+        }
         
         .icon-label:not(:disabled) {
          color: var(--sensorlabel);
-         font-size: calc(.6rem);
+         font-size: 0.53rem;
         }
         
         .mdc-icon:not(:disabled) {
@@ -730,7 +734,7 @@ ha-card[color-scheme="light"] {
         }
         
        .keypad_cmd_text {
-        font-size: calc(.5rem);
+        font-size: 0.52rem;
         font-style: italic; 
         padding-left: .2rem;
        }        
