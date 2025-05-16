@@ -246,8 +246,8 @@ status_D_color: green
 
 #all style/color settings are optional. These are the default for dark and light modes
 style:
-  "--lcdbgcolordark": var(--input-fill-color)
-  "--lcdtextcolordark": var(--primary-text-color)
+  "--lcdbgcolordark": "#859c99"
+  "--lcdtextcolordark": "#222"
   "--buttonbgcolordark": var(--input-fill-color)
   "--buttontextcolordark": var(--primary-color)
   "--buttonhovercolordark": var(--outline-hover-color)
@@ -258,8 +258,8 @@ style:
   "--bordercolordark": var(--disabled-color)
 
   "--sensoroffcolorlight": var(--disabled-text-color)
-  "--lcdbgcolorlight": var(--input-fill-color)
-  "--lcdtextcolorlight": var(--primary-text-color)
+  "--lcdbgcolorlight": "#859c99"
+  "--lcdtextcolorlight": "#222"
   "--sensorlabelcolorlight": var(--accent-color));
   "--buttonbgcolorlight": var(--input-fill-color)
   "--buttontextcolorlight": var(--primary-color)

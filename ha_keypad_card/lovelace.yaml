@@ -25,21 +25,21 @@ status_D_on_icon: mdi:power-plug
 status_D_off_icon: mdi:power-plug-off-outline
 status_D_color: green
 style:
-  "--lcdbgcolordark": var(--input-fill-color)
-  "--lcdtextcolordark": var(--primary-text-color)
+  "--lcdbgcolordark": "#859c99"
+  "--lcdtextcolordark": "#222"
   "--buttonbgcolordark": var(--input-fill-color)
   "--buttontextcolordark": var(--primary-color)
   "--buttonhovercolordark": var(--outline-hover-color)
   "--buttonactivecolordark": var(--secondary-text-color)
-  "--sensorlabelcolordark": var(--accent-color));
+  "--sensorlabelcolordark": var(--accent-color)
   "--buttonfocuscolordark": var(--outline-color)
   "--sensoroffcolordark": var(--disabled-text-color)
   "--bordercolordark": var(--disabled-color)
 
   "--sensoroffcolorlight": var(--disabled-text-color)
-  "--lcdbgcolorlight": var(--input-fill-color)
-  "--lcdtextcolorlight": var(--primary-text-color)
-  "--sensorlabelcolorlight": var(--accent-color));
+  "--lcdbgcolorlight": "#859c99"
+  "--lcdtextcolorlight": "#222"
+  "--sensorlabelcolorlight": var(--accent-color)
   "--buttonbgcolorlight": var(--input-fill-color)
   "--buttontextcolorlight": var(--primary-color)
   "--buttonhovercolorlight": var(--outline-hover-color)

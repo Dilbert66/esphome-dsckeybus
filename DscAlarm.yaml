@@ -81,7 +81,7 @@ esp32:
 external_components:
   - source: github://Dilbert66/esphome-components@dev #uncomment to use github repository (dev branch selected)
   #- source:  my_components #uncomment to use local directory 
-    components: [dsc_alarm_panel,web_keypad] 
+    components: [dsc_alarm_panel,web_keypad,mg_lib] 
     refresh: 10min
     
     
