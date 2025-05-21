@@ -20,14 +20,15 @@ dsc_alarm_panel:
   # dsc debug level: 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
   dscdebuglevel: "2"  
    
-  #zone expander addresses:
+  #virtual zone expander addresses:
   # 9  - zones 9-16
   # 10 - zones 17-24
   # 11 - zones 25-32
   # 12 - zones 33-40 (for systems with 64 zone support)
   # 13 - zones 41-48 (for systems with 64 zone support)
   # 14 - zones 49-56 (for systems with 64 zone support)
-  # 16 - zones 57-64 (for systems with 64 zone support)  
+  # 16 - zones 57-64 (for systems with 64 zone support) 
+  # !! Note: if you already have real zone expanders on the bus (pc5108), ensure you do use the same addresses here. 
   expanderaddr1: "0" # 1st zone expander emulator address to use . Set to 0 to disable. 
   expanderaddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
 
