@@ -86,11 +86,11 @@ external_components:
     refresh: 10min
     
     
-#web keypad component. Remove or comment if not needed
+# web keypad component. Remove or comment if not needed
 # each included files will be downloaded automatically and compiled within the flash.  
 # there will be no need for internet access when running.
-#For www.js build details and source: https://github.com/Dilbert66/esphome-webserver-custom/tree/keypad
-#Component source: https://github.com/Dilbert66/esphome-components/tree/keypad/components/web_keypad
+# For www.js build details and source: https://github.com/Dilbert66/esphome-webserver-custom/tree/keypad
+# Component source: https://github.com/Dilbert66/esphome-components/tree/keypad/components/web_keypad
 ### Note: this is an ESP32 only component. The esp8266 does not support the resources needed.
 
 
@@ -161,6 +161,7 @@ logger:
 api:
    encryption:
     key: !secret encryption_key
+   custom_services: true 
     
     
 #to use mqtt disable the api: section above. This enables you to use esphome with 
@@ -181,8 +182,8 @@ safe_mode:
 ota:
    password: !secret ota_password
    platform: esphome
-   #on_begin: #disabled due to bug in esphome
-       #switch.turn_off: connection_status_switch   
+   on_begin: 
+       switch.turn_off: connection_status_switch   
    
 time:
  - platform: sntp
