@@ -20,15 +20,14 @@ dsc_alarm_panel:
   # dsc debug level: 0 = off, 1 = minimal, 2 = all packets shown on console  3 =  + serial port debugging
   dscdebuglevel: "2"  
    
-  #virtual zone expander addresses:
+  #zone expander addresses:
   # 9  - zones 9-16
   # 10 - zones 17-24
   # 11 - zones 25-32
   # 12 - zones 33-40 (for systems with 64 zone support)
   # 13 - zones 41-48 (for systems with 64 zone support)
   # 14 - zones 49-56 (for systems with 64 zone support)
-  # 16 - zones 57-64 (for systems with 64 zone support) 
-  # !! Note: if you already have real zone expanders on the bus (pc5108), ensure you do use the same addresses here. 
+  # 16 - zones 57-64 (for systems with 64 zone support)  
   expanderaddr1: "0" # 1st zone expander emulator address to use . Set to 0 to disable. 
   expanderaddr2: "0" # 2nd expander emulator address to use . Set to 0 to disable. 
 
@@ -36,11 +35,6 @@ dsc_alarm_panel:
   dscclockpin: "22"
   dscreadpin: "21"
   dscwritepin: "18"
-  
-  ##WT32-ETH01 Pins
-  #dscclockpin: "15"
-  #dscreadpin: "14"
-  #dscwritepin: "4"
   
   ##ESP8266 Pins
   #dscclockpin: "5"
@@ -66,7 +60,6 @@ dsc_alarm_panel:
 
 esp32: 
   board: nodemcu-32s
-  #board: esp-wrover-kit # use with WT32-ETH01
   framework: 
     type: arduino
     version: recommended
@@ -80,34 +73,47 @@ esp32:
 #copy the code to directory "my_components" in your main esphome directory   
 # see here for more info: https://esphome.io/components/external_components       
 external_components:
-  - source: github://Dilbert66/esphome-components@dev #uncomment to use github repository (dev branch selected)
+  - source: github://Dilbert66/esphome-components@main #uncomment to use github repository (main branch selected)
   #- source:  my_components #uncomment to use local directory 
     components: [dsc_alarm_panel,web_keypad,mg_lib] 
     refresh: 10min
     
     
-# web keypad component. Remove or comment if not needed
-# each included files will be downloaded automatically and compiled within the flash.  
-# there will be no need for internet access when running.
-# For www.js build details and source: https://github.com/Dilbert66/esphome-webserver-custom/tree/keypad
-# Component source: https://github.com/Dilbert66/esphome-components/tree/keypad/components/web_keypad
+#web keypad component. remove or comment if not needed
+# Each included file will be downloaded automatically and compiled within the flash.  
+# There will be no need for internet access when running.
+#For www.js build details and source: https://github.com/Dilbert66/esphome-webserver-custom/tree/keypad
+#Component source: https://github.com/Dilbert66/esphome-components/tree/keypad/components/web_keypad
 ### Note: this is an ESP32 only component. The esp8266 does not support the resources needed.
-
 
 web_keypad:
   port: 80 
   partitions: 1  # a keypad will be shown for each partition
   log: false
+  version: 3
+  sorting_groups:
+    - id: zones
+      name: "Zones"
+      sorting_weight: -4
+    - id: partition1
+      name: "Partition 1"
+      sorting_weight: -3
+    - id: partition2
+      name: "Partition 2"
+      sorting_weight: -2
+    - id: partition3
+      name: "Partition 3"
+      sorting_weight: -1
   auth:          #this section is optional. Enable if you need authentication/encryption
     username: test
     password: test
     encryption: true  #set true to use AES256HMAC encryption/auth for sent keys and returned LCD messages
                       #set to false to use Digest authentication - no encryption
   config_url: https://dilbert66.github.io/config_files/config_dsc.yml  
-  js_url: https://dilbert66.github.io/js_files/www.js
+  js_url: https://dilbert66.github.io/js_files/www_v3.js
   ## If you prefer to use locally hosted compile time files comment the two lines above and uncomment below
   #config_local: ./config_dsc.yml    
-  #js_local: ./www.js    
+  #js_local: ./www_v3.js    
   
   ## custom function call to send keypresses if other than dsc/vista components are used. Parmeters are a string keys and int partition
   #service_lambda: |- 
@@ -145,15 +151,6 @@ wifi:
     ssid: "$name"
     password: !secret wifi_password
 
-# Configuration for WT32-ETH01. Also comment out wifi section
-# ethernet:
-#   type: LAN8720
-#   mdc_pin: GPIO23
-#   mdio_pin: GPIO18
-#   clk_mode: GPIO0_IN
-#   phy_addr: 1
-#   power_pin: GPIO16
-
 logger:
   baud_rate: 115200
   level: DEBUG
@@ -161,7 +158,7 @@ logger:
 api:
    encryption:
     key: !secret encryption_key
-   custom_services: true 
+   custom_services: true
     
     
 #to use mqtt disable the api: section above. This enables you to use esphome with 
@@ -182,8 +179,8 @@ safe_mode:
 ota:
    password: !secret ota_password
    platform: esphome
-   on_begin: 
-       switch.turn_off: connection_status_switch   
+   #on_begin: #disabled due to bug in esphome
+       #switch.turn_off: connection_status_switch   
    
 time:
  - platform: sntp
@@ -203,11 +200,19 @@ binary_sensor:
     id: z1
     name: "Front door z1"
     device_class: door
-
+    #example/optional sorting group functionality for web_keypad component
+#    web_keypad:
+#      sorting_group_id: zones
+#      sorting_weight: 1
+#
   - platform: dsc_alarm_panel
     id: z2
     name: "Garage door z2"
     device_class: door
+    #example/optional sorting group
+#    web_keypad:
+#      sorting_group_id: zones
+#      sorting_weight: 2
       
 
   - platform: dsc_alarm_panel
@@ -375,6 +380,11 @@ text_sensor:
     id: ps_1  
     name: "Status partition 1"
     icon: "mdi:shield"
+# sample filter to change "not_ready" status to "disarmed" for use in HA Alarm Panel
+#    filters:
+#      - lambda: |-
+#          if (x == "not_ready") x="disarmed";
+#          return x;
 
   - platform: dsc_alarm_panel
     id: ps_2  
