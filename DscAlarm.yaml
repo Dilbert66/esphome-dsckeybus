@@ -40,8 +40,22 @@ dsc_alarm_panel:
   #dscclockpin: "5"
   #dscreadpin: "4"
   #dscwritepin: "15" 
-  
 
+  #periodic check for trouble messages in seconds. Minium 30s. Defaults to 120s (2 minutes)
+  trouble_fetch_update_time: 120
+
+  #flag to have the esp check for trouble statuses for devices/zones when the trouble light goes on or off
+  #Note: It will prevent the physical panel from beeping to let you know as the check resets the beep.
+  #Sends *21 and *27 to the panel. Default: true
+  trouble_fetch: true
+  
+  #if true the available states will be:
+  #triggered,armed_home,armed_away,armed_night,pending,arming,disarmed,ready,not_ready
+  #if false the states will be:
+  #triggered,armed_home,armed_away,armed_night,pending,arming,disarmed
+  #the default is "false"
+  detailed_partition_state: false
+ 
   clean_build: "false" #default is false.  set to true if getting duplication errors in linking step.  
 
 esp32: 
@@ -59,26 +73,75 @@ esp32:
 #copy the code to directory "my_components" in your main esphome directory   
 # see here for more info: https://esphome.io/components/external_components       
 external_components:
-  - source: github://Dilbert66/esphome-components@main #uncomment to use github repository
+  - source: github://Dilbert66/esphome-components@main #uncomment to use github repository (main branch selected)
   #- source:  my_components #uncomment to use local directory 
-    components: [dsc_alarm_panel,binary_sensor,text_sensor] 
+    components: [dsc_alarm_panel,web_keypad,mg_lib] 
     refresh: 10min
+    
+    
+#web keypad component. remove or comment if not needed
+# Each included file will be downloaded automatically and compiled within the flash.  
+# There will be no need for internet access when running.
+#For www.js build details and source: https://github.com/Dilbert66/esphome-webserver-custom/tree/keypad
+#Component source: https://github.com/Dilbert66/esphome-components/tree/keypad/components/web_keypad
+### Note: this is an ESP32 only component. The esp8266 does not support the resources needed.
+
+web_keypad:
+  port: 80 
+  partitions: 1  # a keypad will be shown for each partition
+  log: false
+  version: 3
+  sorting_groups:
+    - id: zones
+      name: "Zones"
+      sorting_weight: -4
+    - id: partition1
+      name: "Partition 1"
+      sorting_weight: -3
+    - id: partition2
+      name: "Partition 2"
+      sorting_weight: -2
+    - id: partition3
+      name: "Partition 3"
+      sorting_weight: -1
+  auth:          #this section is optional. Enable if you need authentication/encryption
+    username: test
+    password: test
+    encryption: true  #set true to use AES256HMAC encryption/auth for sent keys and returned LCD messages
+                      #set to false to use Digest authentication - no encryption
+  config_url: https://dilbert66.github.io/config_files/config_dsc.yml  
+  js_url: https://dilbert66.github.io/js_files/www_v3.js
+  ## If you prefer to use locally hosted compile time files comment the two lines above and uncomment below
+  #config_local: ./config_dsc.yml    
+  #js_local: ./www_v3.js    
+  
+  ## custom function call to send keypresses if other than dsc/vista components are used. Parmeters are a string keys and int partition
+  #service_lambda: |- 
+      #$panelId->alarm_keypress_partition(keys,partition);      
+
   
 esphome:
   name: $name
   friendly_name: $friendlyName
+  
+#Example of how to set the panel time from the esp time on bootup  
+  #on_boot:
+    #priority: 600
+    #then:
+      #- lambda: |-
+         #   $panelId->set_panel_time();    
 
 #output sympols to output.map for debugging. You can remove if not needed
   platformio_options:
     build_flags: 
         - "-Wl,-Map,output.map"  
 
-#you can remove/disable this section if you don't want your panel time updated automatically  
-interval:
-  - interval: 7200s
-    then:
-      - lambda: |-
-          $panelId->set_panel_time();
+#you can remove/disable this section if you don't want your panel time updated automatically. 
+#interval:
+  #- interval: 7200s
+   # then:
+    #  - lambda: |-
+     #     $panelId->set_panel_time();  
   
 wifi:
   ssid: !secret wifi_ssid
@@ -95,6 +158,7 @@ logger:
 api:
    encryption:
     key: !secret encryption_key
+   custom_services: true
     
     
 #to use mqtt disable the api: section above. This enables you to use esphome with 
@@ -110,14 +174,13 @@ api:
   #discovery_prefix: "homeassistant"
   #topic_prefix: $name
  
-
 safe_mode: 
 
 ota:
    password: !secret ota_password
    platform: esphome
    #on_begin: #disabled due to bug in esphome
-       #switch.turn_off: connection_status_switch 
+       #switch.turn_off: connection_status_switch   
    
 time:
  - platform: sntp
@@ -125,7 +188,7 @@ time:
 
 ################################################################################
 # Edit binary and text sensors below to suit your alarm setup. 
-# The id code is entered using the "id_code:" tag.  Alternatively you can
+# The id code is entered using the "id:" tag.  Alternatively you can
 # add the id code in round brackets  at the end of the sensor name: eg. (z1)
 # You can safely add or remove any sensors as needed.
 
@@ -133,276 +196,288 @@ binary_sensor:
 ### zone setup ###
 # zone status open/close for each zone 
 # zone id code = z+zone number  
-  - platform: template
-    id_code: z1
-    name: "Front door (z1)"
+  - platform: dsc_alarm_panel
+    id: z1
+    name: "Front door z1"
     device_class: door
-    publish_initial_state: true        
-
-  - platform: template
-    id_code: z2
-    name: "Garage door (z2)"
+    #example/optional sorting group functionality for web_keypad component
+#    web_keypad:
+#      sorting_group_id: zones
+#      sorting_weight: 1
+#
+  - platform: dsc_alarm_panel
+    id: z2
+    name: "Garage door z2"
     device_class: door
-    publish_initial_state: true         
+    #example/optional sorting group
+#    web_keypad:
+#      sorting_group_id: zones
+#      sorting_weight: 2
+      
 
-  - platform: template
-    id_code: z3  
-    name: "Back door (z3)"
+  - platform: dsc_alarm_panel
+    id: z3  
+    name: "Back door z3"
     device_class: door
-    publish_initial_state: true         
 
-  - platform: template
-    id_code: z4  
-    name: "Living room window (z4)"
+  - platform: dsc_alarm_panel
+    id: z4  
+    name: "Living room window z4"
     device_class: window
-    publish_initial_state: true         
-
-  - platform: template
-    id_code: z5
-    name: "Dining room window (z5)"
+   
+  - platform: dsc_alarm_panel
+    id: z5
+    name: "Dining room window z5"
     device_class: window
-    publish_initial_state: true         
-
-  - platform: template
-    id_code: z1  
-    name: "Family room window LF (z6)"
+      
+  - platform: dsc_alarm_panel
+    id: z6
+    name: "Family room window LF z6"
     device_class: window
-    publish_initial_state: true         
-
-  - platform: template
-    id_code: z7  
-    name: "Family room window RF (z7)"
+      
+  - platform: dsc_alarm_panel
+    id: z7  
+    name: "Family room window RF z7"
     device_class: window
-    publish_initial_state: true         
-
-  - platform: template
-    id_code: z8  
-    name: "Basement windows (z8)"
+      
+  - platform: dsc_alarm_panel
+    id: z8  
+    name: "Basement windows z8"
     device_class: window
-    publish_initial_state: true        
-
-  - platform: template
-    id_code: z9
-    name: "Upstairs motion (z9)"
+     
+  - platform: dsc_alarm_panel
+    id: z9
+    name: "Upstairs motion z9"
     device_class: motion
-    publish_initial_state: true        
-
-  - platform: template
-    id_code: z10  
-    name: "Basement motion (z10)"
+     
+  - platform: dsc_alarm_panel
+    id: z10  
+    name: "Basement motion z10"
     device_class: motion
-    publish_initial_state: true        
-
-  - platform: template
-    id_code: z11  
-    name: "Main floor motion (z11)"
+     
+  - platform: dsc_alarm_panel
+    id: z11  
+    name: "Main floor motion z11"
     device_class: motion
-    publish_initial_state: true        
-
-  - platform: template
-    id_code: z17  
-    name: "Test sensor (z17)"
+     
+  - platform: dsc_alarm_panel
+    id: z17  
+    name: "Top floor motion z17"
     device_class: motion    
-    publish_initial_state: true        
-
+   
 ### non zone sensors ###
 # partition ready indicators
 # ready id code = rdy_ + partition number
-  - platform: template
-    id_code: rdy_1  
-    name: "Partition 1 Ready (rdy_1)"
-    publish_initial_state: true        
-
-  - platform: template
-    id_code: rdy_2  
-    name: "Partition 2 Ready (rdy_2)"    
-    publish_initial_state: true        
-
+  - platform: dsc_alarm_panel
+    id: rdy_1  
+    name: "Ready partition 1"
+     
+  - platform: dsc_alarm_panel
+    id: rdy_2  
+    name: "Ready partition 2"    
+     
 # partition arm indicators
 # arm id code = arm_ + partition number
-  - platform: template
-    id_code: arm_1  
-    name: "Partition 1 Armed (arm_1)"
-    publish_initial_state: true        
-
-  - platform: template
-    id_code: arm_2  
-    name: "Partition 2 Armed (arm_2)"   
-    publish_initial_state: true         
-
+  - platform: dsc_alarm_panel
+    id: arm_1  
+    name: "Armed partition 1"
+     
+  - platform: dsc_alarm_panel
+    id: arm_2  
+    name: "Armed partition 2"   
+      
 # panel trouble status indicator
 # trouble id code = tr
-  - platform: template
-    id_code: tr  
-    name: "Trouble Status (tr)"
+  - platform: dsc_alarm_panel
+    id: tr  
+    name: "Trouble Status"
     device_class: problem
-    publish_initial_state: true        
-
+     
 # bat id code = bat
 # panel battery status indicator
-  - platform: template
-    id_code: bat  
-    name: "Battery Status (bat)"
+  - platform: dsc_alarm_panel
+    id: bat  
+    name: "Battery Status"
     device_class: problem
-    publish_initial_state: true        
-
+     
 # ac id code = ac
 # panel AC power indicator
-  - platform: template
-    id_code: ac  
-    name: "AC Status (ac)"
+  - platform: dsc_alarm_panel
+    id: ac  
+    name: "AC Status"
     device_class: plug
-    publish_initial_state: true        
-    
+     
 # partition fire alarm indicators
 # fire id code = fa_ + partition number  
-  - platform: template
-    id_code: fa_1  
+  - platform: dsc_alarm_panel
+    id: fa_1  
     device_class: smoke
-    name: "Fire partition 1 Status (fa_1)"
-    publish_initial_state: true        
-    
-  - platform: template
-    id_code: fa_2  
+    name: "Fire Status partition 1"
+       
+  - platform: dsc_alarm_panel
+    id: fa_2  
     device_class: smoke
-    name: "Fire partition 2 Status (fa_2)"  
-    publish_initial_state: true          
+    name: "Fire Status partition 2"  
 
 # partition in alarm indicators
 # alarm id code = al_ + partition number  
-  - platform: template
-    id_code: al_1  
-    name: "partition 1 Alarm Status (al_1)"
-    publish_initial_state: true        
-    
-  - platform: template
-    id_code: al_2  
-    name: "partition 2 Alarm Status (al_2)"  
-    publish_initial_state: true        
-    
+  - platform: dsc_alarm_panel
+    id: al_1  
+    name: "Alarm Status partition 1"
+     
+  - platform: dsc_alarm_panel
+    id: al_2  
+    name: "Alarm Status partition 2"  
+     
 # relay PGM channels. Will show the state of the activate relay channel on/off
 # relay id code = r + channel number
-  - platform: template
-    id_code: r1  
-    name: "PGM 1 (r1)"
-    publish_initial_state: true        
+  - platform: dsc_alarm_panel
+    id: r1  
+    name: "PGM 1"
 
-  - platform: template
-    id_code: r2  
-    name: "PGM 2 (r2)"
-    publish_initial_state: true        
+  - platform: dsc_alarm_panel
+    id: r2  
+    name: "PGM 2"
+     
+  - platform: dsc_alarm_panel
+    id: r3  
+    name: "PGM 3"
+     
+  - platform: dsc_alarm_panel
+    id: r4  
+    name: "PGM 4"
 
-  - platform: template
-    id_code: r3  
-    name: "PGM 3 (r3)"
-    publish_initial_state: true        
+  #- platform: dsc_alarm_panel
+  #  name: "PGM 5"
 
-  - platform: template
-    id_code: r4  
-    name: "PGM 4 (r4)"
-    publish_initial_state: true        
+  #- platform: dsc_alarm_panel
+  #  name: "PGM 6"
 
-  #- platform: template
-  #  name: "PGM 5 (r5)"
+  #- platform: dsc_alarm_panel
+  #  name: "PGM 7"
 
-  #- platform: template
-  #  name: "PGM 6 (r6)"
-
-  #- platform: template
-  #  name: "PGM 7 (r7)"
-
-  #- platform: template
-  #  name: "PGM 8 (r8)"
+  #- platform: dsc_alarm_panel
+  #  name: "PGM 8"
               
 text_sensor:
 # general system status online/disconnected 
 # system status id code = ss
-  - platform: template
-    id_code: ss  
-    name: "System Status (ss)"
+  - platform: dsc_alarm_panel
+    id: ss  
+    name: "System Status"
     icon: "mdi:shield"
 
 # battery level status for wireless channels, tamper , in alarm, etc for individual zones
 # zone status id code = zs    
-  - platform: template
-    id_code: zs  
-    name: "zone status (zs)"
+  - platform: dsc_alarm_panel
+    id: zs  
+    name: "Zone Status"
     icon: "mdi:shield"  
 
 # partition status ie ready/not ready, triggered, etc
 # partition status id code = ps_ + partition number   
-  - platform: template
-    id_code: ps_1  
-    name: "Partition 1 Status (ps_1)"
+  - platform: dsc_alarm_panel
+    id: ps_1  
+    name: "Status partition 1"
     icon: "mdi:shield"
+# sample filter to change "not_ready" status to "disarmed" for use in HA Alarm Panel
+#    filters:
+#      - lambda: |-
+#          if (x == "not_ready") x="disarmed";
+#          return x;
 
-  - platform: template
-    id_code: ps_2  
-    name: "Partition 2 Status (ps_2)" 
+  - platform: dsc_alarm_panel
+    id: ps_2  
+    name: "Status partition 2" 
     icon: "mdi:shield"  
 
 # more verbose message regarding the partition status. ie zones open, bypassed, etc
 # partition message id code = msg_ + partition number    
-  - platform: template
-    id_code: msg_1  
-    name: "Partition 1 Msg (msg_1)"
+  - platform: dsc_alarm_panel
+    id: msg_1  
+    name: "Msg partition 1"
     icon: "mdi:alert-box"
 
-  - platform: template
-    id_code: msg_2  
-    name: "Partition 2 Msg (msg_2)"
+  - platform: dsc_alarm_panel
+    id: msg_2  
+    name: "Msg partition 2"
     icon: "mdi:alert-box"
 
 # virtual lcd keypad line1 and line2 messages for each partition   
 # partition line1 id code = ln1_ + partition number
 # partition line2 id code = ln2_ + partition number
 # partition 1
-  - platform: template
-    id_code: ln1_1  
-    name: "line1 Partition 1 (ln1_1)"
+  - platform: dsc_alarm_panel
+    id: ln1_1  
+    name: "line1 partition 1"
     icon: "mdi:alert-box"
 
-  - platform: template
-    id_code: ln2_1  
-    name: "line2 Partition 1 (ln2_1)"
+  - platform: dsc_alarm_panel
+    id: ln2_1  
+    name: "line2 partition 1"
     icon: "mdi:alert-box"  
 
 # partition 2
-  - platform: template
-    id_code: ln1_2  
-    name: "line1 partition 2 (ln1_2)"
+  - platform: dsc_alarm_panel
+    id: ln1_2  
+    name: "line1 partition 2"
     icon: "mdi:alert-box"
 
-  - platform: template
-    id_code: ln2_2  
-    name: "line2 partition 2 (ln2_2)"
+  - platform: dsc_alarm_panel
+    id: ln2_2  
+    name: "line2 partition 2"
     icon: "mdi:alert-box" 
 
 # generic event messages from panel
 # panel event id code = evt
-  - platform: template
-    id_code: evt  
-    name: "event (evt)"
+  - platform: dsc_alarm_panel
+    id: evt  
+    name: "event"
     icon: "mdi:alert-box" 
   
 # partition beeps
 # beeps id code = bp_ + partition number
-  - platform: template
-    id_code: bp_1  
-    name: "beeps (bp_1)"
+  - platform: dsc_alarm_panel
+    id: bp_1  
+    name: "beeps partition 1"
     icon: "mdi:alert-box" 
 
-  - platform: template
-    id_code: bp_2  
-    name: "partition 2 beeps (bp_2)"
+  - platform: dsc_alarm_panel
+    id: bp_2  
+    name: "beeps partition 2"
     icon: "mdi:alert-box"   
 
  # panel trouble messages  
  # panel msg id code = tr_msg
-  - platform: template
-    id_code: tr_msg  
-    name: "Trouble Msg (tr_msg)" 
+  - platform: dsc_alarm_panel
+    id: tr_msg  
+    name: "Trouble Msg" 
     icon: "mdi:alert-box"
+
+# name of the zone that triggered the last alarm
+# zone alarm id code = (za_ + partition number)
+  - platform: dsc_alarm_panel
+    id: za_1
+    name: zone alarm (za_1)
+    icon: "mdi:alert-box" 
+
+# name or id of the user that last armed/disarmed the partition
+# user id code = (user_ + partition number)
+  - platform: dsc_alarm_panel
+    id: user_1
+    name: Arming/Disarming user (user_1)
+    icon: "mdi:alert-box" 
+
+
+ #optional. Example button config to send a keypad cmd. This one sends a PGM1 relay on cmd on partition 1
+button:
+    - platform: template
+      name: Gate Button
+      id: gate1
+      icon: "mdi:emoticon-outline"    
+      on_press:
+        - lambda: |-
+            $panelId->alarm_keypress_partition("*71",1);   
 
 # this sensor below is optional - example use of pin d8 as a zone trigger pin for the emulated zone expander  
 # this emulates the hardware connection for a pc5108 board. Use a pull down/pull up resistor.  Adjust logic accordingly for the correct logic output. ie invert
@@ -411,10 +486,10 @@ text_sensor:
  #   device_class: window
  #   on_press:       #pin high=on(open), pin low=off(closed)
  #     - lambda: |-
- #         dsc.setZoneFault(17,1);  #set zone 17 as open
+ #         $panelId->setZoneFault(17,1);  #set zone 17 as open
  #   on_release:
  #     - lambda: |-
- #         dsc.setZoneFault(17,0);  #set zone 17 as closed
+ #         $panelId->setZoneFault(17,0);  #set zone 17 as closed
  
 
 
@@ -425,6 +500,8 @@ switch:
   - platform: template
     name: "Connection"
     id: connection_status_switch
+    optimistic: true
+    restore_mode: DISABLED
     lambda: |-
       return dsc.keybusConnected;
     icon: "mdi:shield-link-variant"
