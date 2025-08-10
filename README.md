@@ -4,7 +4,7 @@ If you like this project and wish to supplement my coffee intake, please click t
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/Dilbert66)
 
-This is an implementation of an ESPHOME custom component to interface directly to a DSC POWERSERIES alarm system using the keybus interface and  very inexpensive ESP8266/ESP32 modules . NOTE: I strongly suggest using an ESP32 for it's increased capabilities. 
+This is an implementation of an ESPHOME custom component to interface directly to a [DSC POWERSERIES] (https://www.dsc.com/dsc-security-products/g/PowerSeries/4)  alarm system using the keybus interface and  very inexpensive ESP8266/ESP32 modules.  Dsc Classic series is not currently supported.  NOTE: I strongly suggest using an ESP32 for it's increased capabilities. 
 
 Using a heavily modified DSC keybus interface library from https://github.com/taligentx/dscKeybusInterface, it provides full read and write control of the alarm system. The idea and yaml code is based on the DIY example at: https://github.com/Margriko/Paradox-ESPHome.
 
@@ -73,7 +73,7 @@ alarm_control_panel:
     panels:
       safe_alarm_panel:
         name: "Alarm Panel"
-        value_template: "{{states('sensor.dscalarm_partition_1_status')}}"
+        value_template: "{{states('sensor.dscalarm_status_partition_1')}}"
         code_arm_required: false
         
         arm_away:
@@ -102,7 +102,7 @@ alarm_control_panel:
     panels:
       safe_alarm_panel:
         name: "Alarm Panel - Partition 2"
-        value_template: "{{states('sensor.dscalarm_partition_1_status')}}"
+        value_template: "{{states('sensor.dscalarm_status_partition_1')}}"
         code_arm_required: false
         
         arm_away:
@@ -210,11 +210,12 @@ resources:
 
 ### Panel Card example
 	
-![image](https://github.com/user-attachments/assets/db4bdf2c-ed17-4ee0-b33e-f0bd9359d61a)
+![image](https://github.com/user-attachments/assets/c4036487-55e4-4710-a05e-575c4709c5d6)
 
 
 
 ### Panel card example lovelace configuration
+
 ```
 type: custom:alarm-keypad-card
 title: DSC Keypad
@@ -233,19 +234,20 @@ sensor_D: binary_sensor.dscalarm_ac
 status_A_off_icon: mdi:circle-off-outline
 status_A_on_icon: mdi:check-circle
 status_A_color: green
-status_C_on_icon: mdi:alert
-status_C_off_icon: mdi:triangle-outline
-status_C_color: orange
 status_B_on_icon: mdi:shield-lock
 status_B_off_icon: mdi:shield-off-outline
 status_B_color: red
+status_C_on_icon: mdi:alert
+status_C_off_icon: mdi:triangle-outline
+status_C_color: orange
 status_D_on_icon: mdi:power-plug
 status_D_off_icon: mdi:power-plug-off-outline
 status_D_color: green
-#optional styling and colors
+
+#all style/color settings are optional. These are the default for dark and light modes
 style:
-  "--lcdbgcolordark": var(--input-fill-color)
-  "--lcdtextcolordark": var(--primary-text-color)
+  "--lcdbgcolordark": "#859c99"
+  "--lcdtextcolordark": "#222"
   "--buttonbgcolordark": var(--input-fill-color)
   "--buttontextcolordark": var(--primary-color)
   "--buttonhovercolordark": var(--outline-hover-color)
@@ -256,8 +258,8 @@ style:
   "--bordercolordark": var(--disabled-color)
 
   "--sensoroffcolorlight": var(--disabled-text-color)
-  "--lcdbgcolorlight": var(--input-fill-color)
-  "--lcdtextcolorlight": var(--primary-text-color)
+  "--lcdbgcolorlight": "#859c99"
+  "--lcdtextcolorlight": "#222"
   "--sensorlabelcolorlight": var(--accent-color));
   "--buttonbgcolorlight": var(--input-fill-color)
   "--buttontextcolorlight": var(--primary-color)
@@ -265,6 +267,7 @@ style:
   "--buttonactivecolorlight": var(--secondary-text-color)
   "--buttonfocuscolorlight": var(--outline-color)
   "--bordercolorlight": var(--disabled-color)
+
 button_A: STAY
 button_B: AWAY
 button_C: NIGHT
@@ -355,8 +358,6 @@ view_bottom: true
 	
 ```	
 
-![dscinterface](https://user-images.githubusercontent.com/7193213/135171111-a1f723cf-43fc-4d4a-bdb9-61645630c7be.png)
-
 ## MQTT Support
 If you would like to use MQTT communications with Homeassistant or alternatively use ESPHOME with other platforms that can support MQTT, you can modify the configuration to use the MQTT protocol instead of the native HA API integration.  This simply involves the addtion of an mqtt: configuration section in the yaml and to remove the api: section.   Please see the ESPHOME MQTT documentation more details: https://esphome.io/components/mqtt.html .  For an example on how to configure the alarm-panel-card to use MQTT services, please see the lovelace.yaml file.  
 
@@ -373,24 +374,40 @@ Sensor data will follow the HA MQTT discovery format. See here for details: http
 If you prefer to use Arduino instead of ESPHome, I've also provided an Arduino example sketch in the mqtt_example folder.  Follow the instructions at the top of the file.
 	
 ## Wiring
-### Isolated version
-![image](https://user-images.githubusercontent.com/7193213/193299136-eb453cc3-6b2b-4224-a018-fefc0edb01b1.png)
-### Non-isolated simple version	
-![Image of Wiring schematic](https://github.com/Dilbert66/esphome-dsckeybus/blob/master/dscinterface.png)
+### Mosfet level converter version - recommended
+![image](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/46abd72b-fec5-4fc3-af86-cf55fbc81a26)
+
+
+
+Notes: You need to set dscreadpin = dscwritepin in the yaml config.  eg: dscwritepin: 21, dscreadpin: 21, dscclockpin: 22
+This version uses a bidrectional read/write configuration for the green line. The yellow line is read only.
+Thanks to utmba95 for the design suggestion and testing.
+
+### Resistor divider version	
+![image](https://github.com/Dilbert66/esphome-dsckeybus/assets/7193213/a91c331e-be00-4852-9092-06d7c95168db)
+
+
+Notes: Write access to the Keybus requires an NPN transistor and a resistor.  Most small signal NPN transistors should be suitable.
+
+## Optocoupler ground isolated version
+![image](https://user-images.githubusercontent.com/7193213/193299293-5ac6c36c-e589-4857-8854-33118530fee5.png)
 
 * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: GPIO5, GPIO4 and GPIO15.
 * esp32: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: GPIO22, GPIO21 and GPIO18.
   Note: You can use a Wemos D1 Mini PRO (ESP32) with the same foot print as an original esp8266 based d1 mini. In that case use pins GPIO22,GPIO21 and GPIO5
-	
-* Write access to the Keybus requires an NPN transistor and a resistor.  Most small signal NPN transistors should be suitable.
+
 * When powering the ESP from an external power supply such as USB (recommended) ensure you still connect the ground to the DSC panel if you are not using the isolated circuit version.
 	
 ## OTA updates
 In order to make OTA updates with an ESP8266, the connection switch in frontend must be switched to OFF since the DSC library is using interrupts. This is not normally necessary with an ESP32.
 
+## Useful tools
+jpmeijers has generously provided a python script to allow getting the installer code from a DSC panel.  See the README and associated files in the extras\crack_installer_code folder
+
 ## References
 * ESPHOME yaml and component structure based on code from https://github.com/Margriko/Paradox-ESPHome
 * Wiring and DSC library from https://github.com/taligentx/dscKeybusInterface
 * ESPHOME diy examples from https://esphome.io/guides/diy.html
-
+* Thanks to jpmeijers for the unlock script
+* Also many thanks to the various people who have helped updating this library by testing and posting logs.
 
