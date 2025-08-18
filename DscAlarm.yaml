@@ -36,10 +36,6 @@ dsc_alarm_panel:
   dscreadpin: "21"
   dscwritepin: "18"
   
-  ##ESP8266 Pins
-  #dscclockpin: "5"
-  #dscreadpin: "4"
-  #dscwritepin: "15" 
 
   #periodic check for trouble messages in seconds. Minium 30s. Defaults to 120s (2 minutes)
   trouble_fetch_update_time: 120
@@ -64,10 +60,6 @@ esp32:
     type: arduino
     version: recommended
 
-#esp8266:    
-  #board: nodemcuv2
-  #framework:
-    #version: recommended 
 
 #location of alarm panel code.  You can use the github release version  or 
 #copy the code to directory "my_components" in your main esphome directory   
