@@ -6,7 +6,7 @@ If you like this project and wish to supplement my coffee intake, please click t
 
 This is an implementation of an ESPHOME custom component to interface directly to a [DSC POWERSERIES] (https://www.dsc.com/dsc-security-products/g/PowerSeries/4)  alarm system using the keybus interface and  very inexpensive ESP32 modules.  Dsc Classic series is not currently supported.  
 
-*** NOTE *** : The ESP8266 is no longer supported due to it having the inadequate resources needed to run the current code base since ESPHome version 2025.7  
+*** NOTE *** : The ESP8266 is no longer supported due to it having inadequate resources needed to run the current code base since ESPHome version 2025.7  
 
 Using a heavily modified DSC keybus interface library from https://github.com/taligentx/dscKeybusInterface, it provides full read and write control of the alarm system. The idea and yaml code is based on the DIY example at: https://github.com/Margriko/Paradox-ESPHome.
 
