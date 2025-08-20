@@ -5,9 +5,9 @@ import asyncio
 start_code = 0000
 end_code = 9999
 
-sensor_id="msg_partition_1" # object_id or name of text_sensor field with id: msg_1 
+sensor_id="msg_1" # object_id or name of text_sensor field with id: msg_1 
 device_address="dscalarm.local"  #http address of esp device
-passkey="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=" # secret api key
+passkey=""xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=" # secret api key
 
 delay = 0
 user_data = []
@@ -55,7 +55,7 @@ async def maintask():
             continue
         
         x=user_data.pop(0)
-        if (x == "03: Zones open" or x== "01: Ready"):
+        if (x == "03 Zones open" or x== "01: Ready"):
             if (len(user_data) > 0):
                 x=user_data.pop(0)
             else:
@@ -65,7 +65,7 @@ async def maintask():
                 else:
                     continue
         print (x)    
-        if  x == "B7: Installer code":
+        if  x == "b7 Installer code":
             test_code = '{num:#04d}'.format(num=start_code)
             start_code = start_code + 1
 
@@ -79,17 +79,17 @@ async def maintask():
             with open("codes.txt", 'a') as file1:
                 file1.write(test_code + "\t" + x + "\n")
 
-            if x == "E4: Installer menu":
+            if x == "e4 Installer menu":
                 print("!!!! CODE FOUND !!!!")
                 print("====    " + test_code + "    ====")
               
                 cli.execute_service(skey,{"keys":"##","partition":1})                 
                 break
 
-            if x == "8F: Invalid code":
+            if x == "8f Invalid code":
                 # Expected response for invalid code, so continue
                 pass
-            elif x == "10: Keypad lockout":
+            elif x == "10 Keypad lockout":
                 # Lockout, wait for it to clear
                 print("Keypad lockout, waiting to clear")
                 user_data.clear()
