@@ -85,7 +85,7 @@ def main():
                 
         x=user_data.pop(0)
         
-        if (x == b"03: Zones open" or x== b"01: Ready"):
+        if (x == b"03 Zones open" or x== b"01: Ready"):
             if (len(user_data) > 0):
                 x=user_data.pop(0)
             else:
@@ -97,7 +97,7 @@ def main():
         print (x) 
         
         
-        if x == b"B7: Installer code":
+        if x == b"b7 Installer code":
 
             test_code = '{num:#04d}'.format(num=start_code)
             start_code = start_code + 1
@@ -113,16 +113,16 @@ def main():
             with open("codes.txt", 'a') as file1:
                 file1.write(test_code + "\t" + str(x) + "\n")
 
-            if x == b"E4: Installer menu":
+            if x == b"e4 Installer menu":
                 print("!!!! CODE FOUND !!!!")
                 print("====    " + test_code + "    ====")
                 mqttc.publish(device_name + "/alarm/set", "{\"keys\":\"##\",\"partition\":1}")                
                 break
 
-            if x == b"8F: Invalid code":
+            if x == b"8f Invalid code":
                 # Expected response for invalid code, so continue
                 pass
-            elif x == b"10: Keypad lockout":
+            elif x == b"10 Keypad lockout":
                 # Lockout, wait for it to clear
                 print("Keypad lockout, waiting to clear")
                 user_data.clear()
