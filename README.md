@@ -79,18 +79,18 @@ alarm_control_panel:
         code_arm_required: false
         
         arm_away:
-          - service: esphome.dscalarm_alarm_arm_away
+			action: esphome.dscalarm_alarm_arm_away
                   
         arm_home:
-          - service: esphome.dscalarm_alarm_arm_home
+           action: esphome.dscalarm_alarm_arm_home
           
         arm_night:
-          - service: esphome.dscalarm_alarm_arm_night
+           action: esphome.dscalarm_alarm_arm_night
             data_template:
               code: '{{code}}' #if you didnt set it in the yaml, then send the code here
           
         disarm:
-          - service: esphome.dscalarm_alarm_disarm
+           action: esphome.dscalarm_alarm_disarm
             data_template:
               code: '{{code}}'                    
 
@@ -108,28 +108,28 @@ alarm_control_panel:
         code_arm_required: false
         
         arm_away:
-          - service: esphome.dscalarm_set_alarm_state
+           action: esphome.dscalarm_set_alarm_state
             data_template:
 			  partition: 2
 			  state: "A"
 			  code: ""
       
         arm_home:
-          - service: esphome.dscalarm_set_alarm_state
+           action: esphome.dscalarm_set_alarm_state
             data_template:
               partition: 2
 			  state: "S"
 			  code: ""
 
         arm_night:
-          - service: esphome.dscalarm_set_alarm_state
+           action: esphome.dscalarm_set_alarm_state
             data_template:
               partition: 2
               state: "N"
               code: '{{code}}'  
           
         disarm:
-          - service: esphome.dscalarm_set_alarm_state
+           action: esphome.dscalarm_set_alarm_state
             data_template:
               partition: 2
               state: "D"
