@@ -469,8 +469,10 @@ class AlarmKeypadCard extends LitElement {
     displayChanged() {
         let state1 = "";
         let state2 = "";
-        for (let i = 0; i < this._kpdline1.state.length; i++) state1 += this._translateChar(this._kpdline1.state[i]);
-        for (let i = 0; i < this._kpdline2.state.length; i++) state2 += this._translateChar(this._kpdline2.state[i]);
+        if (this._kpdline1  != undefined)
+            for (let i = 0; i < this._kpdline1.state.length; i++) state1 += this._translateChar(this._kpdline1.state[i]);
+        if (this._kpdline2 != undefined)
+            for (let i = 0; i < this._kpdline2.state.length; i++) state2 += this._translateChar(this._kpdline2.state[i]);
         this._line1 = state1;
         this._line2 = state2;
     }
@@ -554,19 +556,19 @@ class AlarmKeypadCard extends LitElement {
     static getStubConfig() {
         return {
             title: "Alarm Keypad",
-            disp_line1: "sensor.<devicename>_ln1_1",
-            disp_line2: "sensor.<devicename>_ln2_1",
-            beep: "binary_sensor.<devicename>_bp_1",
+            disp_line1: "sensor.<devicename>_line1_ln1_1",
+            disp_line2: "sensor.<devicename>_line2_ln2_1",
+            beep: "binary_sensor.<devicename>_beep_bp_1",
             service_type: "esphome",
             service: "<devicename>_alarm_keypress_partition",
             status_A: "READY",
             status_B: "ARMED",
             status_C: "TROUBLE",
             status_D: "AC",
-            sensor_A: "binary_sensor.<devicename>_rdy_1",
-            sensor_B: "binary_sensor.<devicename>_arm_1",
-            sensor_C: "binary_sensor.<devicename>_tr",
-            sensor_D: "binary_sensor.<devicename>_ac",
+            sensor_A: "binary_sensor.<devicename>_ready_rdy_1",
+            sensor_B: "binary_sensor.<devicename>_armed_arm_1",
+            sensor_C: "binary_sensor.<devicename>_trouble_tr",
+            sensor_D: "binary_sensor.<devicename>_ac_ac",
             status_A_off_icon: "mdi:circle-off-outline",
             status_A_on_icon: "mdi:check-circle",
             status_A_color: "green",

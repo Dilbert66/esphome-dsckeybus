@@ -1,17 +1,17 @@
 type: custom:alarm-keypad-card
 title: DSC Keypad
-disp_line1: sensor.dscalarm_ln1_1
-disp_line2: sensor.dscalarm_ln2_1
+disp_line1: sensor.dscalarm_line1_ln1_1
+disp_line2: sensor.dscalarm_line2_ln2_1
 service_type: esphome
 service: dscalarm_alarm_keypress_partition
 status_A: READY
 status_B: ARMED
 status_C: TROUBLE
 status_D: AC
-sensor_A: binary_sensor.dscalarm_rdy_1
-sensor_B: binary_sensor.dscalarm_arm_1
-sensor_C: binary_sensor.dscalarm_tr
-sensor_D: binary_sensor.dscalarm_ac
+sensor_A: binary_sensor.dscalarm_ready_rdy_1
+sensor_B: binary_sensor.dscalarm_armed_arm_1
+sensor_C: binary_sensor.dscalarm_trouble_tr
+sensor_D: binary_sensor.dscalarm_ac_ac
 status_A_off_icon: mdi:circle-off-outline
 status_A_on_icon: mdi:check-circle
 status_A_color: green
