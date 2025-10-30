@@ -10,8 +10,8 @@ status_C: TROUBLE
 status_D: AC
 sensor_A: binary_sensor.dscalarm_ready
 sensor_B: binary_sensor.dscalarm_armed
-sensor_C: binary_sensor.dscalarm_trouble
-sensor_D: binary_sensor.dscalarm_ac
+sensor_C: binary_sensor.dscalarm_trouble_status
+sensor_D: binary_sensor.dscalarm_ac_status
 status_A_off_icon: mdi:circle-off-outline
 status_A_on_icon: mdi:check-circle
 status_A_color: green
