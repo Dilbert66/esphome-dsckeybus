@@ -10,8 +10,8 @@ status_C: TROUBLE
 status_D: AC
 sensor_A: binary_sensor.dscalarm_ready_partition_1
 sensor_B: binary_sensor.dscalarm_armed_partition_1
-sensor_C: binary_sensor.dscalarm_trouble
-sensor_D: binary_sensor.dscalarm_ac
+sensor_C: binary_sensor.dscalarm_trouble_status
+sensor_D: binary_sensor.dscalarm_ac_status
 status_A_off_icon: mdi:circle-off-outline
 status_A_on_icon: mdi:check-circle
 status_A_color: green
@@ -121,7 +121,7 @@ text_9: NIGHT
 text_star: SELECT
 text_pound: ENTER
 text_0: ""
-beep: binary_sensor.dscalarm_bp_1
+beep: binary_sensor.dscalarm_beeps_partition_1
 button_disabled_A: false
 button_disabled_B: false
 button_disabled_C: false
