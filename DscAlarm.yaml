@@ -1,7 +1,7 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 substitutions:
   name: "dscalarm" #unique network name
-  friendlyName: "DSC Alarm" #friendly name for this device
+  friendlyName: "DSCAlarm" #friendly name for this device
   panelId: DSCAlarm  #used as the service variable name.
   
 dsc_alarm_panel:
