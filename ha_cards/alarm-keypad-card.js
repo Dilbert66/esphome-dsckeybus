@@ -20,6 +20,7 @@ class AlarmKeypadCard extends LitElement {
                   <div class="keypad_display">
                     <div class="display_line" id="display_line1">${this._line1}</div>
                     <div class="display_line" id="display_line2">${this._line2}</div>
+                    <div class="display_line" id="beep_line">${this._beeps}</div>
                   </div>`: ''}
 
 
@@ -259,6 +260,7 @@ class AlarmKeypadCard extends LitElement {
         if (changedProperties.has("_kpdline1") || changedProperties.has("_kpdline2")) {
             this.displayChanged();
         }
+
         if (changedProperties.has("_kpdbeep")) {
             this.beepChanged();
         }
@@ -306,6 +308,7 @@ class AlarmKeypadCard extends LitElement {
             },
             _line1: String,
             _line2: String,
+            _beeps: String,
 
 
         };
@@ -478,7 +481,11 @@ class AlarmKeypadCard extends LitElement {
     }
 
     beepChanged() {
+        if (this._kpdbeep.state != null && this._kpdbeep != "0") {
+            this._beeps="*** " + this._kpdbeep.state + " beep(s) ***";
+        } 
         if (this._kpdbeep.state == "0" || this._kpdbeep.state == null) {
+            this._beeps="";
             var promise = this.shadowRoot.getElementById("exitsound1").pause();
             this.shadowRoot.getElementById("exitsound2").pause();
             this.shadowRoot.getElementById("chime").pause();
@@ -556,19 +563,19 @@ class AlarmKeypadCard extends LitElement {
     static getStubConfig() {
         return {
             title: "Alarm Keypad",
-            disp_line1: "sensor.<devicename>_line1_partition_1",
-            disp_line2: "sensor.<devicename>_line2_partition_1",
-            beep: "binary_sensor.<devicename>_beeps_partition_1",
             service_type: "esphome",
             service: "<devicename>_alarm_keypress_partition",
+            disp_line1: "sensor.<devicename>_line1_ln1_1",
+            disp_line2: "sensor.<devicename>_line2_ln2_1",
+            beep: "sensor.<nodename>_beep_bp_1",
+            sensor_A: "binary_sensor.<devicename>_ready_rdy_1",
+            sensor_B: "binary_sensor.<deviceame>_armed_arm_1",
+            sensor_C: "binary_sensor.<devicename>_trouble_tr",
+            sensor_D: "binary_sensor.<devicename>_ac_ac",
             status_A: "READY",
             status_B: "ARMED",
             status_C: "TROUBLE",
             status_D: "AC",
-            sensor_A: "binary_sensor.<devicename>_ready_partition_1",
-            sensor_B: "binary_sensor.<devicename>_armed_partition_1",
-            sensor_C: "binary_sensor.<devicename>_trouble_status",
-            sensor_D: "binary_sensor.<devicename>_ac_status",
             status_A_off_icon: "mdi:circle-off-outline",
             status_A_on_icon: "mdi:check-circle",
             status_A_color: "green",
@@ -728,8 +735,8 @@ class AlarmKeypadCard extends LitElement {
        }
 
 ha-card[color-scheme="dark"] {
-           --lcdbg: var(--lcdbgcolordark,var(--input-fill-color));
-           --lcdtext: var(--lcdtextcolordark,var(--primary-text-color));
+           --lcdbg: var(--lcdbgcolordark,#859c99);
+           --lcdtext: var(--lcdtextcolordark,#222);
            --buttonbg: var(--buttonbgcolordark,var(--input-fill-color));
            --buttontext: var(--buttontextcolordark,var(--primary-color));
            --sensorlabel: var(--sensorlabelcolordark,var(--accent-color));
@@ -741,8 +748,8 @@ ha-card[color-scheme="dark"] {
 }
 
 ha-card[color-scheme="light"] {
-           --lcdbg: var(--lcdbgcolorlight,var(--input-fill-color));
-           --lcdtext: var(--lcdtextcolorlight,var(--primary-text-color));
+           --lcdbg: var(--lcdbgcolorlight,#859c99);
+           --lcdtext: var(--lcdtextcolorlight,#222);
            --buttonbg: var(--buttonbgcolorlight,var(--input-fill-color));
            --buttontext: var(--buttontextcolorlight,var(--primary-color));
            --sensorlabel: var(--sensorlabelcolorlight,var(--accent-color));
@@ -791,10 +798,9 @@ ha-card[color-scheme="light"] {
          
         }
         .display_line {
-          font-size: 1rem;
-          line-height: 1.1;
+          font-size: 1.3rem;
           color: var(--lcdtext);
-          font-family: monospace;
+          font-family: "Arial";
           display: flex;
           justify-content: center;
         }
@@ -805,6 +811,10 @@ ha-card[color-scheme="light"] {
         #display_line2 {
           white-space: pre-wrap;
         } 
+       #beep_line {
+            height: 1.2em;
+        }
+
 
         .pad {
           display: flex;
@@ -821,7 +831,7 @@ ha-card[color-scheme="light"] {
           margin-right: 8px;
           margin-bottom: 8px;
           margin-left: 8px;
-           width: 75%;
+          width: 75%;
 
         }
         
@@ -907,6 +917,7 @@ ha-card[color-scheme="light"] {
         font-size: 0.5rem;
         font-style: italic; 
         padding-left: .2rem;
+        font-weight: bold;
        }        
 
     `;
