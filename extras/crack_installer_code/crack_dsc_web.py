@@ -19,7 +19,7 @@ end_run=False
 async def wait_for_data(timeout=10):
     start_time = time.time()
     while start_time + timeout > time.time():
-        await asyncio.sleep(0.001)
+        await asyncio.sleep(0.01)
         if len(user_data) > 0:
             return True
     return False
