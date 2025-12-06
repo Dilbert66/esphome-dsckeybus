@@ -1,4 +1,4 @@
-console.info("%c  ALARM-KEYPAD-CARD %c v0.4.2 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
+console.info("%c  ALARM-KEYPAD-CARD %c v0.4.5 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
 
 import {
     LitElement,
@@ -7,10 +7,12 @@ import {
 } from "https://unpkg.com/lit-element@4.0.0/lit-element.js?module";
 
 
-
 class AlarmKeypadCard extends LitElement {
 
+_rendered=false;
+
     render() {
+    this._rendered=true;
         return html`
    <ha-card header="${this._title}" color-scheme="${this._scheme}">
         <div id="zoom" class='flex-container'  style="${this._scale}" @click="${this.stopPropagation}">
@@ -253,17 +255,6 @@ class AlarmKeypadCard extends LitElement {
                   <source src="/local/3_beeps.mp3" type="audio/mpeg">
                 </audio>
     `;
-    }
-
-    updated(changedProperties) {
-
-        if (changedProperties.has("_kpdline1") || changedProperties.has("_kpdline2")) {
-            this.displayChanged();
-        }
-
-        if (changedProperties.has("_kpdbeep")) {
-            this.beepChanged();
-        }
 
     }
 
@@ -306,9 +297,6 @@ class AlarmKeypadCard extends LitElement {
             _kpdh: {
                 type: Object,
             },
-            _line1: String,
-            _line2: String,
-            _beeps: String,
 
 
         };
@@ -466,6 +454,8 @@ class AlarmKeypadCard extends LitElement {
         this._status_G_state = this._kpdg ? (this._kpdg.state.toLowerCase() == "on" || this._kpdg.state == "1") ? this._status_G_color : '' : "";
         this._status_H_state = this._kpdh ? (this._kpdh.state.toLowerCase() == "on" || this._kpdh.state == "1") ? this._status_H_color : '' : "";
 
+        this.displayChanged();
+        this.beepChanged() 
 
     }
 
@@ -481,6 +471,8 @@ class AlarmKeypadCard extends LitElement {
     }
 
     beepChanged() {
+        if (this._kpdbeep == undefined || !this._rendered) return;
+
         if (this._kpdbeep.state != null && this._kpdbeep != "0") {
             this._beeps="*** " + this._kpdbeep.state + " beep(s) ***";
         } 
@@ -564,14 +556,14 @@ class AlarmKeypadCard extends LitElement {
         return {
             title: "Alarm Keypad",
             service_type: "esphome",
-            service: "<devicename>_alarm_keypress_partition",
-            disp_line1: "sensor.<devicename>_line1_ln1_1",
-            disp_line2: "sensor.<devicename>_line2_ln2_1",
-            beep: "sensor.<nodename>_beep_bp_1",
-            sensor_A: "binary_sensor.<devicename>_ready_rdy_1",
-            sensor_B: "binary_sensor.<deviceame>_armed_arm_1",
-            sensor_C: "binary_sensor.<devicename>_trouble_tr",
-            sensor_D: "binary_sensor.<devicename>_ac_ac",
+            service: "<alarmname>_alarm_keypress_partition",
+            disp_line1: "sensor.<alarmname>_line1_partition_1_ln1",
+            disp_line2: "sensor.<alarmname>_line2_partition_1_ln2",
+            sensor_A: "binary_sensor.<alarmname>_partition_1_ready_rdy_1",
+            sensor_B: "binary_sensor.<alarmname>_partition_1_armed_arm_1",
+            sensor_C: "binary_sensor.<alarmname>_trouble_status_tr",
+            sensor_D: "binary_sensor.<alarmname>_ac_status_ac",
+            beep: "sensor.<alarmname>_beeps_bp_1",
             status_A: "READY",
             status_B: "ARMED",
             status_C: "TROUBLE",
@@ -692,6 +684,28 @@ class AlarmKeypadCard extends LitElement {
             button_left: false,
             view_bottom: true,
             vibration_duration: 5,
+style: {
+    "--buttonbgcolordark": "#252525",
+    "--buttontextcolordark": "#03a9f4",
+    "--lcdbgcolordark": "#859c99",
+    "--lcdtextcolordark": "#000",
+    "--sensoroffdark": "#303030",
+    "--bordercolordark": "#333",
+    "--hovercolordark": "#444",
+    "--activecolordark": "#555",
+    "--focuscolordark": "#454545",
+    "--btngrpbgcolorlight":  "whitesmoke",
+    "--buttonbgcolorlight": "#d9dcdf",
+    "--buttontextcolorlight": "#000",
+    "--lcdbgcolorlight": "#859c99",
+    "--lcdtextcolorlight": "#000",
+    "--sensorofflight": "#ccc",
+    "--bordercolorlight": "#bbb",
+    "--hovercolorlight": "#c0c0c0",
+    "--activecolorlight": "#d0d0d0",
+    "--focuscolorlight": "#c5c5c5"
+    }
+
 /*
             style:
             {
@@ -798,11 +812,12 @@ ha-card[color-scheme="light"] {
          
         }
         .display_line {
-          font-size: 1.3rem;
+          font-size: 1.2rem;
           color: var(--lcdtext);
           font-family: "Arial";
           display: flex;
           justify-content: center;
+          height: 1.2em;
         }
         #display_line1 {
           padding-bottom: 10px;
@@ -811,10 +826,10 @@ ha-card[color-scheme="light"] {
         #display_line2 {
           white-space: pre-wrap;
         } 
-       #beep_line {
-            height: 1.2em;
+         #beep_line {
+           
         }
-
+ 
 
         .pad {
           display: flex;
