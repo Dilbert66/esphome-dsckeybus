@@ -284,8 +284,9 @@ class AlarmKeypadCard extends LitElement {
     this._troubleStyle=(this._sensor_trouble && this._sensor_trouble.state=="on")?"color: orange;":"color: var(--sensoroff);";
     this._armedStyle=(this._sensor_armed && this._sensor_armed.state=="on")?"color: red;":"color: var(--sensoroff);";
     this._chimeStyle=(this._sensor_chime && this._sensor_chime.state=="on")?"color: green;":"color: var(--sensoroff);";
-this.displayChanged();
-this.beepChanged() 
+
+    this.displayChanged();
+    this.beepChanged() 
 
 }
 
@@ -370,14 +371,6 @@ _isObject(obj) {
      }
      //  this._hass.callService(this._kpdservicetype, this._kpdservice, key);
   }
-
-confirmState(e)   {
-var key=e.currentTarget.getAttribute('state');
-if (confirm("Are you sure you want to send the cmd [" + key + "]?" ) == true)
-    setState(e);
-//else 
-//    alert("Cmd ["+key+"] cancelled");
-}
 
   getCardSize() {
       let size = 2;
