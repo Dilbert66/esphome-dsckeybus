@@ -49,7 +49,7 @@ async def maintask():
             break
             
         print("sending","##*8")
-        cli.execute_service(skey,{"keys":"##*8","partition":1})  
+        await cli.execute_service(skey,{"keys":"##*8","partition":1})  
         if not await wait_for_data():
             print("no response")
             continue
@@ -70,7 +70,7 @@ async def maintask():
             start_code = start_code + 1
 
             print("sending code:",test_code)
-            cli.execute_service(skey,{"keys":test_code,"partition":1})             
+            await cli.execute_service(skey,{"keys":test_code,"partition":1})             
             if not await wait_for_data():
                 break
             x=user_data.pop(0)                
@@ -83,7 +83,7 @@ async def maintask():
                 print("!!!! CODE FOUND !!!!")
                 print("====    " + test_code + "    ====")
               
-                cli.execute_service(skey,{"keys":"##","partition":1})                 
+                await cli.execute_service(skey,{"keys":"##","partition":1})                 
                 break
 
             if x == "8f Invalid code":
