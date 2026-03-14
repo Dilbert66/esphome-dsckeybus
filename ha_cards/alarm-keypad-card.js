@@ -381,6 +381,15 @@ _rendered=false;
         this._status_G_color = (config.status_G_color != null) ? config.status_G_color : "green";
         this._status_H_color = (config.status_H_color != null) ? config.status_H_color : "green";
 
+        this._confirm_A = (config.confirm_A != null) ? config.confirm_A : false;
+        this._confirm_B = (config.confirm_B != null) ? config.confirm_B : false;
+        this._confirm_C = (config.confirm_C != null) ? config.confirm_C : false;
+        this._confirm_D = (config.confirm_D != null) ? config.confirm_D : false;
+        this._confirm_E = (config.confirm_E != null) ? config.confirm_E : false;
+        this._confirm_F = (config.confirm_F != null) ? config.confirm_F : false;
+        this._confirm_G = (config.confirm_G != null) ? config.confirm_G : false;
+        this._confirm_H = (config.confirm_H != null) ? config.confirm_H : false;
+
         this._key_0 = (config.key_0 != null) ? config.key_0 : "";
         this._key_1 = (config.key_1 != null) ? config.key_1 : "";
         this._key_2 = (config.key_2 != null) ? config.key_2 : "";
@@ -512,18 +521,24 @@ _rendered=false;
         e.stopPropagation();
     }
 
+confirmState(name)   {
+
+return confirm("Are you sure you want to trigger the "+ name + " command" );
+}
+
+
     setState(e) {
         var key = e.currentTarget.getAttribute('state');
 
         switch (key) {
-            case 'A': key = this._cmd_A; break;
-            case 'B': key = this._cmd_B; break;
-            case 'C': key = this._cmd_C; break;
-            case 'D': key = this._cmd_D; break;
-            case 'E': key = this._cmd_E; break;
-            case 'F': key = this._cmd_F; break;
-            case 'G': key = this._cmd_G; break;
-            case 'H': key = this._cmd_H; break;
+            case 'A': key = this._cmd_A; if (this._confirm_A && !this.confirmState(this._button_A)) return;break;
+            case 'B': key = this._cmd_B; if (this._confirm_B && !this.confirmState(this._button_B)) return;break;
+            case 'C': key = this._cmd_C; if (this._confirm_C && !this.confirmState(this._button_C)) return;break;
+            case 'D': key = this._cmd_D; if (this._confirm_D && !this.confirmState(this._button_D)) return;break;
+            case 'E': key = this._cmd_E; if (this._confirm_E && !this.confirmState(this._button_E)) return;break;
+            case 'F': key = this._cmd_F; if (this._confirm_F && !this.confirmState(this._button_F)) return;break;
+            case 'G': key = this._cmd_G; if (this._confirm_G && !this.confirmState(this._button_G)) return;break;
+            case 'H': key = this._cmd_H; if (this._confirm_H && !this.confirmState(this._button_H)) return;break;
             case '0': key = this._key_0; break;
             case '1': key = this._key_1; break;
             case '2': key = this._key_2; break;
@@ -588,6 +603,14 @@ _rendered=false;
             button_F: "<",
             button_G: ">",
             button_H: "",
+            confirm_A: false,
+            confirm_B: false,
+            confirm_C: false,
+            confirm_D: false,
+            confirm_E: false,
+            confirm_F: false,
+            confirm_G: false,
+            confirm_H: false,
             text_1: "BYPASS",
             text_2: "SERV",
             text_3: "ALARMS",
