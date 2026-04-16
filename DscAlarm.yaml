@@ -445,7 +445,7 @@ text_sensor:
 # user id code = (user_ + partition number)
   - platform: dsc_alarm_panel
     id: user_1
-    name: Arming/Disarming user (user_1)
+    name: Arming_Disarming user (user_1)
     icon: "mdi:alert-box" 
 
 
