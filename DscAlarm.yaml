@@ -115,11 +115,6 @@ esphome:
       #- lambda: |-
          #   $panelId->set_panel_time();    
 
-#output sympols to output.map for debugging. You can remove if not needed
-  platformio_options:
-    build_flags: 
-        - "-Wl,-Map,output.map"  
-
 #you can remove/disable this section if you don't want your panel time updated automatically. 
 #interval:
   #- interval: 7200s
