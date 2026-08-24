@@ -1,4 +1,4 @@
-console.info("%c  Alarm-keypad-card-dsc \n%c Version 0.1.6 ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
+console.info("%c  Alarm-keypad-card-dsc \n%c Version 0.1.6b ", "color: orange; font-weight: bold; background: black", "color: white; font-weight: bold; background: dimgray");
 import { LitElement, html, css } from "https://unpkg.com/lit-element@4.0.0/lit-element.js?module";
 
 class AlarmKeypadCard extends LitElement {
@@ -138,6 +138,7 @@ class AlarmKeypadCard extends LitElement {
   
  
   static get properties() {
+
     return {
         _config: Object,
         _title: String,
@@ -153,9 +154,21 @@ class AlarmKeypadCard extends LitElement {
         _kpdsetting: {
           type: Object,            
         },
-        
-
-
+        _sensor_ready: {
+          type: Object,            
+        },
+        _sensor_armed: {
+          type: Object,            
+        },
+        _sensor_chime: {
+          type: Object,            
+        },
+        _sensor_trouble: {
+          type: Object,            
+        },
+        _sensor_ac: {
+          type: Object,            
+        },
 
     };
   }
@@ -286,7 +299,8 @@ class AlarmKeypadCard extends LitElement {
     this._chimeStyle=(this._sensor_chime && this._sensor_chime.state=="on")?"color: green;":"color: var(--sensoroff);";
 
     this.displayChanged();
-    this.beepChanged() 
+    this.beepChanged() ;
+
 
 }
 
