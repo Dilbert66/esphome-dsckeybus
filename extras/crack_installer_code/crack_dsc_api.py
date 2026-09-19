@@ -72,7 +72,9 @@ async def maintask():
             print("sending code:",test_code)
             await cli.execute_service(skey,{"keys":test_code,"partition":1})             
             if not await wait_for_data():
-                break
+                print("no data, retrying")
+                start_code = start_code - 1
+                pass
             x=user_data.pop(0)                
             print(x)
             # Log code and result to a file

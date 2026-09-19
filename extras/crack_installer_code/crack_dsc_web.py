@@ -73,7 +73,10 @@ async def maintask():
             print("sending code:",test_code)
             session.get(esp_host + "/alarm_panel/alarm_panel/set",params={'keys':test_code,'partition':1})
             if not await wait_for_data():
-                break
+               # break
+                print("no data, retrying")
+                start_code = start_code - 1
+                pass
             x=user_data.pop(0)                
             print(x)
             # Log code and result to a file
