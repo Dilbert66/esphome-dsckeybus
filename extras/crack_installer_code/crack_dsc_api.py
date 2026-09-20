@@ -55,7 +55,7 @@ async def maintask():
             continue
         
         x=user_data.pop(0)
-        if (x == "03 Zones open" or x== "01: Ready"):
+        if (x == "03 Zones open" or x== "01 Ready"):
             if (len(user_data) > 0):
                 x=user_data.pop(0)
             else:
