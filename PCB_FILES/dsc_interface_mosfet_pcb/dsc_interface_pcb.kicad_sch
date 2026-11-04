@@ -9,7 +9,7 @@
 		(rev "1")
 	)
 	(lib_symbols
-		(symbol "Connector:Screw_Terminal_01x03"
+		(symbol "Connector:Screw_Terminal_01x04"
 			(pin_names
 				(offset 1.016)
 				(hide yes)
@@ -29,8 +29,8 @@
 					)
 				)
 			)
-			(property "Value" "Screw_Terminal_01x03"
-				(at 0 -5.08 0)
+			(property "Value" "Screw_Terminal_01x04"
+				(at 0 -7.62 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -61,7 +61,7 @@
 					)
 				)
 			)
-			(property "Description" "Generic screw terminal, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(property "Description" "Generic screw terminal, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -94,10 +94,10 @@
 					)
 				)
 			)
-			(symbol "Screw_Terminal_01x03_1_1"
+			(symbol "Screw_Terminal_01x04_1_1"
 				(rectangle
 					(start -1.27 3.81)
-					(end 1.27 -3.81)
+					(end 1.27 -6.35)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -144,6 +144,18 @@
 				)
 				(polyline
 					(pts
+						(xy -0.5334 -4.7498) (xy 0.3302 -5.588)
+					)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
 						(xy -0.3556 3.048) (xy 0.508 2.2098)
 					)
 					(stroke
@@ -178,6 +190,18 @@
 						(type none)
 					)
 				)
+				(polyline
+					(pts
+						(xy -0.3556 -4.572) (xy 0.508 -5.4102)
+					)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
 				(circle
 					(center 0 2.54)
 					(radius 0.635)
@@ -202,6 +226,17 @@
 				)
 				(circle
 					(center 0 -2.54)
+					(radius 0.635)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 0 -5.08)
 					(radius 0.635)
 					(stroke
 						(width 0.1524)
@@ -258,6 +293,24 @@
 						)
 					)
 					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -5.08 0)
+					(length 3.81)
+					(name "Pin_4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1820,7 +1873,7 @@
 		)
 		(uuid "0f30340c-d426-46e0-9b71-6134398cfa9a")
 	)
-	(text "Notes:\ni: resistors r1,r2 connection can be omitted as the internal gpio will be set as input_pullup\nii: q1,q2  can be substituted for other low power N-type Mosfets. Be careful of pin locations as some are reversed.\niii: the yellow and green lines from the panel already have builtin 10k pullup resistors so none are needed on the interface.\n"
+	(text "Notes:\ni: resistors r1,r2 connection can be omitted as the internal gpio will be set as input_pullup\nii: q1,q2  can be substituted for other low power N-channel Mosfets. Be careful of pin locations as some are reversed such as with the bs170.\niii: the yellow and green lines from the panel already have builtin 10k pullup resistors so none are needed on the interface.\n"
 		(exclude_from_sim no)
 		(at 42.926 109.22 0)
 		(effects
@@ -1923,13 +1976,13 @@
 	)
 	(wire
 		(pts
-			(xy 58.42 46.99) (xy 53.34 46.99)
+			(xy 57.15 40.64) (xy 54.61 40.64)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "0d756dc2-8253-4f59-ab83-ac1edfc067c6")
+		(uuid "2cff61d7-03c8-4c45-a9d2-2b6c34aae56e")
 	)
 	(wire
 		(pts
@@ -2033,6 +2086,26 @@
 	)
 	(wire
 		(pts
+			(xy 58.42 41.91) (xy 57.15 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8c876441-4c54-44cd-a8a0-007ca54913f1")
+	)
+	(wire
+		(pts
+			(xy 57.15 41.91) (xy 57.15 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "92c81dfa-2069-43e0-b4ef-229f23d2374f")
+	)
+	(wire
+		(pts
 			(xy 53.34 76.2) (xy 54.61 76.2)
 		)
 		(stroke
@@ -2040,6 +2113,16 @@
 			(type default)
 		)
 		(uuid "95300799-429f-4a5e-8953-ebc7de1d0776")
+	)
+	(wire
+		(pts
+			(xy 50.8 48.26) (xy 58.42 48.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9531b2dc-8a32-494c-8462-72935ce09460")
 	)
 	(wire
 		(pts
@@ -2103,6 +2186,16 @@
 	)
 	(wire
 		(pts
+			(xy 58.42 48.26) (xy 58.42 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "db27e798-f053-4c6c-a756-3d1003eb4450")
+	)
+	(wire
+		(pts
 			(xy 52.07 78.74) (xy 54.61 78.74)
 		)
 		(stroke
@@ -2130,16 +2223,6 @@
 			(type default)
 		)
 		(uuid "f9300e99-f299-499c-bb61-0b568bb8b04d")
-	)
-	(wire
-		(pts
-			(xy 58.42 41.91) (xy 53.34 41.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fa706a7e-5cc2-4fae-acda-e19996433e5c")
 	)
 	(wire
 		(pts
@@ -2293,6 +2376,30 @@
 			)
 		)
 	)
+	(global_label "RED"
+		(shape passive)
+		(at 50.8 48.26 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "940886fc-2073-4adf-92d2-eb2286621f4d")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 45.2371 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
 	(global_label "GREEN"
 		(shape passive)
 		(at 53.34 44.45 180)
@@ -2342,7 +2449,7 @@
 	)
 	(global_label "YELLOW"
 		(shape passive)
-		(at 53.34 41.91 180)
+		(at 54.61 40.64 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2352,7 +2459,7 @@
 		)
 		(uuid "f6732a5e-203d-462f-ba38-a805ee4af3fb")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 53.34 41.91 0)
+			(at 54.61 40.64 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2459,83 +2566,6 @@
 			(project "dsc_interface_pcb"
 				(path "/22dc8205-0032-46e8-a65d-e2b9aceaea86"
 					(reference "#PWR02")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 53.34 46.99 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "16c3e3e9-782b-4137-a5e4-9eadb2f97c1b")
-		(property "Reference" "#PWR01"
-			(at 53.34 53.34 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 53.34 50.8 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 53.34 46.99 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 53.34 46.99 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 53.34 46.99 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "f7bc197f-e525-413b-96d2-de73ef508f61")
-		)
-		(instances
-			(project "dsc_interface_pcb"
-				(path "/22dc8205-0032-46e8-a65d-e2b9aceaea86"
-					(reference "#PWR01")
 					(unit 1)
 				)
 			)
@@ -3264,6 +3294,83 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GND")
+		(at 58.42 49.53 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "9cb3e181-4e01-4b8e-8c7f-01092a0657be")
+		(property "Reference" "#PWR01"
+			(at 58.42 55.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 59.69 53.848 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 58.42 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 58.42 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 58.42 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "0623359c-5882-4fca-a7a0-0a45966200a5")
+		)
+		(instances
+			(project "dsc_interface_pcb"
+				(path "/22dc8205-0032-46e8-a65d-e2b9aceaea86"
+					(reference "#PWR01")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Connector_Generic:Conn_01x04")
 		(at 59.69 73.66 0)
 		(unit 1)
@@ -3693,7 +3800,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:Screw_Terminal_01x03")
+		(lib_id "Connector:Screw_Terminal_01x04")
 		(at 63.5 44.45 0)
 		(unit 1)
 		(body_style 1)
@@ -3723,7 +3830,7 @@
 				)
 			)
 		)
-		(property "Footprint" "TerminalBlock_MetzConnect:TerminalBlock_MetzConnect_Type055_RT01503HDWU_1x03_P5.00mm_Horizontal"
+		(property "Footprint" "TerminalBlock_MetzConnect:TerminalBlock_MetzConnect_Type055_RT01504HDWU_1x04_P5.00mm_Horizontal"
 			(at 63.5 44.45 0)
 			(hide yes)
 			(show_name no)
@@ -3745,7 +3852,7 @@
 				)
 			)
 		)
-		(property "Description" "TerminalBlock_MetzConnect:TerminalBlock_MetzConnect_Type101_RT01604HBWC_1x03_P5.08mm_Horizontal"
+		(property "Description" "Generic screw terminal, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 63.5 44.45 0)
 			(hide yes)
 			(show_name no)
@@ -3775,6 +3882,9 @@
 		)
 		(pin "3"
 			(uuid "3e3cd0ff-9610-4a72-bdfa-04b3614e7437")
+		)
+		(pin "4"
+			(uuid "fdd82a0d-aa6f-43b6-b8c5-bc19ca3a14b9")
 		)
 		(instances
 			(project "dsc_interface_pcb"
