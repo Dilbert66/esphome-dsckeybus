@@ -2079,9 +2079,9 @@
 		)
 		(uuid "0f30340c-d426-46e0-9b71-6134398cfa9a")
 	)
-	(text "Notes:\ni: resistors r1,r2 connection can be omitted as the internal gpio will be set as input_pullup\nii: q1,q2  can be substituted for other low power N-channel Mosfets. Be careful of pin locations as some are reversed such as with the bs170.\niii: the yellow and green lines from the panel already have builtin 10k pullup resistors so none are needed on the interface.\niv: j3 provides output 12v from the panel that can be used by an external step down converter to USB for powering the ESP.  \n  Powering the esp directly on the 5v pin is not recommended \n  as it will conflict with the usb input if a cable is plugged in.\n"
+	(text "Notes:\ni: resistors r1,r2 connection can be omitted as the internal gpio will be set as input_pullup\nii: q1,q2  can be substituted for other low power N-channel Mosfets. Be careful of pin locations as some are reversed such as with the bs170.\niii: the yellow and green lines from the panel already have builtin 10k pullup resistors so none are needed on the interface.\niv: j3 provides 12v output from the panel that can be used by an external step down to USB converter for powering the ESP.  \n  Powering the esp directly on the 5v pin is not recommended as it will conflict with the usb input if a cable is plugged in.\n"
 		(exclude_from_sim no)
-		(at 95.25 111.506 0)
+		(at 94.996 114.046 0)
 		(effects
 			(font
 				(size 1.27 1.27)
