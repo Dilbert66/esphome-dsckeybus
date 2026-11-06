@@ -2081,7 +2081,7 @@
 	)
 	(text "Notes:\ni: resistors r1,r2 connection can be omitted as the internal gpio will be set as input_pullup\nii: q1,q2  can be substituted for other low power N-channel Mosfets. Be careful of pin locations as some are reversed such as with the bs170.\niii: the yellow and green lines from the panel already have builtin 10k pullup resistors so none are needed on the interface.\niv: j3 provides 12v output from the panel that can be used by an external step down to USB converter for powering the ESP.  \n  Powering the esp directly on the 5v pin is not recommended as it will conflict with the usb input if a cable is plugged in.\n"
 		(exclude_from_sim no)
-		(at 94.996 114.046 0)
+		(at 84.328 113.792 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2103,7 +2103,7 @@
 	)
 	(text "Black = GND"
 		(exclude_from_sim no)
-		(at 34.29 63.754 0)
+		(at 29.21 68.834 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2125,7 +2125,7 @@
 	)
 	(text "YAML config: \n  #ESP32C3 supermini pin config\n  dscclockpin: \"6\"\n  dscreadpin: \"5\"\n  dscwritepin: \"5\"\n\nesp32: \n  variant: ESP32C3  \n  board: esp32-c3-devkitm-1\n\n"
 		(exclude_from_sim no)
-		(at 92.964 97.536 0)
+		(at 82.296 97.282 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2165,7 +2165,7 @@
 		(uuid "a3814e1f-b4ae-4bf9-b259-c53df1931db8")
 	)
 	(junction
-		(at 48.26 73.66)
+		(at 43.18 78.74)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f035039a-d5d0-4270-a137-6106fe263162")
@@ -2182,7 +2182,7 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 50.8) (xy 45.72 50.8)
+			(xy 43.18 55.88) (xy 40.64 55.88)
 		)
 		(stroke
 			(width 0)
@@ -2192,7 +2192,7 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 73.66) (xy 40.64 73.66)
+			(xy 43.18 78.74) (xy 35.56 78.74)
 		)
 		(stroke
 			(width 0)
@@ -2242,7 +2242,7 @@
 	)
 	(wire
 		(pts
-			(xy 49.53 73.66) (xy 48.26 73.66)
+			(xy 44.45 78.74) (xy 43.18 78.74)
 		)
 		(stroke
 			(width 0)
@@ -2262,7 +2262,7 @@
 	)
 	(wire
 		(pts
-			(xy 44.45 54.61) (xy 49.53 54.61)
+			(xy 39.37 59.69) (xy 44.45 59.69)
 		)
 		(stroke
 			(width 0)
@@ -2292,7 +2292,7 @@
 	)
 	(wire
 		(pts
-			(xy 49.53 52.07) (xy 48.26 52.07)
+			(xy 44.45 57.15) (xy 43.18 57.15)
 		)
 		(stroke
 			(width 0)
@@ -2302,7 +2302,7 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 52.07) (xy 48.26 50.8)
+			(xy 43.18 57.15) (xy 43.18 55.88)
 		)
 		(stroke
 			(width 0)
@@ -2312,7 +2312,7 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 78.74) (xy 49.53 78.74)
+			(xy 43.18 83.82) (xy 44.45 83.82)
 		)
 		(stroke
 			(width 0)
@@ -2322,7 +2322,7 @@
 	)
 	(wire
 		(pts
-			(xy 41.91 58.42) (xy 49.53 58.42)
+			(xy 36.83 63.5) (xy 44.45 63.5)
 		)
 		(stroke
 			(width 0)
@@ -2332,7 +2332,7 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 76.2) (xy 49.53 76.2)
+			(xy 43.18 81.28) (xy 44.45 81.28)
 		)
 		(stroke
 			(width 0)
@@ -2392,7 +2392,7 @@
 	)
 	(wire
 		(pts
-			(xy 49.53 58.42) (xy 49.53 57.15)
+			(xy 44.45 63.5) (xy 44.45 62.23)
 		)
 		(stroke
 			(width 0)
@@ -2402,7 +2402,7 @@
 	)
 	(wire
 		(pts
-			(xy 46.99 81.28) (xy 49.53 81.28)
+			(xy 41.91 86.36) (xy 44.45 86.36)
 		)
 		(stroke
 			(width 0)
@@ -2512,7 +2512,7 @@
 	)
 	(global_label "CLOCK"
 		(shape passive)
-		(at 48.26 76.2 180)
+		(at 43.18 81.28 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2522,7 +2522,7 @@
 		)
 		(uuid "75f7fe9c-8d20-4a4d-a731-eedb27fe270a")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 40.2175 76.2 0)
+			(at 35.1375 81.28 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2560,7 +2560,7 @@
 	)
 	(global_label "RD{slash}RW"
 		(shape passive)
-		(at 48.26 78.74 180)
+		(at 43.18 83.82 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2570,7 +2570,7 @@
 		)
 		(uuid "8c7d582d-fae1-4e06-a4be-dfe58d480ead")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 39.7942 78.74 0)
+			(at 34.7142 83.82 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2584,7 +2584,7 @@
 	)
 	(global_label "RED"
 		(shape passive)
-		(at 41.91 58.42 180)
+		(at 36.83 63.5 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2594,7 +2594,7 @@
 		)
 		(uuid "940886fc-2073-4adf-92d2-eb2286621f4d")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 36.3471 58.42 0)
+			(at 31.2671 63.5 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2608,7 +2608,7 @@
 	)
 	(global_label "RED"
 		(shape passive)
-		(at 49.53 92.71 180)
+		(at 44.45 97.79 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2618,7 +2618,7 @@
 		)
 		(uuid "9c7ed321-ca2b-44d1-b090-f229a3b6531d")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 43.9671 92.71 0)
+			(at 38.8871 97.79 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2656,7 +2656,7 @@
 	)
 	(global_label "GREEN"
 		(shape passive)
-		(at 44.45 54.61 180)
+		(at 39.37 59.69 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2666,7 +2666,7 @@
 		)
 		(uuid "d3474b7f-1033-46c9-9d54-ab3cda9b6368")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 44.45 54.61 0)
+			(at 39.37 59.69 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2703,7 +2703,7 @@
 	)
 	(global_label "YELLOW"
 		(shape passive)
-		(at 45.72 50.8 180)
+		(at 40.64 55.88 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2713,7 +2713,7 @@
 		)
 		(uuid "f6732a5e-203d-462f-ba38-a805ee4af3fb")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 45.72 50.8 0)
+			(at 40.64 55.88 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2750,7 +2750,7 @@
 	)
 	(symbol
 		(lib_id "power:+3V3")
-		(at 48.26 73.66 0)
+		(at 43.18 78.74 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2760,7 +2760,7 @@
 		(dnp no)
 		(uuid "0ae1827f-cf7f-4309-a29b-ad43545d1480")
 		(property "Reference" "#PWR02"
-			(at 48.26 77.47 0)
+			(at 43.18 82.55 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2771,7 +2771,7 @@
 			)
 		)
 		(property "Value" "+3V3"
-			(at 48.26 69.85 0)
+			(at 43.18 74.93 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2781,7 +2781,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 48.26 73.66 0)
+			(at 43.18 78.74 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2792,7 +2792,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 48.26 73.66 0)
+			(at 43.18 78.74 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2803,7 +2803,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 48.26 73.66 0)
+			(at 43.18 78.74 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3068,7 +3068,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 46.99 81.28 0)
+		(at 41.91 86.36 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3078,7 +3078,7 @@
 		(dnp no)
 		(uuid "3d643e61-a508-45a2-9b08-b3d6beae3a01")
 		(property "Reference" "#PWR03"
-			(at 46.99 87.63 0)
+			(at 41.91 92.71 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3089,7 +3089,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 46.99 85.09 0)
+			(at 41.91 90.17 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3099,7 +3099,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 46.99 81.28 0)
+			(at 41.91 86.36 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3110,7 +3110,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 46.99 81.28 0)
+			(at 41.91 86.36 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3121,7 +3121,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 46.99 81.28 0)
+			(at 41.91 86.36 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3145,7 +3145,7 @@
 	)
 	(symbol
 		(lib_id "Connector:Screw_Terminal_01x02")
-		(at 54.61 92.71 0)
+		(at 49.53 97.79 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3155,7 +3155,7 @@
 		(dnp no)
 		(uuid "47bf7ba9-bcd2-4800-8c29-bfca3a36a83f")
 		(property "Reference" "J3"
-			(at 54.864 88.646 0)
+			(at 49.784 93.726 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3164,8 +3164,8 @@
 				)
 			)
 		)
-		(property "Value" "12v out"
-			(at 54.61 101.6 0)
+		(property "Value" "Screw_Terminal_01x02"
+			(at 62.992 99.06 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3175,7 +3175,7 @@
 			)
 		)
 		(property "Footprint" "TerminalBlock_MetzConnect:TerminalBlock_MetzConnect_Type059_RT06302HBWC_1x02_P3.50mm_Horizontal"
-			(at 54.61 92.71 0)
+			(at 49.53 97.79 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3186,7 +3186,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 54.61 92.71 0)
+			(at 49.53 97.79 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3197,7 +3197,7 @@
 			)
 		)
 		(property "Description" "Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 54.61 92.71 0)
+			(at 49.53 97.79 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3208,7 +3208,7 @@
 			)
 		)
 		(property "KiLib_Generator" "connector/pin_header_socket"
-			(at 54.61 92.71 0)
+			(at 49.53 97.79 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3235,7 +3235,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 49.53 95.25 0)
+		(at 44.45 100.33 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3245,7 +3245,7 @@
 		(dnp no)
 		(uuid "4aac8f7f-50e5-4e04-a145-a66cfe480c92")
 		(property "Reference" "#PWR014"
-			(at 49.53 101.6 0)
+			(at 44.45 106.68 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3256,7 +3256,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 49.53 99.06 0)
+			(at 44.45 104.14 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3266,7 +3266,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 49.53 95.25 0)
+			(at 44.45 100.33 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3277,7 +3277,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 49.53 95.25 0)
+			(at 44.45 100.33 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3288,7 +3288,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 49.53 95.25 0)
+			(at 44.45 100.33 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3638,7 +3638,7 @@
 	)
 	(symbol
 		(lib_id "power:PWR_FLAG")
-		(at 40.64 73.66 0)
+		(at 35.56 78.74 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3648,7 +3648,7 @@
 		(dnp no)
 		(uuid "9192b3ba-00da-4e06-887d-4696fcdae50d")
 		(property "Reference" "#FLG01"
-			(at 40.64 71.755 0)
+			(at 35.56 76.835 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3659,7 +3659,7 @@
 			)
 		)
 		(property "Value" "PWR_FLAG"
-			(at 40.64 69.85 0)
+			(at 35.56 74.93 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3670,7 +3670,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 40.64 73.66 0)
+			(at 35.56 78.74 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3681,7 +3681,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 40.64 73.66 0)
+			(at 35.56 78.74 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3692,7 +3692,7 @@
 			)
 		)
 		(property "Description" "Special symbol for telling ERC where power comes from"
-			(at 40.64 73.66 0)
+			(at 35.56 78.74 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3716,7 +3716,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 49.53 59.69 0)
+		(at 44.45 64.77 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3726,7 +3726,7 @@
 		(dnp no)
 		(uuid "9cb3e181-4e01-4b8e-8c7f-01092a0657be")
 		(property "Reference" "#PWR01"
-			(at 49.53 66.04 0)
+			(at 44.45 71.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3737,7 +3737,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 50.8 64.008 0)
+			(at 45.72 69.088 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3747,7 +3747,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 49.53 59.69 0)
+			(at 44.45 64.77 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3758,7 +3758,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 49.53 59.69 0)
+			(at 44.45 64.77 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3769,7 +3769,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 49.53 59.69 0)
+			(at 44.45 64.77 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3793,7 +3793,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x04")
-		(at 54.61 76.2 0)
+		(at 49.53 81.28 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3803,7 +3803,7 @@
 		(dnp no)
 		(uuid "a05f261f-698a-418e-affd-3949e87cc3df")
 		(property "Reference" "J2"
-			(at 54.61 69.088 0)
+			(at 49.53 74.168 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3812,8 +3812,8 @@
 				)
 			)
 		)
-		(property "Value" "ESP32"
-			(at 54.61 85.09 0)
+		(property "Value" "Conn_01x05"
+			(at 57.658 83.82 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3823,7 +3823,7 @@
 			)
 		)
 		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
-			(at 54.61 76.2 0)
+			(at 49.53 81.28 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3834,7 +3834,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 54.61 76.2 0)
+			(at 49.53 81.28 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3845,7 +3845,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 54.61 76.2 0)
+			(at 49.53 81.28 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3856,7 +3856,7 @@
 			)
 		)
 		(property "KiLib_Generator" "connector/pin_header_socket"
-			(at 54.61 76.2 0)
+			(at 49.53 81.28 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4222,7 +4222,7 @@
 	)
 	(symbol
 		(lib_id "Connector:Screw_Terminal_01x04")
-		(at 54.61 54.61 0)
+		(at 49.53 59.69 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -4232,7 +4232,7 @@
 		(dnp no)
 		(uuid "d15af9b4-d200-4bba-8e73-a9c78c7ad772")
 		(property "Reference" "J1"
-			(at 54.61 48.26 0)
+			(at 49.53 53.34 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4241,8 +4241,8 @@
 				)
 			)
 		)
-		(property "Value" "PANEL"
-			(at 54.864 64.262 0)
+		(property "Value" "Screw_Terminal_01x04"
+			(at 62.738 62.23 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4252,7 +4252,7 @@
 			)
 		)
 		(property "Footprint" "TerminalBlock_MetzConnect:TerminalBlock_MetzConnect_Type055_RT01504HDWU_1x04_P5.00mm_Horizontal"
-			(at 54.61 54.61 0)
+			(at 49.53 59.69 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4263,7 +4263,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 54.61 54.61 0)
+			(at 49.53 59.69 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4274,7 +4274,7 @@
 			)
 		)
 		(property "Description" "Generic screw terminal, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 54.61 54.61 0)
+			(at 49.53 59.69 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4285,7 +4285,7 @@
 			)
 		)
 		(property "KiLib_Generator" "terminal_block/Metz_Connect"
-			(at 54.61 54.61 0)
+			(at 49.53 59.69 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
